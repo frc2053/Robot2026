@@ -1,0 +1,5 @@
+# Code owners for automatic review requests
+# These owners will be requested for review when someone opens a pull request.
+
+# All files - notify @r4stered
+* @r4stered

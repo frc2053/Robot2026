@@ -9,22 +9,80 @@ on:
     branches: [ main ]
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  # Spotless code formatting check
+  spotless:
+    name: Spotless Check
     runs-on: ubuntu-22.04
-    # This grabs the WPILib docker container
     container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@6
-    # Declares the repository safe and not under dubious ownership.
+    - uses: actions/checkout@v4
     - name: Add repository to git safe directories
       run: git config --global --add safe.directory $GITHUB_WORKSPACE
-    # Grant execute permission for gradlew
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    # Runs a single command using the runners shell
+    - name: Run Spotless check
+      run: ./gradlew spotlessCheck
+
+  # Checkstyle linting
+  checkstyle:
+    name: Checkstyle
+    runs-on: ubuntu-22.04
+    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add repository to git safe directories
+      run: git config --global --add safe.directory $GITHUB_WORKSPACE
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Run Checkstyle
+      run: ./gradlew checkstyleMain checkstyleTest
+    - name: Upload Checkstyle Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: checkstyle-reports
+        path: build/reports/checkstyle/
+        retention-days: 30
+
+  # PMD static analysis
+  pmd:
+    name: PMD Analysis
+    runs-on: ubuntu-22.04
+    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add repository to git safe directories
+      run: git config --global --add safe.directory $GITHUB_WORKSPACE
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Run PMD
+      run: ./gradlew pmdMain pmdTest
+    - name: Upload PMD Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pmd-reports
+        path: build/reports/pmd/
+        retention-days: 30
+
+  # Build job - runs after all linting passes
+  build:
+    name: Build Robot Code
+    needs: [spotless, checkstyle, pmd]
+    runs-on: ubuntu-22.04
+    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    steps:
+    - uses: actions/checkout@v4
+    - name: Add repository to git safe directories
+      run: git config --global --add safe.directory $GITHUB_WORKSPACE
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
     - name: Compile and run tests on robot code
       run: ./gradlew build
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: build/test-results/
+        retention-days: 30
