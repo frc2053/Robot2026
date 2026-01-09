@@ -118,7 +118,7 @@ spotless {
     java {
         target fileTree('.') {
             include '**/*.java'
-            exclude '**/build/**', '**/build-*/**', '**/bin/**', '**/BuildConstants.java'
+            exclude '**/build/**', '**/build-*/**', '**/bin/**', '**/generated/**'
         }
         toggleOffOn()
         googleJavaFormat()
@@ -160,7 +160,7 @@ spotless {
 project.compileJava.dependsOn(createVersionFile)
 gversion {
     srcDir       = "src/main/java/"
-    classPackage = "frc.robot"
+    classPackage = "frc.robot.generated"
     className    = "BuildConstants"
     dateFormat   = "yyyy-MM-dd HH:mm:ss z"
     timeZone     = "America/New_York" // Use preferred time zone
@@ -175,7 +175,7 @@ checkstyle {
 }
 
 tasks.withType(Checkstyle) {
-    exclude '**/BuildConstants.java'
+    exclude '**/generated/**'
     exclude '**/build/**'
     reports {
         xml.required = true
@@ -193,7 +193,7 @@ pmd {
 }
 
 tasks.withType(Pmd) {
-    exclude '**/BuildConstants.java'
+    exclude '**/generated/**'
     exclude '**/build/**'
     reports {
         xml.required = true
