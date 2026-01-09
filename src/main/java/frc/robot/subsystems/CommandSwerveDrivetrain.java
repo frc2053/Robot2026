@@ -143,7 +143,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    * Constructs a CTRE SwerveDrivetrain using the specified constants.
    *
    * <p>This constructs the underlying hardware devices, so users should not construct the devices
-   * themselves. If they need the devices, they can access them through getters in the c
+   * themselves. If they need the devices, they can access them through getters in the classes.
    *
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param odometryUpdateFrequency The frequency to run the odometry loop. If unspecified or set to
