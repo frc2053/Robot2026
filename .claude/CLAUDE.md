@@ -165,6 +165,57 @@ Before suggesting students commit code, remind them to run:
 
 This runs Spotless, Checkstyle, and PMD checks that CI will enforce.
 
+## Simulation Support
+
+All subsystems MUST include simulation support using the WPILib `simulationPeriodic()` method and CTRE Phoenix 6 simulation classes. This allows testing without hardware.
+
+### Simulation Pattern
+- Use `simulationPeriodic()` method (called automatically only during simulation)
+- Use CTRE `TalonFXSimState` to interface between WPILib physics simulation and motor controller
+- Use appropriate WPILib simulation classes (e.g., `ElevatorSim`, `SingleJointedArmSim`, `FlywheelSim`)
+- Initialize simulation objects in the constructor
+
+```java
+public class ExampleSubsystem extends SubsystemBase {
+  private final TalonFX m_motor;
+
+  // Simulation objects
+  private final TalonFXSimState m_motorSimState;
+  private final ElevatorSim m_elevatorSim;
+
+  public ExampleSubsystem() {
+    m_motor = new TalonFX(kMotorCanId);
+    // ... other initialization ...
+
+    // Initialize simulation
+    m_motorSimState = m_motor.getSimState();
+    m_elevatorSim = new ElevatorSim(
+        DCMotor.getKrakenX60(1),
+        kGearRatio,
+        kCarriageMassKg,
+        kDrumRadiusMeters,
+        kMinHeightMeters,
+        kMaxHeightMeters,
+        true,  // simulate gravity
+        0.0);  // starting position
+  }
+
+  @Override
+  public void simulationPeriodic() {
+    // Update supply voltage from WPILib
+    m_motorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
+
+    // Get motor voltage and update physics simulation
+    m_elevatorSim.setInputVoltage(m_motorSimState.getMotorVoltage());
+    m_elevatorSim.update(0.020);
+
+    // Feed physics simulation results back to motor simulation
+    m_motorSimState.setRawRotorPosition(positionToMotorRotations(m_elevatorSim.getPositionMeters()));
+    m_motorSimState.setRotorVelocity(velocityToMotorRps(m_elevatorSim.getVelocityMetersPerSecond()));
+  }
+}
+```
+
 ## Common Patterns
 
 ### Creating a Subsystem
