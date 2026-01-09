@@ -13,7 +13,7 @@ jobs:
   spotless:
     name: Spotless Check
     runs-on: ubuntu-22.04
-    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    container: wpilib/roborio-cross-ubuntu:2025-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Add repository to git safe directories
@@ -27,7 +27,7 @@ jobs:
   checkstyle:
     name: Checkstyle
     runs-on: ubuntu-22.04
-    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    container: wpilib/roborio-cross-ubuntu:2025-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Add repository to git safe directories
@@ -48,7 +48,7 @@ jobs:
   pmd:
     name: PMD Analysis
     runs-on: ubuntu-22.04
-    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    container: wpilib/roborio-cross-ubuntu:2025-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Add repository to git safe directories
@@ -70,7 +70,7 @@ jobs:
     name: Build Robot Code
     needs: [spotless, checkstyle, pmd]
     runs-on: ubuntu-22.04
-    container: wpilib/roborio-cross-ubuntu:2026-22.04-py314
+    container: wpilib/roborio-cross-ubuntu:2025-22.04
     steps:
     - uses: actions/checkout@v4
     - name: Add repository to git safe directories
