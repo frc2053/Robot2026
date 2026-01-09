@@ -134,7 +134,7 @@ class Robot {
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive; // Change to Clockwise_Positive if motor runs backward
         // Apply configuration
         motor.getConfigurator().apply(config);
-        // Get status signals 
+        // Get status signals
         motorPosition = motor.getPosition();
         motorVelocity = motor.getVelocity();
         motorVoltage = motor.getMotorVoltage();
