@@ -30,6 +30,7 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     m_timeAndJoystickReplay.update();
     CommandScheduler.getInstance().run();
+    m_robotContainer.m_vision.periodic();
   }
 
   @Override
@@ -81,5 +82,7 @@ public class Robot extends TimedRobot {
   public void testExit() {}
 
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+    m_robotContainer.m_vision.simulationPeriodic(m_robotContainer.m_drivetrain.getState().Pose);
+  }
 }
