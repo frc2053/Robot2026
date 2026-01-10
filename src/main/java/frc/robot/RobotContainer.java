@@ -38,6 +38,7 @@ public class RobotContainer {
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
   public final CommandSwerveDrivetrain m_drivetrain = TunerConstants.createDrivetrain();
+  public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
   private final SendableChooser<Command> m_autoChooser;
