@@ -88,9 +88,8 @@ public class Vision {
   }
 
   public void periodic() {
-    Optional<EstimatedRobotPose> visionEst = Optional.empty();
     for (var result : m_camera.getAllUnreadResults()) {
-      visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
+      Optional<EstimatedRobotPose> visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
       if (visionEst.isEmpty()) {
         visionEst = m_photonEstimator.estimateLowestAmbiguityPose(result);
       }

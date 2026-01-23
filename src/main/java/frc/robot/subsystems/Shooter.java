@@ -18,13 +18,13 @@ import frc.robot.Constants.ShooterConstants;
 
 public class Shooter extends SubsystemBase {
 
-  private TalonFX m_shooterMotorLeft;
-  private TalonFX m_shooterMotorRight;
-  private TalonFX m_shooterMotorTopRoller;
+  private final TalonFX m_shooterMotorLeft;
+  private final TalonFX m_shooterMotorRight;
+  private final TalonFX m_shooterMotorTopRoller;
 
-  private StatusSignal<AngularVelocity> m_leftMotorVel;
-  private StatusSignal<AngularVelocity> m_rightMotorVel;
-  private StatusSignal<AngularVelocity> m_rollerVel;
+  private final StatusSignal<AngularVelocity> m_leftMotorVel;
+  private final StatusSignal<AngularVelocity> m_rightMotorVel;
+  private final StatusSignal<AngularVelocity> m_rollerVel;
 
   /** Creates a new Shooter. */
   public Shooter() {
