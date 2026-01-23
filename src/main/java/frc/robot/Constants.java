@@ -9,8 +9,17 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 
 public class Constants {
+
+  public static class SwerveConstants {
+    public static final double kDrivetrainWidth = Units.inchesToMeters(26.94);
+    public static final double kDrivetrainLength = Units.inchesToMeters(26.94);
+    public static final double kRobotWidth = Units.inchesToMeters(33.876000);
+    public static final double kRobotLength = Units.inchesToMeters(33.876000);
+  }
+
   public static class ShooterConstants {
     public static final int SHOOTER_MOTOR_LEFT_ID = 15;
     public static final int SHOOTER_MOTOR_RIGHT_ID = 16;

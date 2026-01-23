@@ -24,19 +24,19 @@ public record ChoreoTraj(
     Pose2d initialPoseBlue,
     Pose2d endPoseBlue
 ) {
-    public static final ChoreoTraj NewPath = new ChoreoTraj(
-	    "NewPath",
+    public static final ChoreoTraj StraightForward = new ChoreoTraj(
+	    "StraightForward",
 	    OptionalInt.empty(),
-	    3.66541,
-	    new Pose2d(3.589, 5.961, Rotation2d.fromRadians(-3.142)),
-	    new Pose2d(1.164, 4.697, Rotation2d.fromRadians(1.571))
+	    0.75247,
+	    new Pose2d(0, 0, Rotation2d.fromRadians(0)),
+	    new Pose2d(1.524, 0, Rotation2d.fromRadians(0))
 	);
-	public static final ChoreoTraj NewPath_copy1 = new ChoreoTraj(
-	    "NewPath_copy1",
+	public static final ChoreoTraj DepotClimb = new ChoreoTraj(
+	    "DepotClimb",
 	    OptionalInt.empty(),
-	    5.03609,
-	    new Pose2d(3.579, 7.438, Rotation2d.fromRadians(0)),
-	    new Pose2d(3.513, 4.073, Rotation2d.fromRadians(0))
+	    2.73015,
+	    new Pose2d(3.599, 6.361, Rotation2d.fromRadians(-3.142)),
+	    new Pose2d(1.687, 4.177, Rotation2d.fromRadians(0))
 	);
 
     /**
@@ -44,8 +44,8 @@ public record ChoreoTraj(
      * This allows for trajectory data to be looked up with strings during runtime.
      */
     public static final Map<String, ChoreoTraj> ALL_TRAJECTORIES = Map.ofEntries(
-    	Map.entry("NewPath", NewPath),
-		Map.entry("NewPath_copy1", NewPath_copy1)
+    	Map.entry("StraightForward", StraightForward),
+		Map.entry("DepotClimb", DepotClimb)
     );
 
     /**
