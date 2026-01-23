@@ -15,12 +15,13 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.generated.CompBotTunerConstants;
+import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Shooter;
 
 public class RobotContainer {
   private final double m_maxSpeed =
-      1.0 * CompBotTunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+      1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
   private final double m_maxAngularRate =
       RotationsPerSecond.of(0.75)
           .in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
@@ -37,7 +38,8 @@ public class RobotContainer {
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
-  public final CommandSwerveDrivetrain m_drivetrain = CompBotTunerConstants.createDrivetrain();
+  public final CommandSwerveDrivetrain m_drivetrain = TunerConstants.createDrivetrain();
+  public final Shooter m_shooter = new Shooter();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
