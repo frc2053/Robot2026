@@ -24,6 +24,8 @@
 
 package frc.robot;
 
+import static frc.robot.Constants.VisionConstants;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -31,13 +33,11 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import frc.robot.constants.VisionConstants;
 import java.util.List;
 import java.util.Optional;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
-import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
@@ -52,16 +52,17 @@ public class Vision {
   // Simulation
   private VisionSystemSim m_visionSim;
 
+  /**
+   * Creates a new Vision instance.
+   *
+   * @param estConsumer Lamba that will accept a pose estimate and pass it to your desired {@link
+   *     edu.wpi.first.math.estimator.SwerveDrivePoseEstimator}
+   */
   public Vision(EstimateConsumer estConsumer) {
     this.m_estConsumer = estConsumer;
     m_camera = new PhotonCamera(VisionConstants.kCameraName);
-
     m_photonEstimator =
-        new PhotonPoseEstimator(
-            VisionConstants.kTagLayout,
-            PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            VisionConstants.kRobotToCam);
-    m_photonEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
+        new PhotonPoseEstimator(VisionConstants.kTagLayout, VisionConstants.kRobotToCam);
 
     // ----- Simulation
     if (Robot.isSimulation()) {
@@ -71,14 +72,14 @@ public class Vision {
       m_visionSim.addAprilTags(VisionConstants.kTagLayout);
       // Create simulated camera properties. These can be set to mimic your actual camera.
       var cameraProp = new SimCameraProperties();
-      cameraProp.setCalibration(1600, 1304, Rotation2d.fromDegrees(55));
-      cameraProp.setCalibError(0.55, 0.05);
-      cameraProp.setFPS(25);
-      cameraProp.setAvgLatencyMs(60);
-      cameraProp.setLatencyStdDevMs(5);
+      cameraProp.setCalibration(960, 720, Rotation2d.fromDegrees(90));
+      cameraProp.setCalibError(0.35, 0.10);
+      cameraProp.setFPS(15);
+      cameraProp.setAvgLatencyMs(50);
+      cameraProp.setLatencyStdDevMs(15);
       // Create a PhotonCameraSim which will update the linked PhotonCamera's values with visible
       // targets.
-      var cameraSim = new PhotonCameraSim(m_camera, cameraProp);
+      PhotonCameraSim cameraSim = new PhotonCameraSim(m_camera, cameraProp);
       // Add the simulated camera to view the targets on this simulated field.
       m_visionSim.addCamera(cameraSim, VisionConstants.kRobotToCam);
 
@@ -87,10 +88,13 @@ public class Vision {
   }
 
   public void periodic() {
-    Optional<EstimatedRobotPose> visionEst;
-    for (var change : m_camera.getAllUnreadResults()) {
-      visionEst = m_photonEstimator.update(change);
-      updateEstimationStdDevs(visionEst, change.getTargets());
+    Optional<EstimatedRobotPose> visionEst = Optional.empty();
+    for (var result : m_camera.getAllUnreadResults()) {
+      visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
+      if (visionEst.isEmpty()) {
+        visionEst = m_photonEstimator.estimateLowestAmbiguityPose(result);
+      }
+      updateEstimationStdDevs(visionEst, result.getTargets());
 
       if (Robot.isSimulation()) {
         visionEst.ifPresentOrElse(
@@ -195,8 +199,9 @@ public class Vision {
   public Field2d getSimDebugField() {
     if (!Robot.isSimulation()) {
       return null;
+    } else {
+      return m_visionSim.getDebugField();
     }
-    return m_visionSim.getDebugField();
   }
 
   @FunctionalInterface
