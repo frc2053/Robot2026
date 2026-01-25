@@ -188,6 +188,40 @@
                       "model": "Robot_2053",
                       "color": "#ff0000"
                     }
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/Vision/FrontCameraPoseEstimation",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Robot_2053",
+                      "color": "#00ff00"
+                    }
+                  },
+                  {
+                    "type": "axes",
+                    "logKey": "NT:/Vision/SideCameratargetPoses",
+                    "logType": "Pose3d[]",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "axes",
+                    "logKey": "NT:/Vision/FrontCameratargetPoses",
+                    "logType": "Pose3d[]",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/Vision/SideCameraPoseEstimation",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Robot_2053",
+                      "color": "#ff00ff"
+                    }
                   }
                 ],
                 "game": "FRC:2026 Field"
@@ -197,16 +231,51 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -6.664315587126384,
-                  4.340628236977664,
-                  6.733276832635114
+                  -8.795073085651978,
+                  4.2418691885301225,
+                  -3.6762470167904535
                 ],
                 "cameraTarget": [
-                  -5.622728027412421,
-                  1.627447383633381,
-                  1.339224109866458
+                  -4.066120679793231,
+                  -1.0807612614346775,
+                  1.1632253513429065
                 ]
               },
+              "controlsHeight": 200
+            },
+            {
+              "type": 11,
+              "title": "Points",
+              "controller": {
+                "sources": [
+                  {
+                    "type": "plus",
+                    "logKey": "NT:/Vision/FrontCameratargetCorners",
+                    "logType": "Translation2d[]",
+                    "visible": true,
+                    "options": {
+                      "size": "medium",
+                      "groupSize": "0"
+                    }
+                  },
+                  {
+                    "type": "circle",
+                    "logKey": "NT:/Vision/SideCameratargetCorners",
+                    "logType": "Translation2d[]",
+                    "visible": true,
+                    "options": {
+                      "size": "medium",
+                      "groupSize": "0"
+                    }
+                  }
+                ],
+                "width": 1600,
+                "height": 1304,
+                "orientation": "xr,yd",
+                "origin": "ul"
+              },
+              "controllerUUID": "4bsy2t6bqz5lp1g9zwlpijuxyrntsw4u",
+              "renderer": null,
               "controlsHeight": 200
             }
           ]
