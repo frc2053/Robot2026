@@ -15,6 +15,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -25,7 +26,11 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.Constants;
+import frc.robot.Constants.SwerveConstants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -46,6 +51,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
   private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds =
       new SwerveRequest.ApplyRobotSpeeds();
+
+  private final SwerveRequest.FieldCentricFacingAngle m_fieldCentricFacingAngle =
+      new SwerveRequest.FieldCentricFacingAngle();
+
+  private final StructPublisher<Pose2d> m_lookAtPointPub =
+      NetworkTableInstance.getDefault()
+          .getStructTopic("Drivetrain/LookAtPoint/TargetPoint", Pose2d.struct)
+          .publish();
 
   /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
   private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
@@ -125,6 +138,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       startSimThread();
     }
     configureAutoBuilder();
+    configureHeadingController();
   }
 
   /**
@@ -147,6 +161,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       startSimThread();
     }
     configureAutoBuilder();
+    configureHeadingController();
   }
 
   /**
@@ -180,6 +195,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       startSimThread();
     }
     configureAutoBuilder();
+    configureHeadingController();
+  }
+
+  private void configureHeadingController() {
+    m_fieldCentricFacingAngle.HeadingController.setPID(
+        SwerveConstants.kRotationP, SwerveConstants.kRotationI, SwerveConstants.kRotationD);
   }
 
   private void configureAutoBuilder() {
@@ -197,10 +218,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                       .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
                       .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())),
           new PPHolonomicDriveController(
-              // PID constants for translation
-              new PIDConstants(10, 0, 0),
-              // PID constants for rotation
-              new PIDConstants(7, 0, 0)),
+              new PIDConstants(
+                  SwerveConstants.kPathTranslationP,
+                  SwerveConstants.kPathTranslationI,
+                  SwerveConstants.kPathTranslationD),
+              new PIDConstants(
+                  SwerveConstants.kRotationP,
+                  SwerveConstants.kRotationI,
+                  SwerveConstants.kRotationD)),
           config,
           // Assume the path needs to be flipped for Red vs Blue, this is normally the case
           () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
@@ -242,6 +267,44 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    */
   public Command sysIdDynamic(SysIdRoutine.Direction direction) {
     return m_sysIdRoutineToApply.dynamic(direction);
+  }
+
+  /**
+   * Creates a command that continuously faces the robot toward a dynamically supplied field point
+   * while allowing driver control of translation.
+   *
+   * @param targetPointSupplier Supplier for the field point to look at (in meters).
+   * @param xVelocitySupplier Supplier for forward velocity (m/s).
+   * @param yVelocitySupplier Supplier for left velocity (m/s).
+   * @param deadband Deadband for translation velocity (m/s).
+   * @return Command that faces the target point while driving.
+   */
+  public Command lookAtPoint(
+      Supplier<Translation2d> targetPointSupplier,
+      Supplier<Double> xVelocitySupplier,
+      Supplier<Double> yVelocitySupplier,
+      double deadband) {
+    return run(
+        () -> {
+          Translation2d targetPoint = targetPointSupplier.get();
+          m_lookAtPointPub.set(new Pose2d(targetPoint, Rotation2d.kZero));
+
+          Translation2d robotPosition = getState().Pose.getTranslation();
+          Translation2d vectorToTarget = targetPoint.minus(robotPosition);
+          Rotation2d angleToTarget = vectorToTarget.getAngle();
+
+          // Adjust for operator perspective (red alliance has 180 degree offset)
+          if (!Constants.ifOnBlue()) {
+            angleToTarget = angleToTarget.rotateBy(Rotation2d.k180deg);
+          }
+
+          setControl(
+              m_fieldCentricFacingAngle
+                  .withDeadband(deadband)
+                  .withVelocityX(xVelocitySupplier.get())
+                  .withVelocityY(yVelocitySupplier.get())
+                  .withTargetDirection(angleToTarget));
+        });
   }
 
   @Override

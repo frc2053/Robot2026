@@ -2,10 +2,16 @@ package frc.robot;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -13,11 +19,37 @@ import edu.wpi.first.math.util.Units;
 
 public class Constants {
 
+  /**
+   * Returns true if the robot is on the blue alliance.
+   *
+   * @return true if on blue alliance, false otherwise.
+   */
+  public static boolean ifOnBlue() {
+    return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue;
+  }
+
+  public static class FieldSpots {
+    public static final Translation2d kBlueMiddleHub = new Translation2d(Units.inchesToMeters(181.907204), Units.inchesToMeters(158.843750));
+  }
+
   public static class SwerveConstants {
     public static final double kDrivetrainWidth = Units.inchesToMeters(26.94);
     public static final double kDrivetrainLength = Units.inchesToMeters(26.94);
     public static final double kRobotWidth = Units.inchesToMeters(33.876000);
     public static final double kRobotLength = Units.inchesToMeters(33.876000);
+
+    // Path following translation PID constants
+    public static final double kPathTranslationP = 10.0;
+    public static final double kPathTranslationI = 0.0;
+    public static final double kPathTranslationD = 0.0;
+
+    // Rotation PID constants (used for path following and FieldCentricFacingAngle)
+    public static final double kRotationP = 7.0;
+    public static final double kRotationI = 0.0;
+    public static final double kRotationD = 0.0;
+
+    // Deadband percentage for translation (0.1 = 10%)
+    public static final double kDeadbandPercent = 0.1;
   }
 
   public static class ShooterConstants {

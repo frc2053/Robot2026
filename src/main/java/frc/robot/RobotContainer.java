@@ -12,6 +12,8 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
+import com.pathplanner.lib.util.FlippingUtil;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -95,11 +97,34 @@ public class RobotContainer {
     // Reset the field-centric heading on left bumper press.
     m_joystick.leftBumper().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
 
+    // Look at the hub while holding A button (flips based on alliance)
+    m_joystick
+        .a()
+        .whileTrue(
+            m_drivetrain.lookAtPoint(
+                () -> flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub),
+                () -> -m_joystick.getLeftY() * m_maxSpeed,
+                () -> -m_joystick.getLeftX() * m_maxSpeed,
+                m_maxSpeed * 0.1));
+
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
 
   public Command getAutonomousCommand() {
     /* Run the path selected from the auto chooser */
     return m_autoChooser.getSelected();
+  }
+
+  /**
+   * Flips a field point to the opposite alliance side using PathPlanner's FlippingUtil.
+   *
+   * @param point the point to flip.
+   * @return the flipped point if on red alliance, or the original point if on blue.
+   */
+  public static Translation2d flipFieldPoint(Translation2d point) {
+    if (Constants.ifOnBlue()) {
+      return point;
+    }
+    return FlippingUtil.flipFieldPosition(point);
   }
 }
