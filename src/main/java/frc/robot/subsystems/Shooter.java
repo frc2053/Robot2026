@@ -26,6 +26,9 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -46,7 +49,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.ShooterConstants;
+import frc.robot.util.ShootingOnTheFly;
+import frc.robot.util.ShootingOnTheFly.SOTFResult;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 public class Shooter extends SubsystemBase {
 
@@ -426,6 +432,59 @@ public class Shooter extends SubsystemBase {
                   m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
             })
         .withName("SpinUpForDistance");
+  }
+
+  /**
+   * Creates a command that spins up the shooter using Shooting On The Fly (SOTF) calculations. This
+   * compensates for robot velocity to ensure accurate shots while moving.
+   *
+   * @param robotPoseSupplier Supplier for current robot pose
+   * @param robotSpeedsSupplier Supplier for current robot velocity (field-relative)
+   * @param goalPositionSupplier Supplier for the goal position to shoot at
+   * @return A command that runs the shooter at SOTF-adjusted speeds
+   */
+  public Command spinUpForSOTFCommand(
+      Supplier<Pose2d> robotPoseSupplier,
+      Supplier<ChassisSpeeds> robotSpeedsSupplier,
+      Supplier<Translation2d> goalPositionSupplier) {
+    return this.run(
+            () -> {
+              Pose2d robotPose = robotPoseSupplier.get();
+              ChassisSpeeds robotSpeeds = robotSpeedsSupplier.get();
+              Translation2d goalPosition = goalPositionSupplier.get();
+
+              // Calculate SOTF-adjusted parameters
+              SOTFResult result =
+                  ShootingOnTheFly.calculate(
+                      robotPose,
+                      robotSpeeds,
+                      goalPosition,
+                      ShooterConstants.kSOTFLatencyCompensation,
+                      ShooterConstants.TIME_OF_FLIGHT_MAP,
+                      ShooterConstants.kMaxHorizontalVelocity);
+
+              // Use the effective distance to look up RPM from our tuned tables
+              double effectiveDistance = result.effectiveDistance();
+
+              // Look up speeds from interpolating tree maps using effective distance
+              double bottomSpeedRps =
+                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(effectiveDistance);
+              double topRollerSpeedRps =
+                  ShooterConstants.TOP_ROLLER_SPEED_MAP.get(effectiveDistance);
+
+              // Store target velocities for at-speed detection
+              m_targetMainShooterRps = bottomSpeedRps;
+              m_targetRollerRps = topRollerSpeedRps;
+
+              // Command the bottom shooter (right motor is leader, left follows)
+              m_shooterMotorRight.setControl(
+                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
+
+              // Command the top roller
+              m_shooterMotorTopRoller.setControl(
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
+            })
+        .withName("SpinUpForSOTF");
   }
 
   /**
