@@ -14,6 +14,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -24,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Shooter;
+import frc.robot.util.ShootingOnTheFly;
 
 public class RobotContainer {
   private final double m_maxSpeed =
@@ -126,12 +128,46 @@ public class RobotContainer {
                 () -> -m_joystick.getLeftX() * m_maxSpeed,
                 m_maxSpeed * 0.1));
 
+    // SHOOTING ON THE FLY: Hold Y to spin up shooter with velocity compensation
+    // and automatically aim at the SOTF-calculated point while driving
+    m_joystick
+        .y()
+        .whileTrue(
+            m_shooter
+                .spinUpForSOTFCommand(
+                    () -> m_drivetrain.getState().Pose,
+                    () -> fieldRelativeSpeeds(),
+                    () -> flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub))
+                .alongWith(
+                    m_drivetrain.lookAtPoint(
+                        () ->
+                            ShootingOnTheFly.calculateAimingPoint(
+                                m_drivetrain.getState().Pose,
+                                fieldRelativeSpeeds(),
+                                flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub),
+                                Constants.ShooterConstants.kSOTFLatencyCompensation,
+                                Constants.ShooterConstants.TIME_OF_FLIGHT_MAP),
+                        () -> -m_joystick.getLeftY() * m_maxSpeed,
+                        () -> -m_joystick.getLeftX() * m_maxSpeed,
+                        m_maxSpeed * 0.1)));
+
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
 
   public Command getAutonomousCommand() {
     /* Run the path selected from the auto chooser */
     return m_autoChooser.getSelected();
+  }
+
+  /**
+   * Gets the current robot velocity in field-relative coordinates.
+   *
+   * @return Field-relative ChassisSpeeds.
+   */
+  private ChassisSpeeds fieldRelativeSpeeds() {
+    ChassisSpeeds robotRelative = m_drivetrain.getState().Speeds;
+    return ChassisSpeeds.fromRobotRelativeSpeeds(
+        robotRelative, m_drivetrain.getState().Pose.getRotation());
   }
 
   /**

@@ -1,0 +1,550 @@
+
+Introduction
+
+I've seen a lot of whitepapers on Shooting On The Fly (I wrote a LaTeX paper on it once), but they often get bogged down in formal kinematics notation that makes high schoolers' eyes glaze over. Instead of sending it for the 50th time, I wanted to try to break it down to the level where you can actually code it, while also covering the messy real world dynamics I heard to learn the hard way.
+The Concept: It's Just Vectors
+
+At its core, SOTF is a vector addition problem.
+
+Imagine you are standing still and throwing a ball at a target. Easy, right? You aim directly at it. Now, imagine you are running sideways past the target. If you aim directly at the target, the ball carries your sideways momentum and misses wide. To hit the target, you have to aim backwards to cancel out your own movement.
+
+In robot terms:
+→Vball ⁄ ground = →Vball ⁄ robot + →Vrobot ⁄ ground
+
+    Ball_Velocity_Ground: The vector the ball travels relative to the field (This needs to point at the goal!).
+
+    Ball_Velocity_Robot: The vector the ball leaves your robot (What you control: Turret angle, Shooter RPM/Pitch).
+
+    Robot_Velocity_Ground: The vector your robot is moving (What your odometry tells you).
+
+We know where we want the ball to go (the goal). We know how we are moving. We need to solve for Ball_Velocity_Robot.
+
+Rearranging the equation:
+→Vball ⁄ robot = →Vball ⁄ ground − →Vrobot ⁄ ground
+
+That's it. That's the math. The rest is just implementation details and handling the fact that the real world hates theory.
+Prerequisites
+
+Before you try to implement this, you need three things:
+
+    A Consistent Shooter: If your shooter varies by ±10% RPM shot-to-shot while standing still, no amount of math will save you while moving.
+
+    Reliable Odometry: You need to know your robot's velocity vector relative to the field. For FTC, deadwheel odometry is practically mandatory. For FRC, swerve encoders or a good pose estimator are usually sufficient (apriltags!).
+
+    Target Tracking: You need to know where the goal is. Limelight, PhotonVision, or just really good field-relative odometry.
+
+The Math Implementation
+
+Let's break this down into steps you can actually write code for.
+Step 1: Get your Vectors
+
+First, define your Goal Vector. This is the vector from your robot to the goal. Let's say the goal is at (Goal_X, Goal_Y) and you are at (Robot_X, Robot_Y).
+
+double targetX = Goal_X - Robot_X;
+double targetY = Goal_Y - Robot_Y;
+Translation2d targetPosition = new Translation2d(targetX, targetY);
+
+// Calculate the ideal exit velocity magnitude (based on distance)
+double distance = targetPosition.getNorm();
+double idealSpeed = getShooterSpeedForDistance(distance);
+
+Translation2d targetVector = targetPosition.div(distance).times(idealSpeed);
+
+Note: `getShooterSpeedForDistance` comes from your tuning map of "Distance vs RPM/Pitch".
+
+Next, get your Robot Velocity Vector. From your odometry system:
+
+Translation2d robotVelocity = new Translation2d(vel_x, vel_y); // Field centric velocity!
+
+Step 2: The Subtraction
+
+Now we apply our golden rule:
+
+→Vshot = →Vtarget − →Vrobot.
+
+Translation2d shotVector = targetVector.minus(robotVelocity);
+
+Step 3: Convert to Controls
+
+Now shotVector represents the direction and speed the ball needs to leave your robot relative to the chassis.
+
+    Turret Angle: The angle of this vector is where your turret should point (relative to the field).
+
+    Shooter Power: The magnitude of this vector is the speed the ball needs to have.
+
+double turretAngle = shotVector.getAngle().getDegrees();
+double requiredSpeed = shotVector.getNorm();
+
+// OPTION 1: Variable Flywheel Speed (Fixed Hood)
+// double shooterRPM = calcRPM(requiredSpeed);
+
+// OPTION 2: Variable Hood Angle (Constant Speed)
+// double constantTotalSpeed = 15.0; // m/s
+// double newPitch = Math.acos(requiredSpeed / constantTotalSpeed);
+
+// NOTE: For high-arc shots (like Rapid React or Rebuilt), `idealSpeed` MUST be the
+// horizontal component of the exit velocity, NOT the total speed (RPM).
+// If your lookup table gives total speed/RPM, you must project it:
+// idealSpeed_Horizontal = Total_Speed * cos(release_angle);
+
+Wait, The Shooter Speed Changed?
+
+Yes! This is a common "aha" moment. If you are driving towards the goal, your robot is helping the ball, so you don't need to shoot as hard. If you are driving away, you need to shoot harder to overcome your backward momentum.
+
+Moving Hood Variant: If you have a constant speed flywheel and a moving hood, the physics are slightly different. Instead of changing the shot speed, you change the exit angle to get the required horizontal velocity. If you need more horizontal velocity (driving away), you lower the hood (shoot flatter). If you need less horizontal velocity (driving towards), you raise the hood (shoot higher).
+Handling "Lobbed" Shots
+
+This is a common pitfall. If you are shooting a high-arc shot (e.g. 60-70 degree exit angle), you must be careful with your vector math.
+
+The math above assumes a 2D plane. If you use your total shooter exit velocity (RPM) as the vector magnitude, you will massively overcompensate for robot motion.
+
+Why? Gravity only affects the vertical velocity. The robot's motion only affects the horizontal velocity. For a high lob, your horizontal velocity is very small (maybe 4 m/s), even if your ball is leaving the shooter at 12 m/s. If your robot is moving at 2 m/s, that's 50% of your horizontal velocity!
+
+The Fix:
+
+    Decompose your shot into Horizontal and Vertical components.
+
+        vhoriz = vtotal⋅cos(θpitch)
+        vvert = vtotal⋅sin(θpitch)
+
+    Do the vector subtraction ONLY on V_horizontal.
+    →vhoriz ⁄ robot = →vhoriz ⁄ ground − →vrobot
+
+    Recombine to get the new total exit velocity.
+    v’total = √v2horiz ⁄ robot + v2vert
+    θ’pitch = arctan⎛⎝vvertvhoriz ⁄ robot⎞⎠
+
+If you have a constant speed shooter (Option 2 above): You can't change New_V_total. Instead, you solve for New_Pitch such that the horizontal component matches V_horizontal_robot.
+θ’pitch = arccos⎛⎝vhoriz ⁄ robotvtotal⎞⎠
+
+Warning: Changing the pitch changes the vertical velocity, which changes the flight time, which changes the required horizontal velocity. For small corrections, this single-step calculation is usually "good enough", but perfect accuracy might require an iterative solver.
+The "Real World" Dynamics (Where things go wrong)
+
+If you implement the math above, you'll get close. But you'll probably still miss. Why? Because physics is mean. Here are the artifacts you need to account for.
+1. Latency Compensation (The Time Travel Problem)
+
+Your camera takes a picture. It takes 10ms to process. It sends the data to the Rio/Control Hub (another 5ms). Your loop calculates the turret angle. You send the command. The turret motor takes time to accelerate.
+
+By the time the ball actually leaves the robot, you are in a different place than when you took the picture.
+
+The Fix: Project your position forward.
+
+double latencySeconds = CAMERA_LATENCY + MOTOR_LAG + SHOOTING_TIME;
+Translation2d futurePos = currentPos.plus(robotVelocity.times(latencySeconds));
+// Now calculate your target vector from futurePos, not currentPos
+
+You will need to tune latencySeconds. It's often higher than you think (sometimes 100-200ms or more depending on the system).
+2. Shooter Wheel Dynamics (The "Squish" Factor)
+
+When a ball touches a flywheel, two things happen: 1. The wheel slows down (momentum transfer). 2. The wheel slips against the ball.
+
+The vector math assumes the ball leaves at the "commanded" velocity. It doesn't. It leaves at the actual surface speed of the wheel minus slip.
+
+Variable Velocity Artifact: Remember how the math changes the required shooter speed based on robot motion? If you are driving away from the goal, the math demands higher RPM. Higher RPM = More slip = Different trajectory. You might need a 2D lookup table: Map<Distance, RobotVelocity> -> RPM, or simply tune your RPM function to account for the fact that effectiveness drops at higher speeds.
+
+Recovery Time: If you are shooting a rapid stream of balls while moving, the first one might go in, but the impact slows the wheel down. If your PID isn't aggressive enough, the second shot will be too slow and fall short. * Fix: Use a Feedforward-heavy controller (BangBang or aggressive Kv). * Advanced Fix: If you know the RPM has dropped, delay the feeder until it recovers, OR dynamically adjust the hood angle/pitch to compensate for the lower velocity (if you have an adjustable hood).
+3. The "Magnus Effect" and Air Resistance
+
+Calculated SOTF vectors usually assume a parabolic vacuum trajectory. If your game piece is a foam ball (FTC/FRC standard), it has air resistance and spin.
+
+    Sideways Motion: If you are moving sideways, you impart sideways spin on the ball relative to the air. This can cause the ball to curve (Magnus effect).
+
+    Drag: Driving towards the goal effectively increases the air speed over the ball, increasing drag.
+
+The Fix: This is hard to model perfectly. The easiest solution is usually an empirical "correction factor".
+θadjusted = θcalculated + (k⋅vtransverse)
+
+Tune k until it goes straight.
+4. Centripetal Forces (Turret Whip)
+
+If your turret is at the end of a long robot arm or you are spinning the robot chassis fast, the turret itself has a tangential velocity. If your robot is spinning at 180 degrees/sec and your turret is 10 inches from the center of rotation, the turret tip is moving at ~30 inches/sec. Add this velocity to your robot velocity vector before doing the subtraction.
+Putting it All Together
+
+Here is a simplified "end-to-end" example of what the update loop might look like in a real robot codebase.
+
+public class SuperShooter {
+    public void update(Pose2d robotPose, ChassisSpeeds robotSpeed) {
+
+        // 1. LATENCY COMP
+        double latency = 0.15; // Tuned constant
+        Translation2d futurePos = robotPose.getTranslation().plus(
+            new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond).times(latency)
+        );
+
+        // 2. GET TARGET VECTOR
+        Translation2d goalLocation = FieldConstants.GOAL_LOCATION;
+        Translation2d targetVec = goalLocation.minus(futurePos);
+        double dist = targetVec.getNorm();
+
+        // 3. CALCULATE IDEAL SHOT (Stationary)
+        // Note: This returns HORIZONTAL velocity component
+        double idealHorizontalSpeed = ShooterTable.getSpeed(dist);
+
+        // 4. VECTOR SUBTRACTION
+        Translation2d robotVelVec = new Translation2d(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond);
+        Translation2d shotVec = targetVec.div(dist).times(idealHorizontalSpeed).minus(robotVelVec);
+
+        // 5. CONVERT TO CONTROLS
+        double turretAngle = shotVec.getAngle().getDegrees();
+        double newHorizontalSpeed = shotVec.getNorm();
+
+        // 6. SOLVE FOR NEW PITCH/RPM
+        // Assuming constant total exit velocity, variable hood:
+        double totalExitVelocity = 15.0; // m/s
+        // Clamp to avoid domain errors if we need more speed than possible
+        double ratio = Math.min(newHorizontalSpeed / totalExitVelocity, 1.0);
+        double newPitch = Math.acos(ratio);
+
+        // 7. SET OUTPUTS
+        turret.setAngle(turretAngle);
+        hood.setAngle(Math.toDegrees(newPitch));
+        shooter.setRPM(calcRPM(totalExitVelocity));
+    }
+}
+
+
+Introduction
+
+In Part 1, we covered the vector math behind shooting on the fly. The feedback I got was "cool, but how do I actually tune this thing without a physics degree?" Fair point. Let's talk about the practical side: building and using lookup tables (LUTs) that make SOTF work in the real world.
+
+The core insight is this: you don't need to model physics perfectly. You just need a table that maps distance to "what makes the ball go in." The vector math handles the motion compensation; the LUT handles the "shooting while stationary" baseline.
+The Only Map You Will Ever Need
+
+Forget complicated multi-dimensional tables. For most shooters, you need exactly one lookup table:
+
+Distance (meters) → Horizontal Exit Velocity (m/s)
+
+That's it. If you have a variable-speed shooter with fixed hood, this becomes:
+
+Distance (meters) → RPM
+
+If you have a fixed-speed shooter with variable hood, you technically don't even need a distance LUT for the speed, you need one for the hood angle, and you derive the horizontal component from that.
+Why Horizontal Velocity?
+
+The SOTF vector math operates in the horizontal plane. Gravity doesn't care about your robot's sideways motion, it only pulls down. So when we do the vector subtraction:
+→Vshot = →Vtarget − →Vrobot
+
+We're working with horizontal vectors. Your LUT needs to output the horizontal component of the exit velocity, not the total exit velocity (RPM).
+
+For a flat shooter (exit angle near 0°), these are basically the same. For a lobbed shooter (60°+ exit angle), total velocity and horizontal velocity are very different:
+vhorizontal = vtotal⋅cos(θpitch)
+
+If your pitch is 60° and your total velocity is 12 m/s, your horizontal velocity is only 6 m/s. Get this wrong and your motion compensation will be 2x too aggressive.
+Building the LUT: The Lazy Way
+
+Here's the reality: you don't need fancy equipment. You need a tape measure, some tape on the floor, and patience.
+Step 1: Mark Your Distances
+
+Put tape on the floor at regular intervals. For FRC-scale games, every 0.5m from 1.5m to 6m is usually sufficient. For FTC, every 0.25m from 0.5m to 3m.
+Step 2: Tune Each Distance
+
+Park your robot at each mark. Adjust RPM (or hood angle) until shots consistently go in. Write down the value. That's it. No math required.
+
+// Example LUT (distance in meters, RPM)
+private static final InterpolatingTreeMap<Double, Double> SHOOTER_MAP = new InterpolatingTreeMap<>();
+static {
+    SHOOTER_MAP.put(1.5, 2800.0);
+    SHOOTER_MAP.put(2.0, 3100.0);
+    SHOOTER_MAP.put(2.5, 3400.0);
+    SHOOTER_MAP.put(3.0, 3650.0);
+    SHOOTER_MAP.put(3.5, 3900.0);
+    SHOOTER_MAP.put(4.0, 4100.0);
+    SHOOTER_MAP.put(4.5, 4350.0);
+    SHOOTER_MAP.put(5.0, 4550.0);
+}
+
+Step 3: Measure Time of Flight
+
+Here's the trick that makes everything work without modeling shooter physics: measure the time of flight.
+
+At each distance, when you find the RPM that works, also record how long the ball takes to reach the goal. You can do this with:
+
+    A phone recording at 60fps (count frames, divide by 60)
+
+    A stopwatch and a friend (less accurate, but works)
+
+    An optitrack if you're fancy
+
+// Example LUT: distance (m) → {RPM, time of flight (s)}
+private static final InterpolatingTreeMap<Double, ShooterParams> SHOOTER_MAP = new InterpolatingTreeMap<>();
+static {
+    SHOOTER_MAP.put(1.5, new ShooterParams(2800.0, 0.42));
+    SHOOTER_MAP.put(2.0, new ShooterParams(3100.0, 0.51));
+    SHOOTER_MAP.put(2.5, new ShooterParams(3400.0, 0.58));
+    SHOOTER_MAP.put(3.0, new ShooterParams(3650.0, 0.65));
+    SHOOTER_MAP.put(3.5, new ShooterParams(3900.0, 0.71));
+    SHOOTER_MAP.put(4.0, new ShooterParams(4100.0, 0.78));
+    SHOOTER_MAP.put(4.5, new ShooterParams(4350.0, 0.84));
+    SHOOTER_MAP.put(5.0, new ShooterParams(4550.0, 0.91));
+}
+
+Step 4: Let Linear Interpolation Do the Work
+
+Use an InterpolatingTreeMap (WPILib) or equivalent. It handles in-between distances automatically. You don't need to characterize every centimeter.
+Getting Horizontal Velocity from ToF
+
+This is where it gets elegant. The horizontal velocity is just:
+vhorizontal = distancetime_of_flight
+
+That's it. Pure kinematics. If the ball travels 3 meters in 0.65 seconds, it was moving at 4.6 m/s horizontally. No model required.
+
+public double getHorizontalVelocity(double distance) {
+    ShooterParams params = SHOOTER_MAP.get(distance);
+    return distance / params.timeOfFlight;
+}
+
+Why does this work? Because when you tuned the shot to go in, you implicitly found the correct horizontal velocity. The ToF measurement just extracts that information without needing to model the shooter.
+Converting Back to RPM
+
+After the SOTF vector math gives you a new required horizontal velocity, you need to convert back to RPM. Here's the trick: use the same table in reverse.
+
+Your table maps distance → velocity (via ToF). So if you need a certain velocity, find the distance that would produce it, then look up the RPM for that distance.
+
+public double velocityToEffectiveDistance(double velocity) {
+    // Binary search or iterate through table to find distance
+    // where (distance / ToF) = velocity
+    // Most InterpolatingTreeMap implementations support inverse lookup
+    // or you can build a reverse map: velocity → distance
+
+    for (Map.Entry<Double, ShooterParams> entry : SHOOTER_MAP.entrySet()) {
+        double dist = entry.getKey();
+        double vel = dist / entry.getValue().timeOfFlight;
+        if (vel >= velocity) {
+            return dist; // Interpolate for better accuracy
+        }
+    }
+    return SHOOTER_MAP.lastKey(); // Clamp to max
+}
+
+public double calculateAdjustedRpm(double requiredVelocity) {
+    double effectiveDistance = velocityToEffectiveDistance(requiredVelocity);
+    return SHOOTER_MAP.get(effectiveDistance).rpm;
+}
+
+This way you're always using empirically-tuned RPM values from the table, no assumptions about linearity required.
+The "I Have a Variable Hood" Variant
+
+If your shooter has a constant flywheel speed and a moving hood, the same ToF approach works. You just adjust the hood instead of RPM.
+
+Your LUT becomes:
+
+Distance (meters) → Hood Angle (degrees), Time of Flight (s)
+
+// LUT for stationary shots with variable hood
+private static final InterpolatingTreeMap<Double, HoodParams> HOOD_MAP = new InterpolatingTreeMap<>();
+static {
+    HOOD_MAP.put(1.5, new HoodParams(35.0, 0.38));  // degrees, seconds
+    HOOD_MAP.put(2.0, new HoodParams(40.0, 0.45));
+    HOOD_MAP.put(2.5, new HoodParams(45.0, 0.52));
+    HOOD_MAP.put(3.0, new HoodParams(50.0, 0.60));
+    HOOD_MAP.put(3.5, new HoodParams(55.0, 0.68));
+    HOOD_MAP.put(4.0, new HoodParams(58.0, 0.76));
+    HOOD_MAP.put(4.5, new HoodParams(61.0, 0.85));
+    HOOD_MAP.put(5.0, new HoodParams(64.0, 0.94));
+}
+
+Get horizontal velocity the same way:
+
+public double getHorizontalVelocity(double distance) {
+    HoodParams params = HOOD_MAP.get(distance);
+    return distance / params.timeOfFlight;
+}
+
+When you apply the SOTF correction, you get a new required horizontal velocity. To convert back to hood angle, you need to know the total exit velocity. Since the flywheel speed is constant, you can calculate this once from your baseline data:
+
+// Calculate total velocity from baseline measurement
+// v_total = v_horizontal / cos(hood_angle)
+public double getTotalVelocity(double distance) {
+    HoodParams params = HOOD_MAP.get(distance);
+    double vHoriz = distance / params.timeOfFlight;
+    return vHoriz / Math.cos(Math.toRadians(params.hoodAngle));
+}
+
+public double calculateAdjustedHood(double distance, double requiredHorizontalVelocity) {
+    double totalVelocity = getTotalVelocity(distance);
+
+    // Clamp to physical limits
+    double ratio = MathUtil.clamp(
+        requiredHorizontalVelocity / totalVelocity,
+        0.0,
+        1.0
+    );
+    return Math.toDegrees(Math.acos(ratio));
+}
+
+Note: For a truly constant-speed shooter, ``getTotalVelocity`` should return roughly the same value regardless of distance. If it varies a lot, your flywheel speed isn't as constant as you think, or your hood angle affects exit velocity.
+The "I Have Both" Variant
+
+If you have both a variable flywheel and a variable hood, congratulations. You have two degrees of freedom. This is both a blessing and a curse.
+
+The blessing: you have more flexibility to hit the required horizontal velocity.
+
+The curse: you have to decide how to use that flexibility.
+The LUT
+
+Your table now has three outputs:
+
+Distance (meters) → RPM, Hood Angle (degrees), Time of Flight (s)
+
+private static final InterpolatingTreeMap<Double, FullShooterParams> SHOOTER_MAP = new InterpolatingTreeMap<>();
+static {
+    SHOOTER_MAP.put(1.5, new FullShooterParams(2800.0, 35.0, 0.38));
+    SHOOTER_MAP.put(2.0, new FullShooterParams(3100.0, 38.0, 0.45));
+    SHOOTER_MAP.put(2.5, new FullShooterParams(3400.0, 42.0, 0.52));
+    SHOOTER_MAP.put(3.0, new FullShooterParams(3650.0, 46.0, 0.60));
+    SHOOTER_MAP.put(3.5, new FullShooterParams(3900.0, 50.0, 0.68));
+    SHOOTER_MAP.put(4.0, new FullShooterParams(4100.0, 54.0, 0.76));
+    SHOOTER_MAP.put(4.5, new FullShooterParams(4350.0, 58.0, 0.85));
+    SHOOTER_MAP.put(5.0, new FullShooterParams(4550.0, 62.0, 0.94));
+}
+
+public record FullShooterParams(double rpm, double hoodAngle, double timeOfFlight) {}
+
+The Strategy Question
+
+When SOTF demands a different horizontal velocity, you can achieve it by:
+
+    Changing RPM (keep hood fixed)
+
+    Changing hood angle (keep RPM fixed)
+
+    Changing both
+
+There's no single "right" answer.
+
+Option 1: Adjust RPM only (recommended for most teams)
+
+Flywheels can respond faster than mechanical hoods when they have no mass. If your hood is slow, keep it at the baseline angle and only adjust RPM.
+
+public ShooterCommand calculateRpmOnly(double distance, double requiredVelocity) {
+    FullShooterParams baseline = SHOOTER_MAP.get(distance);
+    double effectiveDistance = velocityToEffectiveDistance(requiredVelocity);
+    double adjustedRpm = SHOOTER_MAP.get(effectiveDistance).rpm;
+
+    // Keep hood at baseline
+    return new ShooterCommand(adjustedRpm, baseline.hoodAngle);
+}
+
+Option 2: Adjust hood only
+
+If your flywheel recovery time is slow (big heavy wheel), keep RPM fixed and adjust hood.
+
+public ShooterCommand calculateHoodOnly(double distance, double requiredVelocity) {
+    FullShooterParams baseline = SHOOTER_MAP.get(distance);
+    double baselineVelocity = distance / baseline.timeOfFlight;
+
+    // Calculate total velocity from baseline
+    double totalVelocity = baselineVelocity / Math.cos(Math.toRadians(baseline.hoodAngle));
+
+    // Solve for new hood angle
+    double ratio = MathUtil.clamp(requiredVelocity / totalVelocity, 0.0, 1.0);
+    double adjustedHood = Math.toDegrees(Math.acos(ratio));
+
+    // Keep RPM at baseline
+    return new ShooterCommand(baseline.rpm, adjustedHood);
+}
+
+Option 3: Adjust both (advanced)
+
+If you want to stay within comfortable operating ranges for both systems, you can split the correction. For example, bias towards RPM changes for small corrections, add hood changes for large ones. You can even try to find the closest point to your nearest state and use that.
+
+public ShooterCommand calculateBoth(double distance, double requiredVelocity) {
+    FullShooterParams baseline = SHOOTER_MAP.get(distance);
+    double baselineVelocity = distance / baseline.timeOfFlight;
+    double velocityRatio = requiredVelocity / baselineVelocity;
+
+    // Split the correction: sqrt gives equal "contribution" from each
+    double rpmFactor = Math.sqrt(velocityRatio);
+    double hoodFactor = Math.sqrt(velocityRatio);
+
+    // Apply RPM scaling
+    double adjustedRpm = baseline.rpm * rpmFactor;
+
+    // Apply hood adjustment (changes horizontal component)
+    double totalVelocity = baselineVelocity / Math.cos(Math.toRadians(baseline.hoodAngle));
+    double targetHorizFromHood = baselineVelocity * hoodFactor;
+    double ratio = MathUtil.clamp(targetHorizFromHood / totalVelocity, 0.0, 1.0);
+    double adjustedHood = Math.toDegrees(Math.acos(ratio));
+
+    return new ShooterCommand(adjustedRpm, adjustedHood);
+}
+
+Honestly, option 1 works well for most smaller robots, and option 2 works best for longer range or heavier flywheels. The added complexity of coordinating two actuators rarely pays off unless you're hitting the limits of one system frequently.
+Full Integration Example
+
+Here's what the complete SOTF loop looks like with the ToF-based LUT:
+
+public class ShooterController {
+    private final InterpolatingTreeMap<Double, ShooterParams> shooterTable;
+
+    public ShooterCommand calculate(
+        Translation2d robotPosition,
+        Translation2d robotVelocity,
+        Translation2d goalPosition,
+        double latencyCompensation
+    ) {
+        // 1. Project future position
+        Translation2d futurePos = robotPosition.plus(
+            robotVelocity.times(latencyCompensation)
+        );
+
+        // 2. Get target vector
+        Translation2d toGoal = goalPosition.minus(futurePos);
+        double distance = toGoal.getNorm();
+        Translation2d targetDirection = toGoal.div(distance);
+
+        // 3. Look up baseline velocity from table
+        ShooterParams baseline = shooterTable.get(distance);
+        double baselineVelocity = distance / baseline.timeOfFlight;
+
+        // 4. Build target velocity vector
+        Translation2d targetVelocity = targetDirection.times(baselineVelocity);
+
+        // 5. THE MAGIC: subtract robot velocity
+        Translation2d shotVelocity = targetVelocity.minus(robotVelocity);
+
+        // 6. Extract results
+        Rotation2d turretAngle = shotVelocity.getAngle();
+        double requiredVelocity = shotVelocity.getNorm();
+
+        // 7. Use table in reverse: velocity → effective distance → RPM
+        double effectiveDistance = velocityToEffectiveDistance(requiredVelocity);
+        double requiredRpm = shooterTable.get(effectiveDistance).rpm;
+
+        return new ShooterCommand(turretAngle, requiredRpm);
+    }
+}
+
+// Simple data class for the LUT
+public record ShooterParams(double rpm, double timeOfFlight) {}
+
+Handling Edge Cases
+Impossible Shots
+
+If requiredVelocity exceeds your shooter's capability, the shot is physically impossible at your current speed. You can signal to the drive system to reduce speed, don't shoot until velocity drops into range, or just clamp to max and hope.
+Turret Limits
+
+If the required turret angle exceeds your mechanical limits (cable wrap, etc.), you have similar options. The smart play is often to use chassis rotation to assist.
+Tuning Tips
+The Latency Constant
+
+The latencyCompensation parameter (in seconds) is the single most important tuning knob. It accounts for:
+
+    Camera processing time
+
+    Network/CAN latency
+
+    Motor response time
+
+    Ball flight time through the shooter mechanism
+
+Start at 0.1 seconds. Increase if shots land behind where you're aiming (you moved past the target). Decrease if shots land ahead (you overcorrected).
+
+A good test: drive in a straight line orthogonal the goal at constant speed. If shots consistently land left or right, your latency compensation is off.
+Table Resolution
+
+More points in your LUT isn't always better. If you have too many points, a single bad datapoint can create weird interpolation artifacts.
+
+Rule of thumb from my experience, FRC needs 8-12 points across your operating range, FTC can usually get away with 6-10 (shooters are a lot more linear).
+
+If your interpolated values seem wrong, check nearby table entries for typos.

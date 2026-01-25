@@ -96,6 +96,22 @@ public final class Constants {
     public static final InterpolatingDoubleTreeMap TOP_ROLLER_SPEED_MAP =
         new InterpolatingDoubleTreeMap();
 
+    // Time of flight map for SOTF calculations
+    // Maps distance (m) -> time of flight (s)
+    // TODO: Measure these values using a phone camera at 60fps
+    public static final InterpolatingDoubleTreeMap TIME_OF_FLIGHT_MAP =
+        new InterpolatingDoubleTreeMap();
+
+    // SOTF (Shooting On The Fly) constants
+    // Total latency compensation in seconds (camera + motor lag + ball flight through shooter)
+    // TODO: Tune this value - start at 0.1s, increase if shots land behind target
+    public static final double kSOTFLatencyCompensation = 0.15;
+
+    // Maximum horizontal velocity the shooter can achieve (m/s)
+    // Used to determine if a shot is physically possible
+    // TODO: Calculate from your max RPM and wheel radius
+    public static final double kMaxHorizontalVelocity = 12.0;
+
     static {
       // Bottom shooter speeds (distance in meters -> speed in RPS)
       // TODO: Tune these values based on testing
@@ -112,6 +128,15 @@ public final class Constants {
       TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(118.11), 45.0); // ~3m
       TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(157.48), 55.0); // ~4m
       TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(196.85), 65.0); // ~5m
+
+      // Time of flight values (distance in meters -> flight time in seconds)
+      // TODO: Measure these by recording shots at each distance with a phone camera
+      // Count frames from ball leaving shooter to reaching goal, divide by framerate
+      TIME_OF_FLIGHT_MAP.put(1.0, 0.40); // 1m
+      TIME_OF_FLIGHT_MAP.put(2.0, 0.50); // 2m
+      TIME_OF_FLIGHT_MAP.put(3.0, 0.62); // 3m
+      TIME_OF_FLIGHT_MAP.put(4.0, 0.75); // 4m
+      TIME_OF_FLIGHT_MAP.put(5.0, 0.90); // 5m
     }
   }
 
