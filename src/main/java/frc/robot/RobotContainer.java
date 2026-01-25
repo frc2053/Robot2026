@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
@@ -54,7 +55,7 @@ public class RobotContainer {
     m_autoChooser = AutoBuilder.buildAutoChooser("");
     SmartDashboard.putData("Auto Mode", m_autoChooser);
     configureBindings();
-    FollowPathCommand.warmupCommand().schedule();
+    CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
   }
 
   private void configureBindings() {
@@ -96,6 +97,24 @@ public class RobotContainer {
 
     // Reset the field-centric heading on left bumper press.
     m_joystick.leftBumper().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
+
+    // Shooter SysId routines - use POV buttons while holding back
+    // Direction and mechanism are controlled by NetworkTables toggles:
+    //   Shooter/SysId/Forward - true=forward, false=reverse
+    //   Shooter/SysId/Roller - true=roller, false=main flywheel
+    m_joystick.back().and(m_joystick.povUp()).whileTrue(m_shooter.sysIdQuasistatic());
+    m_joystick.back().and(m_joystick.povDown()).whileTrue(m_shooter.sysIdDynamic());
+
+    // Spin up shooter based on distance to goal while holding right bumper
+    m_joystick
+        .rightBumper()
+        .whileTrue(
+            m_shooter.spinUpForDistanceCommand(
+                () -> {
+                  Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+                  Translation2d goalPosition = flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub);
+                  return robotPosition.getDistance(goalPosition);
+                }));
 
     // Look at the hub while holding A button (flips based on alliance)
     m_joystick

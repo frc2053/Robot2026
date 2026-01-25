@@ -2,22 +2,23 @@ package frc.robot;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
-public class Constants {
+public final class Constants {
+
+  /** Private constructor to prevent instantiation. */
+  private Constants() {}
 
   /**
    * Returns true if the robot is on the blue alliance.
@@ -29,7 +30,8 @@ public class Constants {
   }
 
   public static class FieldSpots {
-    public static final Translation2d kBlueMiddleHub = new Translation2d(Units.inchesToMeters(181.907204), Units.inchesToMeters(158.843750));
+    public static final Translation2d kBlueMiddleHub =
+        new Translation2d(Units.inchesToMeters(181.907204), Units.inchesToMeters(158.843750));
   }
 
   public static class SwerveConstants {
@@ -59,6 +61,58 @@ public class Constants {
 
     public static final int SHOOTER_SUPPLY_LIMIT = 60;
     public static final int SHOOTER_STATOR_LIMIT = 80;
+
+    // Simulation constants
+    public static final double MAIN_SHOOTER_GEAR_RATIO = 1.0;
+    public static final double ROLLER_GEAR_RATIO = 1.0;
+    public static final double MAIN_SHOOTER_MOI = 0.004; // kg*m^2
+    public static final double ROLLER_MOI = 0.001; // kg*m^2
+
+    // Main shooter PID constants (Slot 0)
+    public static final double kMainShooterKS = 0.1;
+    public static final double kMainShooterKV = 0.12;
+    public static final double kMainShooterKA = 0.01;
+    public static final double kMainShooterKP = 0.11;
+    public static final double kMainShooterKI = 0;
+    public static final double kMainShooterKD = 0;
+    public static final double kMainShooterMotionMagicAccel = 400;
+
+    // Roller PID constants (Slot 0)
+    public static final double kRollerKS = 0.1;
+    public static final double kRollerKV = 0.12;
+    public static final double kRollerKA = 0.01;
+    public static final double kRollerKP = 0.15;
+    public static final double kRollerKI = 0;
+    public static final double kRollerKD = 0;
+    public static final double kRollerMotionMagicAccel = 400;
+
+    // Velocity tolerance for "at speed" detection (rotations per second)
+    public static final double kVelocityToleranceRps = 2.0;
+
+    // Interpolating maps for shooter speeds based on distance to goal (meters)
+    // Maps distance (m) -> speed (rotations per second)
+    public static final InterpolatingDoubleTreeMap BOTTOM_SHOOTER_SPEED_MAP =
+        new InterpolatingDoubleTreeMap();
+    public static final InterpolatingDoubleTreeMap TOP_ROLLER_SPEED_MAP =
+        new InterpolatingDoubleTreeMap();
+
+    static {
+      // Bottom shooter speeds (distance in meters -> speed in RPS)
+      // TODO: Tune these values based on testing
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(39.37), 30.0); // ~1m
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(78.74), 40.0); // ~2m
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(118.11), 50.0); // ~3m
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(157.48), 60.0); // ~4m
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(196.85), 70.0); // ~5m
+
+      // Top roller speeds (distance in meters -> speed in RPS)
+      // TODO: Tune these values based on testing
+      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(39.37), 25.0); // ~1m
+      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(78.74), 35.0); // ~2m
+      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(118.11), 45.0); // ~3m
+      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(157.48), 55.0); // ~4m
+      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(196.85), 65.0); // ~5m
+    }
   }
 
   public static class VisionConstants {
