@@ -27,11 +27,38 @@
             "rotations": [
                 {
                     "axis": "x",
-                    "degrees": 90
+                    "degrees":0
                 },
                 {
                     "axis": "y",
+                    "degrees": -15
+                },
+                {
+                    "axis": "z",
                     "degrees": 0
+                }
+            ],
+            "position": [
+                -0.342138,
+                0.342138,
+                0.7112
+            ],
+            "resolution": [
+                1600,
+                1304
+            ],
+            "fov": 55
+        },
+        {
+            "name": "Side Camera",
+            "rotations": [
+                {
+                    "axis": "x",
+                    "degrees":0
+                },
+                {
+                    "axis": "y",
+                    "degrees": -15
                 },
                 {
                     "axis": "z",
@@ -39,9 +66,9 @@
                 }
             ],
             "position": [
-                0,
-                0,
-                0
+                -0.342138,
+                0.342138,
+                0.7112
             ],
             "resolution": [
                 1600,
