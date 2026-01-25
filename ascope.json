@@ -7,7 +7,7 @@
       "height": 1408,
       "state": {
         "sidebar": {
-          "width": 301,
+          "width": 300,
           "expanded": [
             "/DriveState/ModuleStates",
             "/PathPlanner",
@@ -16,7 +16,7 @@
           ]
         },
         "tabs": {
-          "selected": 2,
+          "selected": 3,
           "tabs": [
             {
               "type": 0,
@@ -134,7 +134,7 @@
                     "logType": "NumberArray",
                     "visible": true,
                     "options": {
-                      "model": "Crab Bot",
+                      "model": "Robot_2053",
                       "format": "Pose2d",
                       "units": "degrees"
                     }
@@ -175,7 +175,7 @@
                     "logType": "Pose2d",
                     "visible": true,
                     "options": {
-                      "model": "Crab Bot",
+                      "model": "Robot_2053",
                       "color": "#ff8c00"
                     }
                   },
@@ -185,7 +185,7 @@
                     "logType": "Pose2d",
                     "visible": true,
                     "options": {
-                      "model": "Crab Bot",
+                      "model": "Robot_2053",
                       "color": "#ff0000"
                     }
                   }
@@ -197,14 +197,14 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -9.670386666871014,
-                  3.247043833565656,
-                  -3.483674959717852
+                  -6.664315587126384,
+                  4.340628236977664,
+                  6.733276832635114
                 ],
                 "cameraTarget": [
-                  -5.235630131159431,
-                  0.22896987712088132,
-                  0.46586689597919856
+                  -5.622728027412421,
+                  1.627447383633381,
+                  1.339224109866458
                 ]
               },
               "controlsHeight": 200
