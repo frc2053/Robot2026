@@ -22,6 +22,7 @@ import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.ChassisReference;
@@ -125,7 +126,10 @@ public class Shooter extends SubsystemBase {
 
     TalonFXConfiguration mainShooterConfig =
         new TalonFXConfiguration()
-            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Coast))
+            .withMotorOutput(
+                new MotorOutputConfigs()
+                    .withNeutralMode(NeutralModeValue.Coast)
+                    .withInverted(InvertedValue.CounterClockwise_Positive))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
@@ -144,10 +148,14 @@ public class Shooter extends SubsystemBase {
                 new MotionMagicConfigs()
                     .withMotionMagicAcceleration(ShooterConstants.kMainShooterMotionMagicAccel));
 
-    // Roller config with same motor output and current limits, but different PID gains
+    // Roller config with different PID gains and inverted direction (clockwise positive)
     TalonFXConfiguration rollerConfig =
         mainShooterConfig
             .clone()
+            .withMotorOutput(
+                new MotorOutputConfigs()
+                    .withNeutralMode(NeutralModeValue.Coast)
+                    .withInverted(InvertedValue.Clockwise_Positive))
             .withSlot0(
                 new Slot0Configs()
                     .withKS(ShooterConstants.kRollerKS)
@@ -239,11 +247,6 @@ public class Shooter extends SubsystemBase {
     m_leftMotorSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
     m_rightMotorSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
     m_rollerSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
-
-    // Set orientation (adjust based on your mechanical setup)
-    m_leftMotorSimState.Orientation = ChassisReference.CounterClockwise_Positive;
-    m_rightMotorSimState.Orientation = ChassisReference.CounterClockwise_Positive;
-    m_rollerSimState.Orientation = ChassisReference.CounterClockwise_Positive;
 
     // Main shooter flywheel sim (powered by left and right motors)
     // Using 2 Kraken X60 motors
