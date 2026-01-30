@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Spindexer;
 import frc.robot.util.ShootingOnTheFly;
 
 public class RobotContainer {
@@ -48,6 +49,7 @@ public class RobotContainer {
 
   public final CommandSwerveDrivetrain m_drivetrain = TunerConstants.createDrivetrain();
   public final Shooter m_shooter = new Shooter();
+  public final Spindexer m_spindexer = new Spindexer();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
@@ -150,6 +152,10 @@ public class RobotContainer {
                         () -> -m_joystick.getLeftY() * m_maxSpeed,
                         () -> -m_joystick.getLeftX() * m_maxSpeed,
                         m_maxSpeed * 0.1)));
+
+    // Spindexer: spin while holding right trigger, stop on release
+    m_joystick.rightTrigger().whileTrue(m_spindexer.runVoltageCommand(6.0));
+    m_joystick.rightTrigger().onFalse(m_spindexer.stopCommand());
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
