@@ -29,7 +29,9 @@ public final class Constants {
     return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue;
   }
 
-  public static class FieldSpots {
+  public static final class FieldSpots {
+    private FieldSpots() {}
+
     public static final double kFieldLength = Units.inchesToMeters(651.25); // 54 ft 3.25 in
     public static final Translation2d kBlueMiddleHub =
         new Translation2d(Units.inchesToMeters(181.907204), Units.inchesToMeters(158.843750));
@@ -172,7 +174,10 @@ public final class Constants {
     public static final String kSideCameraName = "SideCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
-            new Translation3d(Units.inchesToMeters(-1.875000), Units.inchesToMeters(3.518814), Units.inchesToMeters(25.102211)),
+            new Translation3d(
+                Units.inchesToMeters(-1.875000),
+                Units.inchesToMeters(3.518814),
+                Units.inchesToMeters(25.102211)),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
     public static final Transform3d kSideRobotToCam =
         new Transform3d(
