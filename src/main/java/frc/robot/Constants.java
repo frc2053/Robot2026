@@ -159,7 +159,7 @@ public final class Constants {
     public static final String kSideCameraName = "SideCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
-            new Translation3d(-0.342138, 0.342138, 0.7112),
+            new Translation3d(Units.inchesToMeters(-1.875000), Units.inchesToMeters(3.518814), Units.inchesToMeters(25.102211)),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
     public static final Transform3d kSideRobotToCam =
         new Transform3d(

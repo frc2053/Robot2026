@@ -45,6 +45,7 @@ public class Camera {
   // NetworkTables publishers
   private final NetworkTable m_nt;
   private final StructPublisher<Pose2d> m_posePub;
+  private final StructPublisher<Pose3d> m_cameraPosePub;
   private final DoublePublisher m_stdDevXPosePub;
   private final DoublePublisher m_stdDevYPosePub;
   private final DoublePublisher m_stdDevRotPosePub;
@@ -82,6 +83,7 @@ public class Camera {
     // Initialize NetworkTables
     m_nt = NetworkTableInstance.getDefault().getTable("Vision");
     m_posePub = m_nt.getStructTopic(cameraName + "PoseEstimation", Pose2d.struct).publish();
+    m_cameraPosePub = m_nt.getStructTopic(cameraName + "CameraPose", Pose3d.struct).publish();
     m_stdDevXPosePub = m_nt.getDoubleTopic(cameraName + "StdDevsX").publish();
     m_stdDevYPosePub = m_nt.getDoubleTopic(cameraName + "StdDevsY").publish();
     m_stdDevRotPosePub = m_nt.getDoubleTopic(cameraName + "StdDevsRot").publish();
@@ -121,6 +123,9 @@ public class Camera {
    * @param robotPose The current robot pose for visualization purposes.
    */
   public void updatePoseEstimator(Pose3d robotPose) {
+    // Publish camera pose (robot pose transformed by robot-to-camera transform)
+    m_cameraPosePub.set(robotPose.transformBy(m_photonEstimator.getRobotToCameraTransform()));
+
     List<PhotonPipelineResult> allUnread = m_camera.getAllUnreadResults();
 
     for (PhotonPipelineResult result : allUnread) {
