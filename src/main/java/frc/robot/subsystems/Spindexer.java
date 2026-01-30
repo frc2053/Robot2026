@@ -177,4 +177,25 @@ public class Spindexer extends SubsystemBase {
             })
         .withName("StopSpindexer");
   }
+
+  /**
+   * Creates a command that spins the spindexer at the constant voltage defined in constants. Stops
+   * when the command ends.
+   *
+   * @return A command that spins the spindexer.
+   */
+  public Command spin() {
+    return this.run(
+            () -> {
+              m_currentVoltageSetpoint = SpindexerConstants.kSpinVoltage;
+              m_spindexerMotor.setControl(
+                  m_voltageRequest.withOutput(SpindexerConstants.kSpinVoltage));
+            })
+        .finallyDo(
+            () -> {
+              m_currentVoltageSetpoint = 0.0;
+              m_spindexerMotor.setControl(m_voltageRequest.withOutput(0));
+            })
+        .withName("Spin");
+  }
 }
