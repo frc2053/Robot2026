@@ -10,11 +10,13 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.util.GameState;
 
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
   private final RobotContainer m_robotContainer;
+  private final GameState m_gameState;
 
   /* log and replay timestamp and joystick data */
   private final HootAutoReplay m_timeAndJoystickReplay =
@@ -22,6 +24,7 @@ public class Robot extends TimedRobot {
 
   public Robot() {
     m_robotContainer = new RobotContainer();
+    m_gameState = new GameState(() -> m_robotContainer.m_drivetrain.getState().Pose);
     DataLogManager.start();
     DriverStation.startDataLog(DataLogManager.getLog());
   }
@@ -32,10 +35,13 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
     m_robotContainer.m_vision.periodic(
         new edu.wpi.first.math.geometry.Pose3d(m_robotContainer.m_drivetrain.getState().Pose));
+    m_gameState.periodic();
   }
 
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+    m_gameState.onDisabled();
+  }
 
   @Override
   public void disabledPeriodic() {}
@@ -45,6 +51,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
+    m_gameState.startAuto();
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
     if (m_autonomousCommand != null) {
@@ -63,6 +70,7 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       CommandScheduler.getInstance().cancel(m_autonomousCommand);
     }
+    m_gameState.startTeleop();
   }
 
   @Override
@@ -74,6 +82,7 @@ public class Robot extends TimedRobot {
   @Override
   public void testInit() {
     CommandScheduler.getInstance().cancelAll();
+    m_gameState.startTest();
   }
 
   @Override

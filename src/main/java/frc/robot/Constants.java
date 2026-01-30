@@ -30,8 +30,21 @@ public final class Constants {
   }
 
   public static class FieldSpots {
+    public static final double kFieldLength = Units.inchesToMeters(651.25); // 54 ft 3.25 in
     public static final Translation2d kBlueMiddleHub =
         new Translation2d(Units.inchesToMeters(181.907204), Units.inchesToMeters(158.843750));
+
+    /**
+     * Gets the hub position for the current alliance.
+     *
+     * @return the hub position, flipped for red alliance.
+     */
+    public static Translation2d getHubPosition() {
+      if (ifOnBlue()) {
+        return kBlueMiddleHub;
+      }
+      return com.pathplanner.lib.util.FlippingUtil.flipFieldPosition(kBlueMiddleHub);
+    }
   }
 
   public static class SwerveConstants {
