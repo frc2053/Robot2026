@@ -15,7 +15,8 @@
             "/photonvision/FrontCamera/rawBytes/multitagResult",
             "/Drivetrain",
             "/Drivetrain/LookAtPoint",
-            "/Shooter"
+            "/Shooter",
+            "/Spindexer"
           ]
         },
         "tabs": {
@@ -28,30 +29,6 @@
               "controllerUUID": "e4ekgtt2rewbs6pqxr77fcky5ckh1huc",
               "renderer": "",
               "controlsHeight": 0
-            },
-            {
-              "type": 1,
-              "title": "Line Graph",
-              "controller": {
-                "leftSources": [],
-                "rightSources": [],
-                "discreteSources": [],
-                "leftLockedRange": null,
-                "rightLockedRange": null,
-                "leftUnitConversion": {
-                  "autoTarget": null,
-                  "preset": null
-                },
-                "rightUnitConversion": {
-                  "autoTarget": null,
-                  "preset": null
-                },
-                "leftFilter": 0,
-                "rightFilter": 0
-              },
-              "controllerUUID": "sdnl479raotagegsiryaw5qmkjyofmqi",
-              "renderer": null,
-              "controlsHeight": 200
             },
             {
               "type": 2,
@@ -244,21 +221,21 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -5.874287928941881,
-                  2.708744335488959,
-                  3.8036635195396524
+                  -7.540246570312571,
+                  2.9436789619130463,
+                  4.761312062678212
                 ],
                 "cameraTarget": [
-                  -4.242749865299231,
-                  -0.5324863130006982,
-                  -1.782679133546197
+                  -3.89733715544729,
+                  -1.213358292422856,
+                  0.6759055764631421
                 ]
               },
               "controlsHeight": 200
             },
             {
               "type": 1,
-              "title": "Line Graph",
+              "title": "Shooter",
               "controller": {
                 "leftSources": [
                   {
@@ -378,6 +355,72 @@
                 "rightFilter": 0
               },
               "controllerUUID": "wl90hg84l3ch027joxd9lugun4qnhv25",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 1,
+              "title": "Spindexer",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/Spindexer/VelocityRPS",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/Spindexer/Voltage",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/Spindexer/VoltageSetpoint",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "NT:/Spindexer/CurrentCommand",
+                    "logType": "String",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "ovs7trlpfugk1vp6mxb53581zp51syqk",
               "renderer": null,
               "controlsHeight": 200
             },
