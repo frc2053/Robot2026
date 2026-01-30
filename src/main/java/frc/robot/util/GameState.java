@@ -18,9 +18,7 @@ import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
 import java.util.function.Supplier;
 
-/**
- * Helper class for tracking 2026 game state including shift phases and scoring windows.
- */
+/** Helper class for tracking 2026 game state including shift phases and scoring windows. */
 public class GameState {
   /** The different phases during a match. */
   public enum ShiftPhase {
@@ -62,7 +60,7 @@ public class GameState {
   private boolean m_isCounting = true;
   private boolean m_canScore = true;
   private double m_deactivationTimestamp = -1.0;
-  private double m_timeUntilCounting = 0.0;
+  private double m_timeUntilCounting;
   private double m_timeUntilNotCounting = Double.MAX_VALUE;
   private String m_gameData = "";
 
@@ -142,9 +140,7 @@ public class GameState {
     m_robotMode = RobotMode.TEST;
   }
 
-  /**
-   * Updates the game state. Call this in robotPeriodic.
-   */
+  /** Updates the game state. Call this in robotPeriodic. */
   public void periodic() {
     // Update game data
     String newGameData = DriverStation.getGameSpecificMessage();
@@ -334,8 +330,8 @@ public class GameState {
   }
 
   /**
-   * Calculates how many seconds until the hub starts counting (next active window).
-   * Only called when hub is currently not counting.
+   * Calculates how many seconds until the hub starts counting (next active window). Only called
+   * when hub is currently not counting.
    *
    * @return seconds until counting starts
    */
@@ -364,8 +360,8 @@ public class GameState {
   }
 
   /**
-   * Calculates the duration of the next counting window (including grace period).
-   * Only called when hub is currently not counting.
+   * Calculates the duration of the next counting window (including grace period). Only called when
+   * hub is currently not counting.
    *
    * @return duration of next counting window in seconds
    */
@@ -408,8 +404,8 @@ public class GameState {
   }
 
   /**
-   * Trigger that fires when we should shoot, accounting for ball travel time.
-   * True when the ball will arrive at the hub before counting stops.
+   * Trigger that fires when we should shoot, accounting for ball travel time. True when the ball
+   * will arrive at the hub before counting stops.
    *
    * @return Trigger for can score state
    */
