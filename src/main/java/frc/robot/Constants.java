@@ -140,6 +140,17 @@ public final class Constants {
     }
   }
 
+  public static class SpindexerConstants {
+    public static final int SPINDEXER_MOTOR_ID = 18;
+
+    public static final int SPINDEXER_SUPPLY_LIMIT = 40;
+    public static final int SPINDEXER_STATOR_LIMIT = 60;
+
+    // Simulation constants
+    public static final double SPINDEXER_GEAR_RATIO = 5.0;
+    public static final double SPINDEXER_MOI = 0.002; // kg*m^2
+  }
+
   public static class VisionConstants {
     public static final String kFrontCameraName = "FrontCamera";
     public static final String kSideCameraName = "SideCamera";
