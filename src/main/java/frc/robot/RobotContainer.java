@@ -12,7 +12,6 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
-import com.pathplanner.lib.util.FlippingUtil;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -116,7 +115,7 @@ public class RobotContainer {
             m_shooter.spinUpForDistanceCommand(
                 () -> {
                   Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
-                  Translation2d goalPosition = flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub);
+                  Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
                   return robotPosition.getDistance(goalPosition);
                 }));
 
@@ -125,7 +124,7 @@ public class RobotContainer {
         .a()
         .whileTrue(
             m_drivetrain.lookAtPoint(
-                () -> flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub),
+                () -> Constants.FieldSpots.getHubPosition(),
                 () -> -m_joystick.getLeftY() * m_maxSpeed,
                 () -> -m_joystick.getLeftX() * m_maxSpeed,
                 m_maxSpeed * 0.1));
@@ -139,14 +138,14 @@ public class RobotContainer {
                 .spinUpForSOTFCommand(
                     () -> m_drivetrain.getState().Pose,
                     () -> fieldRelativeSpeeds(),
-                    () -> flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub))
+                    () -> Constants.FieldSpots.getHubPosition())
                 .alongWith(
                     m_drivetrain.lookAtPoint(
                         () ->
                             ShootingOnTheFly.calculateAimingPoint(
                                 m_drivetrain.getState().Pose,
                                 fieldRelativeSpeeds(),
-                                flipFieldPoint(Constants.FieldSpots.kBlueMiddleHub),
+                                Constants.FieldSpots.getHubPosition(),
                                 Constants.ShooterConstants.kSOTFLatencyCompensation,
                                 Constants.ShooterConstants.TIME_OF_FLIGHT_MAP),
                         () -> -m_joystick.getLeftY() * m_maxSpeed,
@@ -174,18 +173,5 @@ public class RobotContainer {
     ChassisSpeeds robotRelative = m_drivetrain.getState().Speeds;
     return ChassisSpeeds.fromRobotRelativeSpeeds(
         robotRelative, m_drivetrain.getState().Pose.getRotation());
-  }
-
-  /**
-   * Flips a field point to the opposite alliance side using PathPlanner's FlippingUtil.
-   *
-   * @param point the point to flip.
-   * @return the flipped point if on red alliance, or the original point if on blue.
-   */
-  public static Translation2d flipFieldPoint(Translation2d point) {
-    if (Constants.ifOnBlue()) {
-      return point;
-    }
-    return FlippingUtil.flipFieldPosition(point);
   }
 }
