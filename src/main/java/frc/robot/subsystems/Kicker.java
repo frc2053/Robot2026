@@ -188,8 +188,7 @@ public class Kicker extends SubsystemBase {
     return this.run(
             () -> {
               m_currentVoltageSetpoint = KickerConstants.kSpinVoltage;
-              m_kickerMotor.setControl(
-                  m_voltageRequest.withOutput(KickerConstants.kSpinVoltage));
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(KickerConstants.kSpinVoltage));
             })
         .finallyDo(
             () -> {
