@@ -165,8 +165,22 @@ public final class Constants {
     public static final double kSpinVoltage = 6.0;
 
     // Simulation constants
-    public static final double SPINDEXER_GEAR_RATIO = 5.0;
+    public static final double SPINDEXER_GEAR_RATIO = 20.0;
     public static final double SPINDEXER_MOI = 0.002; // kg*m^2
+  }
+
+  public static class KickerConstants {
+    public static final int KICKER_MOTOR_ID = 19;
+
+    public static final int KICKER_SUPPLY_LIMIT = 40;
+    public static final int KICKER_STATOR_LIMIT = 60;
+
+    // Spin voltage for feeding game pieces
+    public static final double kSpinVoltage =  6.0;
+
+    // Simulation constants
+    public static final double KICKER_GEAR_RATIO = 5.0;
+    public static final double KICKER_MOI = 0.002; // kg*m^2
   }
 
   public static class VisionConstants {
