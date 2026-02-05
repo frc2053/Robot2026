@@ -17,7 +17,6 @@ import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -34,11 +33,11 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.SpindexerConstants;
+import frc.robot.Constants.KickerConstants;
 
-public class Spindexer extends SubsystemBase {
+public class Kicker extends SubsystemBase {
 
-  private final TalonFX m_spindexerMotor;
+  private final TalonFX m_kickerMotor;
 
   private final StatusSignal<AngularVelocity> m_motorVelocity;
   private final StatusSignal<Angle> m_motorPosition;
@@ -46,7 +45,7 @@ public class Spindexer extends SubsystemBase {
 
   // Simulation objects
   private final TalonFXSimState m_motorSimState;
-  private final DCMotorSim m_spindexerSim;
+  private final DCMotorSim m_kickerSim;
 
   // NetworkTables publishers for logging
   private final DoublePublisher m_velocityPub;
@@ -61,63 +60,57 @@ public class Spindexer extends SubsystemBase {
   // Track current voltage setpoint for logging
   private double m_currentVoltageSetpoint;
 
-  /** Creates a new Spindexer. */
-  public Spindexer() {
-    m_spindexerMotor = new TalonFX(SpindexerConstants.SPINDEXER_MOTOR_ID);
+  /** Creates a new thingyyy. */
+  public Kicker() {
+    m_kickerMotor = new TalonFX(KickerConstants.KICKER_MOTOR_ID);
 
     TalonFXConfiguration config =
         new TalonFXConfiguration()
-            .withMotorOutput(
-                new MotorOutputConfigs()
-                    .withNeutralMode(NeutralModeValue.Brake)
-                    .withInverted(
-                        SpindexerConstants.INVERTED
-                            ? InvertedValue.Clockwise_Positive
-                            : InvertedValue.CounterClockwise_Positive))
+            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
-                    .withStatorCurrentLimit(SpindexerConstants.SPINDEXER_STATOR_LIMIT)
+                    .withStatorCurrentLimit(KickerConstants.KICKER_STATOR_LIMIT)
                     .withSupplyCurrentLimitEnable(true)
-                    .withSupplyCurrentLimit(SpindexerConstants.SPINDEXER_SUPPLY_LIMIT));
+                    .withSupplyCurrentLimit(KickerConstants.KICKER_SUPPLY_LIMIT));
 
-    StatusCode configResult = m_spindexerMotor.getConfigurator().apply(config);
+    StatusCode configResult = m_kickerMotor.getConfigurator().apply(config);
     if (!configResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply config to spindexer motor!");
+      DataLogManager.log("ERROR! Not able to apply config to kicker motor!");
     }
 
-    m_motorVelocity = m_spindexerMotor.getVelocity();
-    m_motorPosition = m_spindexerMotor.getPosition();
-    m_motorVoltage = m_spindexerMotor.getMotorVoltage();
+    m_motorVelocity = m_kickerMotor.getVelocity();
+    m_motorPosition = m_kickerMotor.getPosition();
+    m_motorVoltage = m_kickerMotor.getMotorVoltage();
 
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
             100, m_motorVelocity, m_motorPosition, m_motorVoltage);
     if (!setUpdateFreqResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply update frequency for spindexer subsystem!");
+      DataLogManager.log("ERROR! Not able to apply update frequency for kicker subsystem!");
     }
-    StatusCode optiResult = ParentDevice.optimizeBusUtilizationForAll(m_spindexerMotor);
+    StatusCode optiResult = ParentDevice.optimizeBusUtilizationForAll(m_kickerMotor);
     if (!optiResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply optimization for spindexer subsystem!");
+      DataLogManager.log("ERROR! Not able to apply optimization for kicker subsystem!");
     }
 
     // Initialize NetworkTables publishers for logging
-    NetworkTable spindexerTable = NetworkTableInstance.getDefault().getTable("Spindexer");
-    m_velocityPub = spindexerTable.getDoubleTopic("VelocityRPS").publish();
-    m_voltagePub = spindexerTable.getDoubleTopic("Voltage").publish();
-    m_voltageSetpointPub = spindexerTable.getDoubleTopic("VoltageSetpoint").publish();
-    m_currentCommandPub = spindexerTable.getStringTopic("CurrentCommand").publish();
+    NetworkTable kickerTable = NetworkTableInstance.getDefault().getTable("Kicker");
+    m_velocityPub = kickerTable.getDoubleTopic("VelocityRPS").publish();
+    m_voltagePub = kickerTable.getDoubleTopic("Voltage").publish();
+    m_voltageSetpointPub = kickerTable.getDoubleTopic("VoltageSetpoint").publish();
+    m_currentCommandPub = kickerTable.getStringTopic("CurrentCommand").publish();
 
     // Initialize simulation
-    m_motorSimState = m_spindexerMotor.getSimState();
+    m_motorSimState = m_kickerMotor.getSimState();
 
-    // Spindexer flywheel sim (powered by single Falcon 500)
-    m_spindexerSim =
+    // Kicker flywheel sim (powered by single Falcon 500)
+    m_kickerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
                 DCMotor.getFalcon500(1),
-                SpindexerConstants.SPINDEXER_MOI,
-                SpindexerConstants.SPINDEXER_GEAR_RATIO),
+                KickerConstants.KICKER_MOI,
+                KickerConstants.KICKER_GEAR_RATIO),
             DCMotor.getFalcon500(1));
   }
 
@@ -141,64 +134,63 @@ public class Spindexer extends SubsystemBase {
     m_motorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 
     // Get motor voltage and update physics simulation
-    m_spindexerSim.setInputVoltage(m_motorSimState.getMotorVoltageMeasure().in(Volts));
-    m_spindexerSim.update(0.020);
+    m_kickerSim.setInputVoltage(m_motorSimState.getMotorVoltageMeasure().in(Volts));
+    m_kickerSim.update(0.020);
 
     // Update motor sim state with rotor position and velocity
     // Note: DCMotorSim returns mechanism values, multiply by gear ratio for rotor values
     m_motorSimState.setRawRotorPosition(
-        m_spindexerSim.getAngularPosition().times(SpindexerConstants.SPINDEXER_GEAR_RATIO));
+        m_kickerSim.getAngularPosition().times(KickerConstants.KICKER_GEAR_RATIO));
     m_motorSimState.setRotorVelocity(
-        m_spindexerSim.getAngularVelocity().times(SpindexerConstants.SPINDEXER_GEAR_RATIO));
+        m_kickerSim.getAngularVelocity().times(KickerConstants.KICKER_GEAR_RATIO));
   }
 
   /**
-   * Creates a command that runs the spindexer at the specified voltage.
+   * Creates a command that runs the Kicker at the specified voltage.
    *
    * @param voltage The voltage to run at (positive = forward, negative = reverse)
-   * @return A command that runs the spindexer
+   * @return A command that runs the Kicker
    */
   public Command runVoltageCommand(double voltage) {
     return this.run(
             () -> {
               m_currentVoltageSetpoint = voltage;
-              m_spindexerMotor.setControl(m_voltageRequest.withOutput(voltage));
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(voltage));
             })
-        .withName("RunSpindexer");
+        .withName("RunKicker");
   }
 
   /**
-   * Creates a command that stops the spindexer motor.
+   * Creates a command that stops the Kicker motor.
    *
-   * @return A command that stops the spindexer
+   * @return A command that stops the Kicker
    */
   public Command stopCommand() {
     return this.runOnce(
             () -> {
               m_currentVoltageSetpoint = 0.0;
-              m_spindexerMotor.setControl(m_neutralRequest);
+              m_kickerMotor.setControl(m_neutralRequest);
             })
-        .withName("StopSpindexer");
+        .withName("StopKicker");
   }
 
   /**
-   * Creates a command that spins the spindexer at the constant voltage defined in constants. Stops
+   * Creates a command that spins the Kicker at the constant voltage defined in constants. Stops
    * when the command ends.
    *
-   * @return A command that spins the spindexer.
+   * @return A command that spins the Kicker.
    */
   public Command spin() {
     return this.run(
             () -> {
-              m_currentVoltageSetpoint = SpindexerConstants.kSpinVoltage;
-              m_spindexerMotor.setControl(
-                  m_voltageRequest.withOutput(SpindexerConstants.kSpinVoltage));
+              m_currentVoltageSetpoint = KickerConstants.kSpinVoltage;
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(KickerConstants.kSpinVoltage));
             })
         .finallyDo(
             () -> {
               m_currentVoltageSetpoint = 0.0;
-              m_spindexerMotor.setControl(m_voltageRequest.withOutput(0));
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(0));
             })
-        .withName("Spin");
+        .withName("SpinKicker");
   }
 }
