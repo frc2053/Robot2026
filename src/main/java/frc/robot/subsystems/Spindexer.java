@@ -17,8 +17,8 @@ import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
@@ -67,7 +67,13 @@ public class Spindexer extends SubsystemBase {
 
     TalonFXConfiguration config =
         new TalonFXConfiguration()
-            .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake))
+            .withMotorOutput(
+                new MotorOutputConfigs()
+                    .withNeutralMode(NeutralModeValue.Brake)
+                    .withInverted(
+                        SpindexerConstants.INVERTED
+                            ? InvertedValue.Clockwise_Positive
+                            : InvertedValue.CounterClockwise_Positive))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
@@ -104,9 +110,6 @@ public class Spindexer extends SubsystemBase {
 
     // Initialize simulation
     m_motorSimState = m_spindexerMotor.getSimState();
-
-    // Set orientation (adjust based on your mechanical setup)
-    m_motorSimState.Orientation = ChassisReference.CounterClockwise_Positive;
 
     // Spindexer flywheel sim (powered by single Falcon 500)
     m_spindexerSim =

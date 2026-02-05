@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Kicker;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Spindexer;
 import frc.robot.util.ShootingOnTheFly;
@@ -49,6 +50,7 @@ public class RobotContainer {
   public final CommandSwerveDrivetrain m_drivetrain = TunerConstants.createDrivetrain();
   public final Shooter m_shooter = new Shooter();
   public final Spindexer m_spindexer = new Spindexer();
+  public final Kicker m_kicker = new Kicker();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
