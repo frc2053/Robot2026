@@ -18,11 +18,11 @@
             "/Shooter",
             "/Spindexer",
             "/Vision",
-            "/GameState"
+            "/Kicker"
           ]
         },
         "tabs": {
-          "selected": 3,
+          "selected": 6,
           "tabs": [
             {
               "type": 0,
@@ -227,17 +227,17 @@
               },
               "controllerUUID": "3dx6zqgy4emytq4a31bxbsb4sxbxxpkj",
               "renderer": {
-                "cameraIndex": -2,
+                "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -0.39199845468337235,
-                  4.634507591457963,
-                  -4.758518623253408
+                  -6.42370549334094,
+                  2.3912493152843495,
+                  4.506503127474617
                 ],
                 "cameraTarget": [
-                  -1.984540298320397,
-                  0.5980520611756797,
-                  0.6857876953901778
+                  -4.7493419894587205,
+                  -0.19458019789249253,
+                  0.37385570644423344
                 ]
               },
               "controlsHeight": 200
@@ -512,6 +512,72 @@
                 "rightFilter": 0
               },
               "controllerUUID": "ovs7trlpfugk1vp6mxb53581zp51syqk",
+              "renderer": null,
+              "controlsHeight": 200
+            },
+            {
+              "type": 1,
+              "title": "Kicker",
+              "controller": {
+                "leftSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/Kicker/VelocityRPS",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#e5b31b",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "rightSources": [
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/Kicker/Voltage",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#af2437",
+                      "size": "normal"
+                    }
+                  },
+                  {
+                    "type": "stepped",
+                    "logKey": "NT:/Kicker/VoltageSetpoint",
+                    "logType": "Number",
+                    "visible": true,
+                    "options": {
+                      "color": "#80588e",
+                      "size": "normal"
+                    }
+                  }
+                ],
+                "discreteSources": [
+                  {
+                    "type": "stripes",
+                    "logKey": "NT:/Kicker/CurrentCommand",
+                    "logType": "String",
+                    "visible": true,
+                    "options": {
+                      "color": "#2b66a2"
+                    }
+                  }
+                ],
+                "leftLockedRange": null,
+                "rightLockedRange": null,
+                "leftUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "rightUnitConversion": {
+                  "autoTarget": null,
+                  "preset": null
+                },
+                "leftFilter": 0,
+                "rightFilter": 0
+              },
+              "controllerUUID": "lt173v56adtj1mer64ozt2euxz11zxvl",
               "renderer": null,
               "controlsHeight": 200
             },
