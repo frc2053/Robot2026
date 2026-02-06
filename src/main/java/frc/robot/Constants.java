@@ -185,6 +185,51 @@ public final class Constants {
     public static final double KICKER_MOI = 0.002; // kg*m^2
   }
 
+  public static class IntakeConstants {
+    public static final int PIVOT_MOTOR_ID = 20;
+    public static final int ROLLER_MOTOR_ID = 21;
+
+    public static final int PIVOT_SUPPLY_LIMIT = 40;
+    public static final int PIVOT_STATOR_LIMIT = 60;
+    public static final int ROLLER_SUPPLY_LIMIT = 40;
+    public static final int ROLLER_STATOR_LIMIT = 60;
+
+    // Gear ratios
+    public static final double PIVOT_GEAR_RATIO = 56.0;
+    public static final double ROLLER_GEAR_RATIO = 1.0;
+
+    // Pivot position constants (in rotations at mechanism)
+    public static final double kPivotDeployedPosition = 0.0;
+    public static final double kPivotStowedPosition = 0.25;
+
+    // Pivot PID constants (Slot 0)
+    public static final double kPivotKS = 0.1;
+    public static final double kPivotKG = 0.44;
+    public static final double kPivotKV = 6.63;
+    public static final double kPivotKA = 0.10;
+    public static final double kPivotKP = 50.0;
+    public static final double kPivotKI = 0.0;
+    public static final double kPivotKD = 0.5;
+    public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
+    public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
+
+    // Roller voltage for intaking
+    public static final double kIntakeVoltage = 8.0;
+    public static final double kEjectVoltage = -6.0;
+
+    // Simulation constants (from CAD)
+    // COM distance from pivot
+    public static final double PIVOT_ARM_LENGTH_METERS = Units.inchesToMeters(11.549);
+    public static final double PIVOT_ARM_MASS_KG = Units.lbsToKilograms(10.224711);
+    // MOI conversion: in^2*lb to kg*m^2
+    public static final double PIVOT_MOI =
+        1585.915769 * Math.pow(Units.inchesToMeters(1), 2) * Units.lbsToKilograms(1);
+    public static final double ROLLER_MOI = 0.001; // kg*m^2
+
+    // Position tolerance for "at position" detection (rotations)
+    public static final double kPivotPositionToleranceRotations = 0.02;
+  }
+
   public static class VisionConstants {
     public static final String kFrontCameraName = "FrontCamera";
     public static final String kSideCameraName = "SideCamera";
