@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -39,6 +40,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotController;
@@ -72,6 +74,13 @@ public class Shooter extends SubsystemBase {
   private final StatusSignal<Voltage> m_rightMotorVoltage;
   private final StatusSignal<Voltage> m_rollerVoltage;
 
+  private final StatusSignal<Current> m_leftMotorStatorCurrent;
+  private final StatusSignal<Current> m_rightMotorStatorCurrent;
+  private final StatusSignal<Current> m_rollerStatorCurrent;
+  private final StatusSignal<Current> m_leftMotorSupplyCurrent;
+  private final StatusSignal<Current> m_rightMotorSupplyCurrent;
+  private final StatusSignal<Current> m_rollerSupplyCurrent;
+
   // Simulation objects
   private final TalonFXSimState m_leftMotorSimState;
   private final TalonFXSimState m_rightMotorSimState;
@@ -86,6 +95,12 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_leftMotorVoltagePub;
   private final DoublePublisher m_rightMotorVoltagePub;
   private final DoublePublisher m_rollerVoltagePub;
+  private final DoublePublisher m_leftMotorStatorCurrentPub;
+  private final DoublePublisher m_rightMotorStatorCurrentPub;
+  private final DoublePublisher m_rollerStatorCurrentPub;
+  private final DoublePublisher m_leftMotorSupplyCurrentPub;
+  private final DoublePublisher m_rightMotorSupplyCurrentPub;
+  private final DoublePublisher m_rollerSupplyCurrentPub;
   private final StringPublisher m_currentCommandPub;
   private final BooleanPublisher m_atSpeedPub;
   private final DoublePublisher m_mainShooterSetpointPub;
@@ -194,6 +209,13 @@ public class Shooter extends SubsystemBase {
     m_rightMotorVoltage = m_shooterMotorRight.getMotorVoltage();
     m_rollerVoltage = m_shooterMotorTopRoller.getMotorVoltage();
 
+    m_leftMotorStatorCurrent = m_shooterMotorLeft.getStatorCurrent();
+    m_rightMotorStatorCurrent = m_shooterMotorRight.getStatorCurrent();
+    m_rollerStatorCurrent = m_shooterMotorTopRoller.getStatorCurrent();
+    m_leftMotorSupplyCurrent = m_shooterMotorLeft.getSupplyCurrent();
+    m_rightMotorSupplyCurrent = m_shooterMotorRight.getSupplyCurrent();
+    m_rollerSupplyCurrent = m_shooterMotorTopRoller.getSupplyCurrent();
+
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
             100,
@@ -205,7 +227,13 @@ public class Shooter extends SubsystemBase {
             m_rollerPos,
             m_leftMotorVoltage,
             m_rightMotorVoltage,
-            m_rollerVoltage);
+            m_rollerVoltage,
+            m_leftMotorStatorCurrent,
+            m_rightMotorStatorCurrent,
+            m_rollerStatorCurrent,
+            m_leftMotorSupplyCurrent,
+            m_rightMotorSupplyCurrent,
+            m_rollerSupplyCurrent);
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for shooter subsystem!");
     }
@@ -229,6 +257,12 @@ public class Shooter extends SubsystemBase {
     m_leftMotorVoltagePub = shooterTable.getDoubleTopic("LeftMotorVoltage").publish();
     m_rightMotorVoltagePub = shooterTable.getDoubleTopic("RightMotorVoltage").publish();
     m_rollerVoltagePub = shooterTable.getDoubleTopic("RollerVoltage").publish();
+    m_leftMotorStatorCurrentPub = shooterTable.getDoubleTopic("LeftMotorStatorCurrent").publish();
+    m_rightMotorStatorCurrentPub = shooterTable.getDoubleTopic("RightMotorStatorCurrent").publish();
+    m_rollerStatorCurrentPub = shooterTable.getDoubleTopic("RollerStatorCurrent").publish();
+    m_leftMotorSupplyCurrentPub = shooterTable.getDoubleTopic("LeftMotorSupplyCurrent").publish();
+    m_rightMotorSupplyCurrentPub = shooterTable.getDoubleTopic("RightMotorSupplyCurrent").publish();
+    m_rollerSupplyCurrentPub = shooterTable.getDoubleTopic("RollerSupplyCurrent").publish();
     m_currentCommandPub = shooterTable.getStringTopic("CurrentCommand").publish();
     m_atSpeedPub = shooterTable.getBooleanTopic("AtSpeed").publish();
     m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPS").publish();
@@ -319,7 +353,13 @@ public class Shooter extends SubsystemBase {
         m_rollerVel,
         m_leftMotorVoltage,
         m_rightMotorVoltage,
-        m_rollerVoltage);
+        m_rollerVoltage,
+        m_leftMotorStatorCurrent,
+        m_rightMotorStatorCurrent,
+        m_rollerStatorCurrent,
+        m_leftMotorSupplyCurrent,
+        m_rightMotorSupplyCurrent,
+        m_rollerSupplyCurrent);
 
     // Publish velocity signals to NetworkTables (auto-logged by DataLogManager)
     m_leftMotorVelPub.set(m_leftMotorVel.getValue().in(RotationsPerSecond));
@@ -330,6 +370,14 @@ public class Shooter extends SubsystemBase {
     m_leftMotorVoltagePub.set(m_leftMotorVoltage.getValue().in(Volts));
     m_rightMotorVoltagePub.set(m_rightMotorVoltage.getValue().in(Volts));
     m_rollerVoltagePub.set(m_rollerVoltage.getValue().in(Volts));
+
+    // Publish current signals to NetworkTables
+    m_leftMotorStatorCurrentPub.set(m_leftMotorStatorCurrent.getValue().in(Amps));
+    m_rightMotorStatorCurrentPub.set(m_rightMotorStatorCurrent.getValue().in(Amps));
+    m_rollerStatorCurrentPub.set(m_rollerStatorCurrent.getValue().in(Amps));
+    m_leftMotorSupplyCurrentPub.set(m_leftMotorSupplyCurrent.getValue().in(Amps));
+    m_rightMotorSupplyCurrentPub.set(m_rightMotorSupplyCurrent.getValue().in(Amps));
+    m_rollerSupplyCurrentPub.set(m_rollerSupplyCurrent.getValue().in(Amps));
 
     // Publish current command name
     Command currentCommand = getCurrentCommand();

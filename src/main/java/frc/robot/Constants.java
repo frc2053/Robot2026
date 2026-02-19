@@ -161,10 +161,10 @@ public final class Constants {
     public static final int SPINDEXER_SUPPLY_LIMIT = 40;
     public static final int SPINDEXER_STATOR_LIMIT = 60;
 
-    public static final boolean INVERTED = true;
+    public static final boolean INVERTED = false;
 
     // Spin voltage for feeding game pieces
-    public static final double kSpinVoltage = 6.0;
+    public static final double kSpinVoltage = 12.0;
 
     // Simulation constants
     public static final double SPINDEXER_GEAR_RATIO = 16.0;
@@ -178,7 +178,7 @@ public final class Constants {
     public static final int KICKER_STATOR_LIMIT = 60;
 
     // Spin voltage for feeding game pieces
-    public static final double kSpinVoltage = 6.0;
+    public static final double kSpinVoltage = 12.0;
 
     // Simulation constants
     public static final double KICKER_GEAR_RATIO = 5.0;

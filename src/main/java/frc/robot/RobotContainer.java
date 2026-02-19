@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
@@ -158,8 +159,7 @@ public class RobotContainer {
                         m_maxSpeed * 0.1)));
 
     // Spindexer: spin while holding right trigger, stop on release
-    m_joystick.rightTrigger().whileTrue(m_spindexer.runVoltageCommand(6.0));
-    m_joystick.rightTrigger().onFalse(m_spindexer.stopCommand());
+    m_joystick.rightTrigger().whileTrue(Commands.parallel(m_spindexer.spin(), m_kicker.spin()));
 
     // Intake: deploy while holding left trigger, stow on release
     m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());

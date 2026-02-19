@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
@@ -38,6 +39,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotController;
@@ -63,6 +65,12 @@ public class Intake extends SubsystemBase {
   private final StatusSignal<AngularVelocity> m_rollerVelocity;
   private final StatusSignal<Voltage> m_rollerVoltage;
 
+  // Current status signals
+  private final StatusSignal<Current> m_pivotStatorCurrent;
+  private final StatusSignal<Current> m_pivotSupplyCurrent;
+  private final StatusSignal<Current> m_rollerStatorCurrent;
+  private final StatusSignal<Current> m_rollerSupplyCurrent;
+
   // Simulation objects
   private final TalonFXSimState m_pivotSimState;
   private final TalonFXSimState m_rollerSimState;
@@ -77,6 +85,10 @@ public class Intake extends SubsystemBase {
   private final DoublePublisher m_rollerVelocityPub;
   private final DoublePublisher m_rollerVoltagePub;
   private final DoublePublisher m_rollerVoltageSetpointPub;
+  private final DoublePublisher m_pivotStatorCurrentPub;
+  private final DoublePublisher m_pivotSupplyCurrentPub;
+  private final DoublePublisher m_rollerStatorCurrentPub;
+  private final DoublePublisher m_rollerSupplyCurrentPub;
   private final BooleanPublisher m_atPositionPub;
   private final StringPublisher m_currentCommandPub;
 
@@ -106,6 +118,12 @@ public class Intake extends SubsystemBase {
     m_rollerVelocity = m_rollerMotor.getVelocity();
     m_rollerVoltage = m_rollerMotor.getMotorVoltage();
 
+    // Get current status signals
+    m_pivotStatorCurrent = m_pivotMotor.getStatorCurrent();
+    m_pivotSupplyCurrent = m_pivotMotor.getSupplyCurrent();
+    m_rollerStatorCurrent = m_rollerMotor.getStatorCurrent();
+    m_rollerSupplyCurrent = m_rollerMotor.getSupplyCurrent();
+
     // Set update frequencies
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
@@ -114,7 +132,11 @@ public class Intake extends SubsystemBase {
             m_pivotVelocity,
             m_pivotVoltage,
             m_rollerVelocity,
-            m_rollerVoltage);
+            m_rollerVoltage,
+            m_pivotStatorCurrent,
+            m_pivotSupplyCurrent,
+            m_rollerStatorCurrent,
+            m_rollerSupplyCurrent);
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for intake subsystem!");
     }
@@ -132,6 +154,10 @@ public class Intake extends SubsystemBase {
     m_rollerVelocityPub = intakeTable.getDoubleTopic("RollerVelocityRPS").publish();
     m_rollerVoltagePub = intakeTable.getDoubleTopic("RollerVoltage").publish();
     m_rollerVoltageSetpointPub = intakeTable.getDoubleTopic("RollerVoltageSetpoint").publish();
+    m_pivotStatorCurrentPub = intakeTable.getDoubleTopic("PivotStatorCurrent").publish();
+    m_pivotSupplyCurrentPub = intakeTable.getDoubleTopic("PivotSupplyCurrent").publish();
+    m_rollerStatorCurrentPub = intakeTable.getDoubleTopic("RollerStatorCurrent").publish();
+    m_rollerSupplyCurrentPub = intakeTable.getDoubleTopic("RollerSupplyCurrent").publish();
     m_atPositionPub = intakeTable.getBooleanTopic("AtPosition").publish();
     m_currentCommandPub = intakeTable.getStringTopic("CurrentCommand").publish();
 
@@ -230,7 +256,15 @@ public class Intake extends SubsystemBase {
   @Override
   public void periodic() {
     BaseStatusSignal.refreshAll(
-        m_pivotPosition, m_pivotVelocity, m_pivotVoltage, m_rollerVelocity, m_rollerVoltage);
+        m_pivotPosition,
+        m_pivotVelocity,
+        m_pivotVoltage,
+        m_rollerVelocity,
+        m_rollerVoltage,
+        m_pivotStatorCurrent,
+        m_pivotSupplyCurrent,
+        m_rollerStatorCurrent,
+        m_rollerSupplyCurrent);
 
     // Publish signals to NetworkTables
     m_pivotPositionPub.set(m_pivotPosition.getValue().in(Rotations));
@@ -240,6 +274,10 @@ public class Intake extends SubsystemBase {
     m_rollerVelocityPub.set(m_rollerVelocity.getValue().in(RotationsPerSecond));
     m_rollerVoltagePub.set(m_rollerVoltage.getValue().in(Volts));
     m_rollerVoltageSetpointPub.set(m_rollerVoltageSetpoint);
+    m_pivotStatorCurrentPub.set(m_pivotStatorCurrent.getValue().in(Amps));
+    m_pivotSupplyCurrentPub.set(m_pivotSupplyCurrent.getValue().in(Amps));
+    m_rollerStatorCurrentPub.set(m_rollerStatorCurrent.getValue().in(Amps));
+    m_rollerSupplyCurrentPub.set(m_rollerSupplyCurrent.getValue().in(Amps));
     m_atPositionPub.set(atPosition());
 
     // Publish current command name
