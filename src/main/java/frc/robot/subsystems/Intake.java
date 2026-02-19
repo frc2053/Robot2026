@@ -182,10 +182,10 @@ public class Intake extends SubsystemBase {
     m_rollerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getFalcon500(1),
+                DCMotor.getFalcon500Foc(1),
                 IntakeConstants.ROLLER_MOI,
                 IntakeConstants.ROLLER_GEAR_RATIO),
-            DCMotor.getFalcon500(1));
+            DCMotor.getFalcon500Foc(1));
   }
 
   private void configurePivotMotor() {

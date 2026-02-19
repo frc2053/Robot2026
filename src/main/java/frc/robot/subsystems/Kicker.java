@@ -123,10 +123,10 @@ public class Kicker extends SubsystemBase {
     m_kickerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getFalcon500(1),
+                DCMotor.getFalcon500Foc(1),
                 KickerConstants.KICKER_MOI,
                 KickerConstants.KICKER_GEAR_RATIO),
-            DCMotor.getFalcon500(1));
+            DCMotor.getFalcon500Foc(1));
   }
 
   @Override
