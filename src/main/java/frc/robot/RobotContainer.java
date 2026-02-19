@@ -121,7 +121,8 @@ public class RobotContainer {
                   Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
                   Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
                   return robotPosition.getDistance(goalPosition);
-                }));
+                }))
+        .whileFalse(m_shooter.idleVoltae(2.0));
 
     // Look at the hub while holding A button (flips based on alliance)
     m_joystick

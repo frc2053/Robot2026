@@ -167,7 +167,7 @@ public final class Constants {
     public static final double kSpinVoltage = 6.0;
 
     // Simulation constants
-    public static final double SPINDEXER_GEAR_RATIO = 20.0;
+    public static final double SPINDEXER_GEAR_RATIO = 16.0;
     public static final double SPINDEXER_MOI = 0.002; // kg*m^2
   }
 
