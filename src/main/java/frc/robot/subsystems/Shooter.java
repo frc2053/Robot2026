@@ -436,6 +436,21 @@ public class Shooter extends SubsystemBase {
         .withName("SpinUpForDistance");
   }
 
+  public Command idleVoltae(double idleVoltage) {
+    return this.run(
+            () -> {
+              m_targetMainShooterRps = 0.0;
+              m_targetRollerRps = 0.0;
+
+              // Set bottom shooter motor (leader)
+              m_shooterMotorRight.setControl(m_voltageRequest.withOutput(idleVoltage));
+
+              // Set top roller motor
+              m_shooterMotorTopRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
+            })
+        .withName("IdleShooterLowerVoltage");
+  }
+
   /**
    * Creates a command that spins up the shooter using Shooting On The Fly (SOTF) calculations. This
    * compensates for robot velocity to ensure accurate shots while moving.
