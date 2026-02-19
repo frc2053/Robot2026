@@ -13,7 +13,6 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -28,7 +27,6 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Kicker;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Spindexer;
-import frc.robot.util.ShootingOnTheFly;
 
 public class RobotContainer {
   private final double m_maxSpeed =
@@ -184,9 +182,9 @@ public class RobotContainer {
    *
    * @return Field-relative ChassisSpeeds.
    */
-  private ChassisSpeeds fieldRelativeSpeeds() {
-    ChassisSpeeds robotRelative = m_drivetrain.getState().Speeds;
-    return ChassisSpeeds.fromRobotRelativeSpeeds(
-        robotRelative, m_drivetrain.getState().Pose.getRotation());
-  }
+  //   private ChassisSpeeds fieldRelativeSpeeds() {
+  //     ChassisSpeeds robotRelative = m_drivetrain.getState().Speeds;
+  //     return ChassisSpeeds.fromRobotRelativeSpeeds(
+  //         robotRelative, m_drivetrain.getState().Pose.getRotation());
+  //   }
 }

@@ -116,10 +116,10 @@ public class Shooter extends SubsystemBase {
 
   // Control requests
   private final MotionMagicVelocityVoltage m_mainShooterVelocityRequest =
-      new MotionMagicVelocityVoltage(0).withSlot(0);
+      new MotionMagicVelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final MotionMagicVelocityVoltage m_rollerVelocityRequest =
-      new MotionMagicVelocityVoltage(0).withSlot(0);
-  private final VoltageOut m_voltageRequest = new VoltageOut(0);
+      new MotionMagicVelocityVoltage(0).withSlot(0).withEnableFOC(true);
+  private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
   // SysId routine for main shooter flywheel (averages both motors)
@@ -604,10 +604,8 @@ public class Shooter extends SubsystemBase {
                 double rollerRps = m_tuningRollerRpsSub.get() / 60.0;
                 m_targetMainShooterRps = mainRps;
                 m_targetRollerRps = rollerRps;
-                m_shooterMotorRight.setControl(
-                    m_mainShooterVelocityRequest.withVelocity(mainRps));
-                m_shooterMotorTopRoller.setControl(
-                    m_rollerVelocityRequest.withVelocity(rollerRps));
+                m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
+                m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
               } else {
                 m_targetMainShooterRps = 0.0;
                 m_targetRollerRps = 0.0;

@@ -60,7 +60,7 @@ public class Kicker extends SubsystemBase {
   private final StringPublisher m_currentCommandPub;
 
   // Control requests
-  private final VoltageOut m_voltageRequest = new VoltageOut(0);
+  private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
   // Track current voltage setpoint for logging
