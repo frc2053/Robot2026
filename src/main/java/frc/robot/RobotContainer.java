@@ -90,16 +90,16 @@ public class RobotContainer {
 
     // Run SysId routines when holding back/start and X/Y.
     // Note that each routine should be run exactly once in a single log.
-    m_joystick.back().and(m_joystick.y()).whileTrue(m_drivetrain.sysIdDynamic(Direction.kForward));
-    m_joystick.back().and(m_joystick.x()).whileTrue(m_drivetrain.sysIdDynamic(Direction.kReverse));
-    m_joystick
-        .start()
-        .and(m_joystick.y())
-        .whileTrue(m_drivetrain.sysIdQuasistatic(Direction.kForward));
-    m_joystick
-        .start()
-        .and(m_joystick.x())
-        .whileTrue(m_drivetrain.sysIdQuasistatic(Direction.kReverse));
+    // m_joystick.back().and(m_joystick.y()).whileTrue(m_drivetrain.sysIdDynamic(Direction.kForward));
+    // m_joystick.back().and(m_joystick.x()).whileTrue(m_drivetrain.sysIdDynamic(Direction.kReverse));
+    // m_joystick
+    //     .start()
+    //     .and(m_joystick.y())
+    //     .whileTrue(m_drivetrain.sysIdQuasistatic(Direction.kForward));
+    // m_joystick
+    //     .start()
+    //     .and(m_joystick.x())
+    //     .whileTrue(m_drivetrain.sysIdQuasistatic(Direction.kReverse));
 
     // Reset the field-centric heading on left bumper press.
     m_joystick.leftBumper().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
@@ -156,7 +156,7 @@ public class RobotContainer {
     //                     () -> -m_joystick.getLeftX() * m_maxSpeed,
     //                     m_maxSpeed * 0.1)));
 
-    m_joystick.y().toggleOnTrue(m_shooter.tuningCommand());
+    m_joystick.start().toggleOnTrue(m_shooter.tuningCommand());
 
     // Spindexer: spin while holding right trigger, stop on release
     m_joystick.rightTrigger().whileTrue(Commands.parallel(m_spindexer.spin(), m_kicker.spin()));
