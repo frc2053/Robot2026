@@ -130,10 +130,10 @@ public class Spindexer extends SubsystemBase {
     m_spindexerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getFalcon500(1),
+                DCMotor.getFalcon500Foc(1),
                 SpindexerConstants.SPINDEXER_MOI,
                 SpindexerConstants.SPINDEXER_GEAR_RATIO),
-            DCMotor.getFalcon500(1));
+            DCMotor.getFalcon500Foc(1));
   }
 
   @Override

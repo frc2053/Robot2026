@@ -295,19 +295,19 @@ public class Shooter extends SubsystemBase {
     m_mainShooterSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getKrakenX60(2),
+                DCMotor.getKrakenX60Foc(2),
                 ShooterConstants.MAIN_SHOOTER_MOI,
                 ShooterConstants.MAIN_SHOOTER_GEAR_RATIO),
-            DCMotor.getKrakenX60(2));
+            DCMotor.getKrakenX60Foc(2));
 
     // Roller flywheel sim (powered by single motor)
     m_rollerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getKrakenX60(1),
+                DCMotor.getFalcon500Foc(1),
                 ShooterConstants.ROLLER_MOI,
                 ShooterConstants.ROLLER_GEAR_RATIO),
-            DCMotor.getKrakenX60(1));
+            DCMotor.getFalcon500Foc(1));
 
     // SysId routine for main shooter flywheel
     // Both motors are applied the same voltage, and we log the average velocity
