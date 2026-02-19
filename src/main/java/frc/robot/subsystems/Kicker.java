@@ -109,7 +109,7 @@ public class Kicker extends SubsystemBase {
 
     // Initialize NetworkTables publishers for logging
     NetworkTable kickerTable = NetworkTableInstance.getDefault().getTable("Kicker");
-    m_velocityPub = kickerTable.getDoubleTopic("VelocityRPS").publish();
+    m_velocityPub = kickerTable.getDoubleTopic("VelocityRPM").publish();
     m_voltagePub = kickerTable.getDoubleTopic("Voltage").publish();
     m_voltageSetpointPub = kickerTable.getDoubleTopic("VoltageSetpoint").publish();
     m_statorCurrentPub = kickerTable.getDoubleTopic("StatorCurrent").publish();
@@ -139,7 +139,7 @@ public class Kicker extends SubsystemBase {
         m_motorSupplyCurrent);
 
     // Publish signals to NetworkTables
-    m_velocityPub.set(m_motorVelocity.getValue().in(RotationsPerSecond));
+    m_velocityPub.set(m_motorVelocity.getValue().in(RotationsPerSecond) * 60.0);
     m_voltagePub.set(m_motorVoltage.getValue().in(Volts));
     m_voltageSetpointPub.set(m_currentVoltageSetpoint);
     m_statorCurrentPub.set(m_motorStatorCurrent.getValue().in(Amps));
