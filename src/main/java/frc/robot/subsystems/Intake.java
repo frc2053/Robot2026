@@ -93,8 +93,9 @@ public class Intake extends SubsystemBase {
   private final StringPublisher m_currentCommandPub;
 
   // Control requests
-  private final MotionMagicVoltage m_pivotPositionRequest = new MotionMagicVoltage(0);
-  private final VoltageOut m_rollerVoltageRequest = new VoltageOut(0);
+  private final MotionMagicVoltage m_pivotPositionRequest =
+      new MotionMagicVoltage(0).withEnableFOC(true);
+  private final VoltageOut m_rollerVoltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
   // Track setpoints for logging
