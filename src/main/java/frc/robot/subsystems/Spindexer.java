@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -28,6 +29,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotController;
@@ -43,6 +45,8 @@ public class Spindexer extends SubsystemBase {
   private final StatusSignal<AngularVelocity> m_motorVelocity;
   private final StatusSignal<Angle> m_motorPosition;
   private final StatusSignal<Voltage> m_motorVoltage;
+  private final StatusSignal<Current> m_motorStatorCurrent;
+  private final StatusSignal<Current> m_motorSupplyCurrent;
 
   // Simulation objects
   private final TalonFXSimState m_motorSimState;
@@ -52,6 +56,8 @@ public class Spindexer extends SubsystemBase {
   private final DoublePublisher m_velocityPub;
   private final DoublePublisher m_voltagePub;
   private final DoublePublisher m_voltageSetpointPub;
+  private final DoublePublisher m_statorCurrentPub;
+  private final DoublePublisher m_supplyCurrentPub;
   private final StringPublisher m_currentCommandPub;
 
   // Control requests
@@ -89,10 +95,17 @@ public class Spindexer extends SubsystemBase {
     m_motorVelocity = m_spindexerMotor.getVelocity();
     m_motorPosition = m_spindexerMotor.getPosition();
     m_motorVoltage = m_spindexerMotor.getMotorVoltage();
+    m_motorStatorCurrent = m_spindexerMotor.getStatorCurrent();
+    m_motorSupplyCurrent = m_spindexerMotor.getSupplyCurrent();
 
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
-            100, m_motorVelocity, m_motorPosition, m_motorVoltage);
+            100,
+            m_motorVelocity,
+            m_motorPosition,
+            m_motorVoltage,
+            m_motorStatorCurrent,
+            m_motorSupplyCurrent);
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for spindexer subsystem!");
     }
@@ -106,6 +119,8 @@ public class Spindexer extends SubsystemBase {
     m_velocityPub = spindexerTable.getDoubleTopic("VelocityRPS").publish();
     m_voltagePub = spindexerTable.getDoubleTopic("Voltage").publish();
     m_voltageSetpointPub = spindexerTable.getDoubleTopic("VoltageSetpoint").publish();
+    m_statorCurrentPub = spindexerTable.getDoubleTopic("StatorCurrent").publish();
+    m_supplyCurrentPub = spindexerTable.getDoubleTopic("SupplyCurrent").publish();
     m_currentCommandPub = spindexerTable.getStringTopic("CurrentCommand").publish();
 
     // Initialize simulation
@@ -123,12 +138,19 @@ public class Spindexer extends SubsystemBase {
 
   @Override
   public void periodic() {
-    BaseStatusSignal.refreshAll(m_motorVelocity, m_motorPosition, m_motorVoltage);
+    BaseStatusSignal.refreshAll(
+        m_motorVelocity,
+        m_motorPosition,
+        m_motorVoltage,
+        m_motorStatorCurrent,
+        m_motorSupplyCurrent);
 
     // Publish signals to NetworkTables
     m_velocityPub.set(m_motorVelocity.getValue().in(RotationsPerSecond));
     m_voltagePub.set(m_motorVoltage.getValue().in(Volts));
     m_voltageSetpointPub.set(m_currentVoltageSetpoint);
+    m_statorCurrentPub.set(m_motorStatorCurrent.getValue().in(Amps));
+    m_supplyCurrentPub.set(m_motorSupplyCurrent.getValue().in(Amps));
 
     // Publish current command name
     Command currentCommand = getCurrentCommand();
