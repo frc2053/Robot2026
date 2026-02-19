@@ -116,7 +116,7 @@ public class Spindexer extends SubsystemBase {
 
     // Initialize NetworkTables publishers for logging
     NetworkTable spindexerTable = NetworkTableInstance.getDefault().getTable("Spindexer");
-    m_velocityPub = spindexerTable.getDoubleTopic("VelocityRPS").publish();
+    m_velocityPub = spindexerTable.getDoubleTopic("VelocityRPM").publish();
     m_voltagePub = spindexerTable.getDoubleTopic("Voltage").publish();
     m_voltageSetpointPub = spindexerTable.getDoubleTopic("VoltageSetpoint").publish();
     m_statorCurrentPub = spindexerTable.getDoubleTopic("StatorCurrent").publish();
@@ -146,7 +146,7 @@ public class Spindexer extends SubsystemBase {
         m_motorSupplyCurrent);
 
     // Publish signals to NetworkTables
-    m_velocityPub.set(m_motorVelocity.getValue().in(RotationsPerSecond));
+    m_velocityPub.set(m_motorVelocity.getValue().in(RotationsPerSecond) * 60.0);
     m_voltagePub.set(m_motorVoltage.getValue().in(Volts));
     m_voltageSetpointPub.set(m_currentVoltageSetpoint);
     m_statorCurrentPub.set(m_motorStatorCurrent.getValue().in(Amps));

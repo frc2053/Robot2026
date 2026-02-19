@@ -126,37 +126,39 @@ public class RobotContainer {
         .whileFalse(m_shooter.idleVoltae(2.0));
 
     // Look at the hub while holding A button (flips based on alliance)
-    m_joystick
-        .a()
-        .whileTrue(
-            m_drivetrain.lookAtPoint(
-                () -> Constants.FieldSpots.getHubPosition(),
-                () -> -m_joystick.getLeftY() * m_maxSpeed,
-                () -> -m_joystick.getLeftX() * m_maxSpeed,
-                m_maxSpeed * 0.1));
+    // m_joystick
+    //     .a()
+    //     .whileTrue(
+    //         m_drivetrain.lookAtPoint(
+    //             () -> Constants.FieldSpots.getHubPosition(),
+    //             () -> -m_joystick.getLeftY() * m_maxSpeed,
+    //             () -> -m_joystick.getLeftX() * m_maxSpeed,
+    //             m_maxSpeed * 0.1));
 
     // SHOOTING ON THE FLY: Hold Y to spin up shooter with velocity compensation
     // and automatically aim at the SOTF-calculated point while driving
-    m_joystick
-        .y()
-        .whileTrue(
-            m_shooter
-                .spinUpForSOTFCommand(
-                    () -> m_drivetrain.getState().Pose,
-                    () -> fieldRelativeSpeeds(),
-                    () -> Constants.FieldSpots.getHubPosition())
-                .alongWith(
-                    m_drivetrain.lookAtPoint(
-                        () ->
-                            ShootingOnTheFly.calculateAimingPoint(
-                                m_drivetrain.getState().Pose,
-                                fieldRelativeSpeeds(),
-                                Constants.FieldSpots.getHubPosition(),
-                                Constants.ShooterConstants.kSOTFLatencyCompensation,
-                                Constants.ShooterConstants.TIME_OF_FLIGHT_MAP),
-                        () -> -m_joystick.getLeftY() * m_maxSpeed,
-                        () -> -m_joystick.getLeftX() * m_maxSpeed,
-                        m_maxSpeed * 0.1)));
+    // m_joystick
+    //     .y()
+    //     .whileTrue(
+    //         m_shooter
+    //             .spinUpForSOTFCommand(
+    //                 () -> m_drivetrain.getState().Pose,
+    //                 () -> fieldRelativeSpeeds(),
+    //                 () -> Constants.FieldSpots.getHubPosition())
+    //             .alongWith(
+    //                 m_drivetrain.lookAtPoint(
+    //                     () ->
+    //                         ShootingOnTheFly.calculateAimingPoint(
+    //                             m_drivetrain.getState().Pose,
+    //                             fieldRelativeSpeeds(),
+    //                             Constants.FieldSpots.getHubPosition(),
+    //                             Constants.ShooterConstants.kSOTFLatencyCompensation,
+    //                             Constants.ShooterConstants.TIME_OF_FLIGHT_MAP),
+    //                     () -> -m_joystick.getLeftY() * m_maxSpeed,
+    //                     () -> -m_joystick.getLeftX() * m_maxSpeed,
+    //                     m_maxSpeed * 0.1)));
+
+    m_joystick.y().toggleOnTrue(m_shooter.tuningCommand());
 
     // Spindexer: spin while holding right trigger, stop on release
     m_joystick.rightTrigger().whileTrue(Commands.parallel(m_spindexer.spin(), m_kicker.spin()));

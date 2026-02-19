@@ -35,6 +35,7 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
@@ -131,6 +132,14 @@ public class Shooter extends SubsystemBase {
   private final BooleanSubscriber m_sysIdRollerSub;
   private final BooleanPublisher m_sysIdForwardPub;
   private final BooleanPublisher m_sysIdRollerPub;
+
+  // Tuning mode NetworkTables controls
+  private final BooleanSubscriber m_tuningEnabledSub;
+  private final BooleanPublisher m_tuningEnabledPub;
+  private final DoubleSubscriber m_tuningMainShooterRpsSub;
+  private final DoublePublisher m_tuningMainShooterRpsPub;
+  private final DoubleSubscriber m_tuningRollerRpsSub;
+  private final DoublePublisher m_tuningRollerRpsPub;
 
   /** Creates a new Shooter. */
   public Shooter() {
@@ -251,9 +260,9 @@ public class Shooter extends SubsystemBase {
 
     // Initialize NetworkTables publishers for logging
     NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("Shooter");
-    m_leftMotorVelPub = shooterTable.getDoubleTopic("LeftMotorVelocityRPS").publish();
-    m_rightMotorVelPub = shooterTable.getDoubleTopic("RightMotorVelocityRPS").publish();
-    m_rollerVelPub = shooterTable.getDoubleTopic("RollerVelocityRPS").publish();
+    m_leftMotorVelPub = shooterTable.getDoubleTopic("LeftMotorVelocityRPM").publish();
+    m_rightMotorVelPub = shooterTable.getDoubleTopic("RightMotorVelocityRPM").publish();
+    m_rollerVelPub = shooterTable.getDoubleTopic("RollerVelocityRPM").publish();
     m_leftMotorVoltagePub = shooterTable.getDoubleTopic("LeftMotorVoltage").publish();
     m_rightMotorVoltagePub = shooterTable.getDoubleTopic("RightMotorVoltage").publish();
     m_rollerVoltagePub = shooterTable.getDoubleTopic("RollerVoltage").publish();
@@ -265,8 +274,8 @@ public class Shooter extends SubsystemBase {
     m_rollerSupplyCurrentPub = shooterTable.getDoubleTopic("RollerSupplyCurrent").publish();
     m_currentCommandPub = shooterTable.getStringTopic("CurrentCommand").publish();
     m_atSpeedPub = shooterTable.getBooleanTopic("AtSpeed").publish();
-    m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPS").publish();
-    m_rollerSetpointPub = shooterTable.getDoubleTopic("RollerSetpointRPS").publish();
+    m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPM").publish();
+    m_rollerSetpointPub = shooterTable.getDoubleTopic("RollerSetpointRPM").publish();
 
     // Initialize at-speed trigger
     m_atSpeedTrigger = new Trigger(this::isAtSpeed);
@@ -343,6 +352,18 @@ public class Shooter extends SubsystemBase {
     m_sysIdRollerPub = sysIdTable.getBooleanTopic("Roller").publish();
     m_sysIdRollerSub = sysIdTable.getBooleanTopic("Roller").subscribe(false);
     m_sysIdRollerPub.set(false); // Default to main flywheel
+
+    // Initialize tuning mode NetworkTables controls
+    NetworkTable tuningTable = shooterTable.getSubTable("Tuning");
+    m_tuningEnabledPub = tuningTable.getBooleanTopic("Enabled").publish();
+    m_tuningEnabledSub = tuningTable.getBooleanTopic("Enabled").subscribe(false);
+    m_tuningEnabledPub.set(false);
+    m_tuningMainShooterRpsPub = tuningTable.getDoubleTopic("MainShooterRPM").publish();
+    m_tuningMainShooterRpsSub = tuningTable.getDoubleTopic("MainShooterRPM").subscribe(0.0);
+    m_tuningMainShooterRpsPub.set(0.0);
+    m_tuningRollerRpsPub = tuningTable.getDoubleTopic("RollerRPM").publish();
+    m_tuningRollerRpsSub = tuningTable.getDoubleTopic("RollerRPM").subscribe(0.0);
+    m_tuningRollerRpsPub.set(0.0);
   }
 
   @Override
@@ -361,10 +382,10 @@ public class Shooter extends SubsystemBase {
         m_rightMotorSupplyCurrent,
         m_rollerSupplyCurrent);
 
-    // Publish velocity signals to NetworkTables (auto-logged by DataLogManager)
-    m_leftMotorVelPub.set(m_leftMotorVel.getValue().in(RotationsPerSecond));
-    m_rightMotorVelPub.set(m_rightMotorVel.getValue().in(RotationsPerSecond));
-    m_rollerVelPub.set(m_rollerVel.getValue().in(RotationsPerSecond));
+    // Publish velocity signals to NetworkTables in RPM
+    m_leftMotorVelPub.set(m_leftMotorVel.getValue().in(RotationsPerSecond) * 60.0);
+    m_rightMotorVelPub.set(m_rightMotorVel.getValue().in(RotationsPerSecond) * 60.0);
+    m_rollerVelPub.set(m_rollerVel.getValue().in(RotationsPerSecond) * 60.0);
 
     // Publish voltage signals to NetworkTables
     m_leftMotorVoltagePub.set(m_leftMotorVoltage.getValue().in(Volts));
@@ -386,9 +407,9 @@ public class Shooter extends SubsystemBase {
     // Publish at-speed status
     m_atSpeedPub.set(isAtSpeed());
 
-    // Publish velocity setpoints
-    m_mainShooterSetpointPub.set(m_targetMainShooterRps);
-    m_rollerSetpointPub.set(m_targetRollerRps);
+    // Publish velocity setpoints in RPM
+    m_mainShooterSetpointPub.set(m_targetMainShooterRps * 60.0);
+    m_rollerSetpointPub.set(m_targetRollerRps * 60.0);
   }
 
   @Override
@@ -566,6 +587,35 @@ public class Shooter extends SubsystemBase {
               m_shooterMotorTopRoller.setControl(m_neutralRequest);
             })
         .withName("StopShooter");
+  }
+
+  /**
+   * Creates a command for tuning mode. When the Shooter/Tuning/Enabled toggle is true, the shooter
+   * runs at the RPM values from Shooter/Tuning/MainShooterRPM and Shooter/Tuning/RollerRPM
+   * (converted to RPS). When the toggle is false, the motors are stopped.
+   *
+   * @return A command that runs the shooter in tuning mode.
+   */
+  public Command tuningCommand() {
+    return this.run(
+            () -> {
+              if (m_tuningEnabledSub.get()) {
+                double mainRps = m_tuningMainShooterRpsSub.get() / 60.0;
+                double rollerRps = m_tuningRollerRpsSub.get() / 60.0;
+                m_targetMainShooterRps = mainRps;
+                m_targetRollerRps = rollerRps;
+                m_shooterMotorRight.setControl(
+                    m_mainShooterVelocityRequest.withVelocity(mainRps));
+                m_shooterMotorTopRoller.setControl(
+                    m_rollerVelocityRequest.withVelocity(rollerRps));
+              } else {
+                m_targetMainShooterRps = 0.0;
+                m_targetRollerRps = 0.0;
+                m_shooterMotorRight.setControl(m_neutralRequest);
+                m_shooterMotorTopRoller.setControl(m_neutralRequest);
+              }
+            })
+        .withName("ShooterTuning");
   }
 
   /**

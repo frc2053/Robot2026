@@ -148,10 +148,10 @@ public class Intake extends SubsystemBase {
     // Initialize NetworkTables publishers for logging
     NetworkTable intakeTable = NetworkTableInstance.getDefault().getTable("Intake");
     m_pivotPositionPub = intakeTable.getDoubleTopic("PivotPositionRotations").publish();
-    m_pivotVelocityPub = intakeTable.getDoubleTopic("PivotVelocityRPS").publish();
+    m_pivotVelocityPub = intakeTable.getDoubleTopic("PivotVelocityRPM").publish();
     m_pivotVoltagePub = intakeTable.getDoubleTopic("PivotVoltage").publish();
     m_pivotSetpointPub = intakeTable.getDoubleTopic("PivotSetpoint").publish();
-    m_rollerVelocityPub = intakeTable.getDoubleTopic("RollerVelocityRPS").publish();
+    m_rollerVelocityPub = intakeTable.getDoubleTopic("RollerVelocityRPM").publish();
     m_rollerVoltagePub = intakeTable.getDoubleTopic("RollerVoltage").publish();
     m_rollerVoltageSetpointPub = intakeTable.getDoubleTopic("RollerVoltageSetpoint").publish();
     m_pivotStatorCurrentPub = intakeTable.getDoubleTopic("PivotStatorCurrent").publish();
@@ -268,10 +268,10 @@ public class Intake extends SubsystemBase {
 
     // Publish signals to NetworkTables
     m_pivotPositionPub.set(m_pivotPosition.getValue().in(Rotations));
-    m_pivotVelocityPub.set(m_pivotVelocity.getValue().in(RotationsPerSecond));
+    m_pivotVelocityPub.set(m_pivotVelocity.getValue().in(RotationsPerSecond) * 60.0);
     m_pivotVoltagePub.set(m_pivotVoltage.getValue().in(Volts));
     m_pivotSetpointPub.set(m_pivotPositionSetpoint);
-    m_rollerVelocityPub.set(m_rollerVelocity.getValue().in(RotationsPerSecond));
+    m_rollerVelocityPub.set(m_rollerVelocity.getValue().in(RotationsPerSecond) * 60.0);
     m_rollerVoltagePub.set(m_rollerVoltage.getValue().in(Volts));
     m_rollerVoltageSetpointPub.set(m_rollerVoltageSetpoint);
     m_pivotStatorCurrentPub.set(m_pivotStatorCurrent.getValue().in(Amps));
