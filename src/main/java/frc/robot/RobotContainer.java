@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Kicker;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Spindexer;
@@ -51,6 +52,7 @@ public class RobotContainer {
   public final Shooter m_shooter = new Shooter();
   public final Spindexer m_spindexer = new Spindexer();
   public final Kicker m_kicker = new Kicker();
+  public final Intake m_intake = new Intake();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
@@ -158,6 +160,10 @@ public class RobotContainer {
     // Spindexer: spin while holding right trigger, stop on release
     m_joystick.rightTrigger().whileTrue(m_spindexer.runVoltageCommand(6.0));
     m_joystick.rightTrigger().onFalse(m_spindexer.stopCommand());
+
+    // Intake: deploy while holding left trigger, stow on release
+    m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
+    m_joystick.leftTrigger().onFalse(m_intake.stowCommand());
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
