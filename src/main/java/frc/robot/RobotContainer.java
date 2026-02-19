@@ -165,6 +165,10 @@ public class RobotContainer {
     m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
     m_joystick.leftTrigger().onFalse(m_intake.stowCommand());
 
+    // Intake: deploy while holding left trigger, stow on release
+    m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
+    m_joystick.leftTrigger().onFalse(m_intake.stowCommand());
+
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
 
