@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.SignalLogger;
+import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
@@ -21,6 +22,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.util.datalog.StringLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -78,6 +81,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization =
       new SwerveRequest.SysIdSwerveRotation();
 
+  // WPILib DataLog entries for SysId state (fallback for HOOT writeString not appearing)
+  private final StringLogEntry m_translationSysIdStateLog =
+      new StringLogEntry(DataLogManager.getLog(), "sysid-test-state-SwerveTranslation");
+  private final StringLogEntry m_rotationSysIdStateLog =
+      new StringLogEntry(DataLogManager.getLog(), "sysid-test-state-SwerveRotation");
+
   /*
    * SysId routine for characterizing translation.
    * This is used to find PID gains for the drive motors.
@@ -88,8 +97,16 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
               null, // Use default ramp rate (1 V/s)
               Volts.of(4), // Reduce dynamic step voltage to 4 V to prevent brownout
               null, // Use default timeout (10 s)
-              // Log state with SignalLogger class
-              state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())),
+              // Log state to both HOOT and WPILib DataLog
+              state -> {
+                StatusCode result =
+                    SignalLogger.writeString("SysIdTranslation_State", state.toString());
+                if (!result.isOK()) {
+                  DataLogManager.log(
+                      "SignalLogger.writeString failed for translation state: " + result);
+                }
+                m_translationSysIdStateLog.append(state.toString());
+              }),
           new SysIdRoutine.Mechanism(
               output -> setControl(m_translationCharacterization.withVolts(output)), null, this));
 
@@ -107,8 +124,16 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
               /* This is in radians per second, but SysId only supports "volts" */
               Volts.of(Math.PI),
               null, // Use default timeout (10 s)
-              // Log state with SignalLogger class
-              state -> SignalLogger.writeString("SysIdRotation_State", state.toString())),
+              // Log state to both HOOT and WPILib DataLog
+              state -> {
+                StatusCode result =
+                    SignalLogger.writeString("SysIdRotation_State", state.toString());
+                if (!result.isOK()) {
+                  DataLogManager.log(
+                      "SignalLogger.writeString failed for rotation state: " + result);
+                }
+                m_rotationSysIdStateLog.append(state.toString());
+              }),
           new SysIdRoutine.Mechanism(
               output -> {
                 /* output is actually radians per second, but SysId only supports "volts" */

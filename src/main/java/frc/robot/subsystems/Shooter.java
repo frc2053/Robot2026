@@ -28,6 +28,7 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -36,13 +37,16 @@ import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.IntegerPublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.util.datalog.StringLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
@@ -53,7 +57,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.util.ShootingOnTheFly;
-import frc.robot.util.ShootingOnTheFly.SOTFResult;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -107,6 +110,19 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_mainShooterSetpointPub;
   private final DoublePublisher m_rollerSetpointPub;
 
+  // SOTF debug publishers
+  private final StructPublisher<Pose2d> m_sotfVirtualTargetPub;
+  private final StructPublisher<Pose2d> m_sotfGoalPub;
+  private final DoublePublisher m_sotfStaticDistancePub;
+  private final DoublePublisher m_sotfVirtualDistancePub;
+  private final DoublePublisher m_sotfTimeOfFlightPub;
+  private final IntegerPublisher m_sotfIterationsPub;
+  private final BooleanPublisher m_sotfConvergedPub;
+  private final DoublePublisher m_sotfContractionFactorPub;
+  private final DoublePublisher m_sotfFirstOrderMissPub;
+  private final DoublePublisher m_sotfRobotSpeedPub;
+  private final DoublePublisher m_sotfAimingAngleDegPub;
+
   // Target velocities for at-speed detection
   private double m_targetMainShooterRps;
   private double m_targetRollerRps;
@@ -126,6 +142,10 @@ public class Shooter extends SubsystemBase {
   private final SysIdRoutine m_mainShooterSysId;
   // SysId routine for top roller
   private final SysIdRoutine m_rollerSysId;
+
+  // WPILib DataLog entries for SysId state (fallback for HOOT writeString not appearing)
+  private final StringLogEntry m_mainShooterSysIdStateLog;
+  private final StringLogEntry m_rollerSysIdStateLog;
 
   // SysId NetworkTables controls - just toggle switches for direction and mechanism selection
   private final BooleanSubscriber m_sysIdForwardSub;
@@ -309,6 +329,14 @@ public class Shooter extends SubsystemBase {
                 ShooterConstants.ROLLER_GEAR_RATIO),
             DCMotor.getFalcon500Foc(1));
 
+    // WPILib DataLog entries for SysId state - these write to .wpilog which is reliable on real
+    // robot
+    // CTRE SignalLogger.writeString to HOOT appears broken on real roboRIO in Phoenix 6 v26.1.1
+    m_mainShooterSysIdStateLog =
+        new StringLogEntry(DataLogManager.getLog(), "sysid-test-state-ShooterFlywheel");
+    m_rollerSysIdStateLog =
+        new StringLogEntry(DataLogManager.getLog(), "sysid-test-state-ShooterRoller");
+
     // SysId routine for main shooter flywheel
     // Both motors are applied the same voltage, and we log the average velocity
     m_mainShooterSysId =
@@ -317,7 +345,16 @@ public class Shooter extends SubsystemBase {
                 null, // Use default ramp rate (1 V/s)
                 edu.wpi.first.units.Units.Volts.of(10), // Dynamic step voltage
                 null, // Use default timeout (10 s)
-                state -> SignalLogger.writeString("ShooterFlywheelSysId_State", state.toString())),
+                state -> {
+                  // Write to both HOOT and WPILib DataLog
+                  StatusCode result =
+                      SignalLogger.writeString("ShooterFlywheelSysId_State", state.toString());
+                  if (!result.isOK()) {
+                    DataLogManager.log(
+                        "SignalLogger.writeString failed for flywheel state: " + result);
+                  }
+                  m_mainShooterSysIdStateLog.append(state.toString());
+                }),
             new SysIdRoutine.Mechanism(
                 volts -> {
                   // Left motor follows right motor automatically
@@ -333,7 +370,15 @@ public class Shooter extends SubsystemBase {
                 null,
                 edu.wpi.first.units.Units.Volts.of(10),
                 null,
-                state -> SignalLogger.writeString("ShooterRollerSysId_State", state.toString())),
+                state -> {
+                  StatusCode result =
+                      SignalLogger.writeString("ShooterRollerSysId_State", state.toString());
+                  if (!result.isOK()) {
+                    DataLogManager.log(
+                        "SignalLogger.writeString failed for roller state: " + result);
+                  }
+                  m_rollerSysIdStateLog.append(state.toString());
+                }),
             new SysIdRoutine.Mechanism(
                 volts ->
                     m_shooterMotorTopRoller.setControl(
@@ -352,6 +397,20 @@ public class Shooter extends SubsystemBase {
     m_sysIdRollerPub = sysIdTable.getBooleanTopic("Roller").publish();
     m_sysIdRollerSub = sysIdTable.getBooleanTopic("Roller").subscribe(false);
     m_sysIdRollerPub.set(false); // Default to main flywheel
+
+    // Initialize SOTF debug publishers
+    NetworkTable sotfTable = shooterTable.getSubTable("SOTF");
+    m_sotfVirtualTargetPub = sotfTable.getStructTopic("VirtualTarget", Pose2d.struct).publish();
+    m_sotfGoalPub = sotfTable.getStructTopic("Goal", Pose2d.struct).publish();
+    m_sotfStaticDistancePub = sotfTable.getDoubleTopic("StaticDistanceM").publish();
+    m_sotfVirtualDistancePub = sotfTable.getDoubleTopic("VirtualDistanceM").publish();
+    m_sotfTimeOfFlightPub = sotfTable.getDoubleTopic("TimeOfFlightS").publish();
+    m_sotfIterationsPub = sotfTable.getIntegerTopic("Iterations").publish();
+    m_sotfConvergedPub = sotfTable.getBooleanTopic("Converged").publish();
+    m_sotfContractionFactorPub = sotfTable.getDoubleTopic("ContractionFactor").publish();
+    m_sotfFirstOrderMissPub = sotfTable.getDoubleTopic("FirstOrderMissM").publish();
+    m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
+    m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
 
     // Initialize tuning mode NetworkTables controls
     NetworkTable tuningTable = shooterTable.getSubTable("Tuning");
@@ -505,7 +564,7 @@ public class Shooter extends SubsystemBase {
         .withName("SpinUpForDistance");
   }
 
-  public Command idleVoltae(double idleVoltage) {
+  public Command idleVoltage(double idleVoltage) {
     return this.run(
             () -> {
               m_targetMainShooterRps = 0.0;
@@ -521,13 +580,14 @@ public class Shooter extends SubsystemBase {
   }
 
   /**
-   * Creates a command that spins up the shooter using Shooting On The Fly (SOTF) calculations. This
-   * compensates for robot velocity to ensure accurate shots while moving.
+   * Creates a command that spins up the shooter using iterative TOF recursion for Shooting On The
+   * Fly (SOTF). This compensates for robot velocity by iteratively computing a virtual target that
+   * accounts for the projectile's time-of-flight.
    *
-   * @param robotPoseSupplier Supplier for current robot pose
-   * @param robotSpeedsSupplier Supplier for current robot velocity (field-relative)
-   * @param goalPositionSupplier Supplier for the goal position to shoot at
-   * @return A command that runs the shooter at SOTF-adjusted speeds
+   * @param robotPoseSupplier Supplier for current robot pose.
+   * @param robotSpeedsSupplier Supplier for current robot velocity (field-relative).
+   * @param goalPositionSupplier Supplier for the goal position to shoot at.
+   * @return A command that runs the shooter at SOTF-adjusted speeds.
    */
   public Command spinUpForSOTFCommand(
       Supplier<Pose2d> robotPoseSupplier,
@@ -539,24 +599,40 @@ public class Shooter extends SubsystemBase {
               ChassisSpeeds robotSpeeds = robotSpeedsSupplier.get();
               Translation2d goalPosition = goalPositionSupplier.get();
 
-              // Calculate SOTF-adjusted parameters
-              SOTFResult result =
+              // Calculate SOTF via iterative TOF recursion
+              ShootingOnTheFly.SOTFResult result =
                   ShootingOnTheFly.calculate(
                       robotPose,
                       robotSpeeds,
                       goalPosition,
                       ShooterConstants.kSOTFLatencyCompensation,
                       ShooterConstants.TIME_OF_FLIGHT_MAP,
-                      ShooterConstants.kMaxHorizontalVelocity);
+                      ShooterConstants.kVelocityUncertainty);
 
-              // Use the effective distance to look up RPM from our tuned tables
-              double effectiveDistance = result.effectiveDistance();
+              // Publish SOTF debug data to NetworkTables
+              Translation2d virtualTarget = result.virtualTarget();
+              m_sotfVirtualTargetPub.set(new Pose2d(virtualTarget, result.aimingAngle()));
+              m_sotfGoalPub.set(new Pose2d(goalPosition, new Rotation2d()));
+              double staticDistance = goalPosition.getDistance(robotPose.getTranslation());
+              m_sotfStaticDistancePub.set(staticDistance);
+              m_sotfVirtualDistancePub.set(result.virtualDistance());
+              m_sotfTimeOfFlightPub.set(result.timeOfFlight());
+              m_sotfIterationsPub.set(result.iterations());
+              m_sotfConvergedPub.set(result.converged());
+              m_sotfContractionFactorPub.set(result.contractionFactor());
+              m_sotfFirstOrderMissPub.set(result.firstOrderMiss());
+              double robotSpeed =
+                  Math.hypot(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond);
+              m_sotfRobotSpeedPub.set(robotSpeed);
+              m_sotfAimingAngleDegPub.set(result.aimingAngle().getDegrees());
 
-              // Look up speeds from interpolating tree maps using effective distance
+              // The virtual distance is the distance to the converged virtual target —
+              // use it directly for RPM lookup from our tuned tables
+              double virtualDistance = result.virtualDistance();
+
               double bottomSpeedRps =
-                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(effectiveDistance);
-              double topRollerSpeedRps =
-                  ShooterConstants.TOP_ROLLER_SPEED_MAP.get(effectiveDistance);
+                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(virtualDistance);
+              double topRollerSpeedRps = ShooterConstants.TOP_ROLLER_SPEED_MAP.get(virtualDistance);
 
               // Store target velocities for at-speed detection
               m_targetMainShooterRps = bottomSpeedRps;

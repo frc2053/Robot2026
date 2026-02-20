@@ -122,10 +122,10 @@ public final class Constants {
     // TODO: Tune this value - start at 0.1s, increase if shots land behind target
     public static final double kSOTFLatencyCompensation = 0.15;
 
-    // Maximum horizontal velocity the shooter can achieve (m/s)
-    // Used to determine if a shot is physically possible
-    // TODO: Calculate from your max RPM and wheel radius
-    public static final double kMaxHorizontalVelocity = 12.0;
+    // Estimated velocity uncertainty in m/s (for first-order miss metric)
+    // This is how uncertain we are about our robot's velocity from odometry
+    // TODO: Tune based on odometry quality — lower is better
+    public static final double kVelocityUncertainty = 0.3;
 
     static {
       // Bottom shooter speeds (distance in meters -> speed in RPS)
