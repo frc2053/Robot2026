@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Intake;
@@ -88,19 +87,6 @@ public class RobotContainer {
     RobotModeTriggers.disabled()
         .whileTrue(m_drivetrain.applyRequest(() -> idle).ignoringDisable(true));
 
-    // Run SysId routines when holding back/start and X/Y.
-    // Note that each routine should be run exactly once in a single log.
-    // m_joystick.back().and(m_joystick.y()).whileTrue(m_drivetrain.sysIdDynamic(Direction.kForward));
-    // m_joystick.back().and(m_joystick.x()).whileTrue(m_drivetrain.sysIdDynamic(Direction.kReverse));
-    // m_joystick
-    //     .start()
-    //     .and(m_joystick.y())
-    //     .whileTrue(m_drivetrain.sysIdQuasistatic(Direction.kForward));
-    // m_joystick
-    //     .start()
-    //     .and(m_joystick.x())
-    //     .whileTrue(m_drivetrain.sysIdQuasistatic(Direction.kReverse));
-
     // Reset the field-centric heading on left bumper press.
     m_joystick.leftBumper().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
 
@@ -121,7 +107,7 @@ public class RobotContainer {
                   Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
                   return robotPosition.getDistance(goalPosition);
                 }))
-        .whileFalse(m_shooter.idleVoltae(2.0));
+        .whileFalse(m_shooter.idleVoltage(2.0));
 
     // Look at the hub while holding A button (flips based on alliance)
     // m_joystick
