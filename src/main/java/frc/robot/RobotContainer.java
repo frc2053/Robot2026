@@ -142,7 +142,12 @@ public class RobotContainer {
     //                     () -> -m_joystick.getLeftX() * m_maxSpeed,
     //                     m_maxSpeed * 0.1)));
 
+    // Tuning commands - toggle on/off with start (shooter) and X (intake)
+    // Use NetworkTables to set setpoints and enable:
+    //   Shooter/Tuning/Enabled, MainShooterRPM, RollerRPM, MainShooterGains/*, RollerGains/*
+    //   Intake/Tuning/Enabled, PivotPositionRotations, PivotGains/*
     m_joystick.start().toggleOnTrue(m_shooter.tuningCommand());
+    m_joystick.x().toggleOnTrue(m_intake.tuningCommand());
 
     // Spindexer: spin while holding right trigger, stop on release
     m_joystick.rightTrigger().whileTrue(Commands.parallel(m_spindexer.spin(), m_kicker.spin()));
