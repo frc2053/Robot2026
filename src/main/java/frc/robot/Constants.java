@@ -205,7 +205,7 @@ public final class Constants {
     // Pivot PID constants (Slot 0)
     public static final double kPivotKS = 0.0;
     public static final double kPivotKG = 0.0;
-    public static final double kPivotKV = 6.0;
+    public static final double kPivotKV = 0.0;
     public static final double kPivotKA = 0.0;
     public static final double kPivotKP = 0;
     public static final double kPivotKI = 0.0;
