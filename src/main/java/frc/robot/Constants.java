@@ -84,19 +84,19 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Main shooter PID constants (Slot 0)
-    public static final double kMainShooterKS = 0.1;
-    public static final double kMainShooterKV = 0.12;
-    public static final double kMainShooterKA = 0.01;
-    public static final double kMainShooterKP = 0.11;
+    public static final double kMainShooterKS = 0.2;
+    public static final double kMainShooterKV = 0.117;
+    public static final double kMainShooterKA = 0.0;
+    public static final double kMainShooterKP = 0.5;
     public static final double kMainShooterKI = 0;
     public static final double kMainShooterKD = 0;
     public static final double kMainShooterMotionMagicAccel = 400;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 0.1;
-    public static final double kRollerKV = 0.12;
-    public static final double kRollerKA = 0.01;
-    public static final double kRollerKP = 0.15;
+    public static final double kRollerKS = 0.19;
+    public static final double kRollerKV = 0.115;
+    public static final double kRollerKA = 0.00;
+    public static final double kRollerKP = 0.5;
     public static final double kRollerKI = 0;
     public static final double kRollerKD = 0;
     public static final double kRollerMotionMagicAccel = 400;
@@ -161,7 +161,7 @@ public final class Constants {
     public static final int SPINDEXER_SUPPLY_LIMIT = 40;
     public static final int SPINDEXER_STATOR_LIMIT = 60;
 
-    public static final boolean INVERTED = false;
+    public static final boolean INVERTED = true;
 
     // Spin voltage for feeding game pieces
     public static final double kSpinVoltage = 12.0;
