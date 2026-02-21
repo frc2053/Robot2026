@@ -203,13 +203,13 @@ public final class Constants {
     public static final double kPivotStowedPosition = 0.25;
 
     // Pivot PID constants (Slot 0)
-    public static final double kPivotKS = 0.1;
-    public static final double kPivotKG = 0.44;
-    public static final double kPivotKV = 6.63;
-    public static final double kPivotKA = 0.10;
-    public static final double kPivotKP = 50.0;
+    public static final double kPivotKS = 0.0;
+    public static final double kPivotKG = 0.0;
+    public static final double kPivotKV = 6.0;
+    public static final double kPivotKA = 0.0;
+    public static final double kPivotKP = 0;
     public static final double kPivotKI = 0.0;
-    public static final double kPivotKD = 0.5;
+    public static final double kPivotKD = 0.0;
     public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
 
