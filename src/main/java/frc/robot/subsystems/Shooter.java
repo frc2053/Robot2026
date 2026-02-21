@@ -161,6 +161,48 @@ public class Shooter extends SubsystemBase {
   private final DoubleSubscriber m_tuningRollerRpsSub;
   private final DoublePublisher m_tuningRollerRpsPub;
 
+  // Tunable gains for main shooter
+  private final DoubleSubscriber m_mainShooterKSSub;
+  private final DoubleSubscriber m_mainShooterKVSub;
+  private final DoubleSubscriber m_mainShooterKASub;
+  private final DoubleSubscriber m_mainShooterKPSub;
+  private final DoubleSubscriber m_mainShooterKISub;
+  private final DoubleSubscriber m_mainShooterKDSub;
+  private final DoublePublisher m_mainShooterKSPub;
+  private final DoublePublisher m_mainShooterKVPub;
+  private final DoublePublisher m_mainShooterKAPub;
+  private final DoublePublisher m_mainShooterKPPub;
+  private final DoublePublisher m_mainShooterKIPub;
+  private final DoublePublisher m_mainShooterKDPub;
+
+  // Tunable gains for roller
+  private final DoubleSubscriber m_rollerKSSub;
+  private final DoubleSubscriber m_rollerKVSub;
+  private final DoubleSubscriber m_rollerKASub;
+  private final DoubleSubscriber m_rollerKPSub;
+  private final DoubleSubscriber m_rollerKISub;
+  private final DoubleSubscriber m_rollerKDSub;
+  private final DoublePublisher m_rollerKSPub;
+  private final DoublePublisher m_rollerKVPub;
+  private final DoublePublisher m_rollerKAPub;
+  private final DoublePublisher m_rollerKPPub;
+  private final DoublePublisher m_rollerKIPub;
+  private final DoublePublisher m_rollerKDPub;
+
+  // Track last known gain values to detect changes
+  private double m_lastMainShooterKS;
+  private double m_lastMainShooterKV;
+  private double m_lastMainShooterKA;
+  private double m_lastMainShooterKP;
+  private double m_lastMainShooterKI;
+  private double m_lastMainShooterKD;
+  private double m_lastRollerKS;
+  private double m_lastRollerKV;
+  private double m_lastRollerKA;
+  private double m_lastRollerKP;
+  private double m_lastRollerKI;
+  private double m_lastRollerKD;
+
   /** Creates a new Shooter. */
   public Shooter() {
     m_shooterMotorLeft = new TalonFX(ShooterConstants.SHOOTER_MOTOR_LEFT_ID);
@@ -423,6 +465,78 @@ public class Shooter extends SubsystemBase {
     m_tuningRollerRpsPub = tuningTable.getDoubleTopic("RollerRPM").publish();
     m_tuningRollerRpsSub = tuningTable.getDoubleTopic("RollerRPM").subscribe(0.0);
     m_tuningRollerRpsPub.set(0.0);
+
+    // Initialize tunable gains for main shooter
+    NetworkTable mainShooterGains = tuningTable.getSubTable("MainShooterGains");
+
+    m_mainShooterKSPub = mainShooterGains.getDoubleTopic("kS").publish();
+    m_mainShooterKSSub =
+        mainShooterGains.getDoubleTopic("kS").subscribe(ShooterConstants.kMainShooterKS);
+    m_mainShooterKSPub.set(ShooterConstants.kMainShooterKS);
+    m_lastMainShooterKS = ShooterConstants.kMainShooterKS;
+
+    m_mainShooterKVPub = mainShooterGains.getDoubleTopic("kV").publish();
+    m_mainShooterKVSub =
+        mainShooterGains.getDoubleTopic("kV").subscribe(ShooterConstants.kMainShooterKV);
+    m_mainShooterKVPub.set(ShooterConstants.kMainShooterKV);
+    m_lastMainShooterKV = ShooterConstants.kMainShooterKV;
+
+    m_mainShooterKAPub = mainShooterGains.getDoubleTopic("kA").publish();
+    m_mainShooterKASub =
+        mainShooterGains.getDoubleTopic("kA").subscribe(ShooterConstants.kMainShooterKA);
+    m_mainShooterKAPub.set(ShooterConstants.kMainShooterKA);
+    m_lastMainShooterKA = ShooterConstants.kMainShooterKA;
+
+    m_mainShooterKPPub = mainShooterGains.getDoubleTopic("kP").publish();
+    m_mainShooterKPSub =
+        mainShooterGains.getDoubleTopic("kP").subscribe(ShooterConstants.kMainShooterKP);
+    m_mainShooterKPPub.set(ShooterConstants.kMainShooterKP);
+    m_lastMainShooterKP = ShooterConstants.kMainShooterKP;
+
+    m_mainShooterKIPub = mainShooterGains.getDoubleTopic("kI").publish();
+    m_mainShooterKISub =
+        mainShooterGains.getDoubleTopic("kI").subscribe(ShooterConstants.kMainShooterKI);
+    m_mainShooterKIPub.set(ShooterConstants.kMainShooterKI);
+    m_lastMainShooterKI = ShooterConstants.kMainShooterKI;
+
+    m_mainShooterKDPub = mainShooterGains.getDoubleTopic("kD").publish();
+    m_mainShooterKDSub =
+        mainShooterGains.getDoubleTopic("kD").subscribe(ShooterConstants.kMainShooterKD);
+    m_mainShooterKDPub.set(ShooterConstants.kMainShooterKD);
+    m_lastMainShooterKD = ShooterConstants.kMainShooterKD;
+
+    // Initialize tunable gains for roller
+    NetworkTable rollerGains = tuningTable.getSubTable("RollerGains");
+
+    m_rollerKSPub = rollerGains.getDoubleTopic("kS").publish();
+    m_rollerKSSub = rollerGains.getDoubleTopic("kS").subscribe(ShooterConstants.kRollerKS);
+    m_rollerKSPub.set(ShooterConstants.kRollerKS);
+    m_lastRollerKS = ShooterConstants.kRollerKS;
+
+    m_rollerKVPub = rollerGains.getDoubleTopic("kV").publish();
+    m_rollerKVSub = rollerGains.getDoubleTopic("kV").subscribe(ShooterConstants.kRollerKV);
+    m_rollerKVPub.set(ShooterConstants.kRollerKV);
+    m_lastRollerKV = ShooterConstants.kRollerKV;
+
+    m_rollerKAPub = rollerGains.getDoubleTopic("kA").publish();
+    m_rollerKASub = rollerGains.getDoubleTopic("kA").subscribe(ShooterConstants.kRollerKA);
+    m_rollerKAPub.set(ShooterConstants.kRollerKA);
+    m_lastRollerKA = ShooterConstants.kRollerKA;
+
+    m_rollerKPPub = rollerGains.getDoubleTopic("kP").publish();
+    m_rollerKPSub = rollerGains.getDoubleTopic("kP").subscribe(ShooterConstants.kRollerKP);
+    m_rollerKPPub.set(ShooterConstants.kRollerKP);
+    m_lastRollerKP = ShooterConstants.kRollerKP;
+
+    m_rollerKIPub = rollerGains.getDoubleTopic("kI").publish();
+    m_rollerKISub = rollerGains.getDoubleTopic("kI").subscribe(ShooterConstants.kRollerKI);
+    m_rollerKIPub.set(ShooterConstants.kRollerKI);
+    m_lastRollerKI = ShooterConstants.kRollerKI;
+
+    m_rollerKDPub = rollerGains.getDoubleTopic("kD").publish();
+    m_rollerKDSub = rollerGains.getDoubleTopic("kD").subscribe(ShooterConstants.kRollerKD);
+    m_rollerKDPub.set(ShooterConstants.kRollerKD);
+    m_lastRollerKD = ShooterConstants.kRollerKD;
   }
 
   @Override
@@ -469,6 +583,89 @@ public class Shooter extends SubsystemBase {
     // Publish velocity setpoints in RPM
     m_mainShooterSetpointPub.set(m_targetMainShooterRps * 60.0);
     m_rollerSetpointPub.set(m_targetRollerRps * 60.0);
+
+    // Check for tuning updates and apply if changed
+    updateTunableGains();
+  }
+
+  /** Checks for tunable gain updates from NetworkTables and applies them to motors. */
+  private void updateTunableGains() {
+    // Read current values from NetworkTables
+    double mainKS = m_mainShooterKSSub.get();
+    double mainKV = m_mainShooterKVSub.get();
+    double mainKA = m_mainShooterKASub.get();
+    double mainKP = m_mainShooterKPSub.get();
+    double mainKI = m_mainShooterKISub.get();
+    double mainKD = m_mainShooterKDSub.get();
+
+    // Check if main shooter gains have changed
+    boolean mainGainsChanged =
+        mainKS != m_lastMainShooterKS
+            || mainKV != m_lastMainShooterKV
+            || mainKA != m_lastMainShooterKA
+            || mainKP != m_lastMainShooterKP
+            || mainKI != m_lastMainShooterKI
+            || mainKD != m_lastMainShooterKD;
+
+    if (mainGainsChanged) {
+      Slot0Configs mainSlot0 =
+          new Slot0Configs()
+              .withKS(mainKS)
+              .withKV(mainKV)
+              .withKA(mainKA)
+              .withKP(mainKP)
+              .withKI(mainKI)
+              .withKD(mainKD);
+
+      m_shooterMotorLeft.getConfigurator().apply(mainSlot0);
+      m_shooterMotorRight.getConfigurator().apply(mainSlot0);
+
+      // Update last known values
+      m_lastMainShooterKS = mainKS;
+      m_lastMainShooterKV = mainKV;
+      m_lastMainShooterKA = mainKA;
+      m_lastMainShooterKP = mainKP;
+      m_lastMainShooterKI = mainKI;
+      m_lastMainShooterKD = mainKD;
+    }
+
+    // Read roller values from NetworkTables
+    double rollerKS = m_rollerKSSub.get();
+    double rollerKV = m_rollerKVSub.get();
+    double rollerKA = m_rollerKASub.get();
+    double rollerKP = m_rollerKPSub.get();
+    double rollerKI = m_rollerKISub.get();
+    double rollerKD = m_rollerKDSub.get();
+
+    // Check if roller gains have changed
+    boolean rollerGainsChanged =
+        rollerKS != m_lastRollerKS
+            || rollerKV != m_lastRollerKV
+            || rollerKA != m_lastRollerKA
+            || rollerKP != m_lastRollerKP
+            || rollerKI != m_lastRollerKI
+            || rollerKD != m_lastRollerKD;
+
+    if (rollerGainsChanged) {
+      Slot0Configs rollerSlot0 =
+          new Slot0Configs()
+              .withKS(rollerKS)
+              .withKV(rollerKV)
+              .withKA(rollerKA)
+              .withKP(rollerKP)
+              .withKI(rollerKI)
+              .withKD(rollerKD);
+
+      m_shooterMotorTopRoller.getConfigurator().apply(rollerSlot0);
+
+      // Update last known values
+      m_lastRollerKS = rollerKS;
+      m_lastRollerKV = rollerKV;
+      m_lastRollerKA = rollerKA;
+      m_lastRollerKP = rollerKP;
+      m_lastRollerKI = rollerKI;
+      m_lastRollerKD = rollerKD;
+    }
   }
 
   @Override
