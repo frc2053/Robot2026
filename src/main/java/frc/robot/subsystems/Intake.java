@@ -33,7 +33,9 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
@@ -102,6 +104,37 @@ public class Intake extends SubsystemBase {
   private double m_pivotPositionSetpoint;
   private double m_rollerVoltageSetpoint;
 
+  // Tunable gains for pivot
+  private final DoubleSubscriber m_pivotKSSub;
+  private final DoubleSubscriber m_pivotKGSub;
+  private final DoubleSubscriber m_pivotKVSub;
+  private final DoubleSubscriber m_pivotKASub;
+  private final DoubleSubscriber m_pivotKPSub;
+  private final DoubleSubscriber m_pivotKISub;
+  private final DoubleSubscriber m_pivotKDSub;
+  private final DoublePublisher m_pivotKSPub;
+  private final DoublePublisher m_pivotKGPub;
+  private final DoublePublisher m_pivotKVPub;
+  private final DoublePublisher m_pivotKAPub;
+  private final DoublePublisher m_pivotKPPub;
+  private final DoublePublisher m_pivotKIPub;
+  private final DoublePublisher m_pivotKDPub;
+
+  // Track last known gain values to detect changes
+  private double m_lastPivotKS;
+  private double m_lastPivotKG;
+  private double m_lastPivotKV;
+  private double m_lastPivotKA;
+  private double m_lastPivotKP;
+  private double m_lastPivotKI;
+  private double m_lastPivotKD;
+
+  // Tuning mode NetworkTables controls
+  private final BooleanSubscriber m_tuningEnabledSub;
+  private final BooleanPublisher m_tuningEnabledPub;
+  private final DoubleSubscriber m_tuningPivotPositionSub;
+  private final DoublePublisher m_tuningPivotPositionPub;
+
   /** Creates a new Intake subsystem. */
   public Intake() {
     m_pivotMotor = new TalonFX(IntakeConstants.PIVOT_MOTOR_ID);
@@ -161,6 +194,56 @@ public class Intake extends SubsystemBase {
     m_rollerSupplyCurrentPub = intakeTable.getDoubleTopic("RollerSupplyCurrent").publish();
     m_atPositionPub = intakeTable.getBooleanTopic("AtPosition").publish();
     m_currentCommandPub = intakeTable.getStringTopic("CurrentCommand").publish();
+
+    // Initialize tunable gains for pivot
+    NetworkTable tuningTable = intakeTable.getSubTable("Tuning").getSubTable("PivotGains");
+
+    m_pivotKSPub = tuningTable.getDoubleTopic("kS").publish();
+    m_pivotKSSub = tuningTable.getDoubleTopic("kS").subscribe(IntakeConstants.kPivotKS);
+    m_pivotKSPub.set(IntakeConstants.kPivotKS);
+    m_lastPivotKS = IntakeConstants.kPivotKS;
+
+    m_pivotKGPub = tuningTable.getDoubleTopic("kG").publish();
+    m_pivotKGSub = tuningTable.getDoubleTopic("kG").subscribe(IntakeConstants.kPivotKG);
+    m_pivotKGPub.set(IntakeConstants.kPivotKG);
+    m_lastPivotKG = IntakeConstants.kPivotKG;
+
+    m_pivotKVPub = tuningTable.getDoubleTopic("kV").publish();
+    m_pivotKVSub = tuningTable.getDoubleTopic("kV").subscribe(IntakeConstants.kPivotKV);
+    m_pivotKVPub.set(IntakeConstants.kPivotKV);
+    m_lastPivotKV = IntakeConstants.kPivotKV;
+
+    m_pivotKAPub = tuningTable.getDoubleTopic("kA").publish();
+    m_pivotKASub = tuningTable.getDoubleTopic("kA").subscribe(IntakeConstants.kPivotKA);
+    m_pivotKAPub.set(IntakeConstants.kPivotKA);
+    m_lastPivotKA = IntakeConstants.kPivotKA;
+
+    m_pivotKPPub = tuningTable.getDoubleTopic("kP").publish();
+    m_pivotKPSub = tuningTable.getDoubleTopic("kP").subscribe(IntakeConstants.kPivotKP);
+    m_pivotKPPub.set(IntakeConstants.kPivotKP);
+    m_lastPivotKP = IntakeConstants.kPivotKP;
+
+    m_pivotKIPub = tuningTable.getDoubleTopic("kI").publish();
+    m_pivotKISub = tuningTable.getDoubleTopic("kI").subscribe(IntakeConstants.kPivotKI);
+    m_pivotKIPub.set(IntakeConstants.kPivotKI);
+    m_lastPivotKI = IntakeConstants.kPivotKI;
+
+    m_pivotKDPub = tuningTable.getDoubleTopic("kD").publish();
+    m_pivotKDSub = tuningTable.getDoubleTopic("kD").subscribe(IntakeConstants.kPivotKD);
+    m_pivotKDPub.set(IntakeConstants.kPivotKD);
+    m_lastPivotKD = IntakeConstants.kPivotKD;
+
+    // Initialize tuning mode controls (in parent Tuning table)
+    NetworkTable tuningParent = intakeTable.getSubTable("Tuning");
+    m_tuningEnabledPub = tuningParent.getBooleanTopic("Enabled").publish();
+    m_tuningEnabledSub = tuningParent.getBooleanTopic("Enabled").subscribe(false);
+    m_tuningEnabledPub.set(false);
+    m_tuningPivotPositionPub = tuningParent.getDoubleTopic("PivotPositionRotations").publish();
+    m_tuningPivotPositionSub =
+        tuningParent
+            .getDoubleTopic("PivotPositionRotations")
+            .subscribe(IntakeConstants.kPivotStowedPosition);
+    m_tuningPivotPositionPub.set(IntakeConstants.kPivotStowedPosition);
 
     // Initialize simulation
     m_pivotSimState = m_pivotMotor.getSimState();
@@ -294,6 +377,55 @@ public class Intake extends SubsystemBase {
             0,
             Units.inchesToMeters(11.25),
             new Rotation3d(0, -pivotAngleRad, 0)));
+
+    // Check for tuning updates and apply if changed
+    updateTunableGains();
+  }
+
+  /** Checks for tunable gain updates from NetworkTables and applies them to the pivot motor. */
+  private void updateTunableGains() {
+    // Read current values from NetworkTables
+    double kS = m_pivotKSSub.get();
+    double kG = m_pivotKGSub.get();
+    double kV = m_pivotKVSub.get();
+    double kA = m_pivotKASub.get();
+    double kP = m_pivotKPSub.get();
+    double kI = m_pivotKISub.get();
+    double kD = m_pivotKDSub.get();
+
+    // Check if gains have changed
+    boolean gainsChanged =
+        kS != m_lastPivotKS
+            || kG != m_lastPivotKG
+            || kV != m_lastPivotKV
+            || kA != m_lastPivotKA
+            || kP != m_lastPivotKP
+            || kI != m_lastPivotKI
+            || kD != m_lastPivotKD;
+
+    if (gainsChanged) {
+      Slot0Configs slot0 =
+          new Slot0Configs()
+              .withKS(kS)
+              .withKG(kG)
+              .withKV(kV)
+              .withKA(kA)
+              .withKP(kP)
+              .withKI(kI)
+              .withKD(kD)
+              .withGravityType(GravityTypeValue.Arm_Cosine);
+
+      m_pivotMotor.getConfigurator().apply(slot0);
+
+      // Update last known values
+      m_lastPivotKS = kS;
+      m_lastPivotKG = kG;
+      m_lastPivotKV = kV;
+      m_lastPivotKA = kA;
+      m_lastPivotKP = kP;
+      m_lastPivotKI = kI;
+      m_lastPivotKD = kD;
+    }
   }
 
   @Override
@@ -444,5 +576,26 @@ public class Intake extends SubsystemBase {
               m_rollerMotor.setControl(m_neutralRequest);
             })
         .withName("StopIntake");
+  }
+
+  /**
+   * Creates a command for tuning mode. When the Intake/Tuning/Enabled toggle is true, the pivot
+   * moves to the position from Intake/Tuning/PivotPositionRotations. When the toggle is false, the
+   * pivot holds its current position.
+   *
+   * @return A command that runs the intake in tuning mode.
+   */
+  public Command tuningCommand() {
+    return this.run(
+            () -> {
+              if (m_tuningEnabledSub.get()) {
+                double targetPosition = m_tuningPivotPositionSub.get();
+                m_pivotPositionSetpoint = targetPosition;
+                m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPosition));
+              } else {
+                m_pivotMotor.setControl(m_neutralRequest);
+              }
+            })
+        .withName("IntakeTuning");
   }
 }
