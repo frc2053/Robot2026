@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Kicker;
@@ -51,6 +52,7 @@ public class RobotContainer {
   public final Spindexer m_spindexer = new Spindexer();
   public final Kicker m_kicker = new Kicker();
   public final Intake m_intake = new Intake();
+  public final Climber m_climber = new Climber();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
@@ -159,6 +161,15 @@ public class RobotContainer {
     // Intake: deploy while holding left trigger, stow on release
     m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
     m_joystick.leftTrigger().onFalse(m_intake.stowCommand());
+
+    // Climber: D-pad right toggles between extend and retract
+    m_joystick
+        .povRight()
+        .onTrue(
+            Commands.either(
+                m_climber.retractCommand().until(m_climber::atPosition),
+                m_climber.extendCommand().until(m_climber::atPosition),
+                m_climber::isExtended));
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
