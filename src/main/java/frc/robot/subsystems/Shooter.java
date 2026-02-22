@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -46,15 +45,12 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.util.datalog.StringLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.util.ShootingOnTheFly;
 import java.util.function.DoubleSupplier;
@@ -137,21 +133,6 @@ public class Shooter extends SubsystemBase {
       new MotionMagicVelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
-
-  // SysId routine for main shooter flywheel (averages both motors)
-  private final SysIdRoutine m_mainShooterSysId;
-  // SysId routine for top roller
-  private final SysIdRoutine m_rollerSysId;
-
-  // WPILib DataLog entries for SysId state (fallback for HOOT writeString not appearing)
-  private final StringLogEntry m_mainShooterSysIdStateLog;
-  private final StringLogEntry m_rollerSysIdStateLog;
-
-  // SysId NetworkTables controls - just toggle switches for direction and mechanism selection
-  private final BooleanSubscriber m_sysIdForwardSub;
-  private final BooleanSubscriber m_sysIdRollerSub;
-  private final BooleanPublisher m_sysIdForwardPub;
-  private final BooleanPublisher m_sysIdRollerPub;
 
   // Tuning mode NetworkTables controls
   private final BooleanSubscriber m_tuningEnabledSub;
@@ -370,75 +351,6 @@ public class Shooter extends SubsystemBase {
                 ShooterConstants.ROLLER_MOI,
                 ShooterConstants.ROLLER_GEAR_RATIO),
             DCMotor.getFalcon500Foc(1));
-
-    // WPILib DataLog entries for SysId state - these write to .wpilog which is reliable on real
-    // robot
-    // CTRE SignalLogger.writeString to HOOT appears broken on real roboRIO in Phoenix 6 v26.1.1
-    m_mainShooterSysIdStateLog =
-        new StringLogEntry(DataLogManager.getLog(), "sysid-test-state-ShooterFlywheel");
-    m_rollerSysIdStateLog =
-        new StringLogEntry(DataLogManager.getLog(), "sysid-test-state-ShooterRoller");
-
-    // SysId routine for main shooter flywheel
-    // Both motors are applied the same voltage, and we log the average velocity
-    m_mainShooterSysId =
-        new SysIdRoutine(
-            new SysIdRoutine.Config(
-                null, // Use default ramp rate (1 V/s)
-                edu.wpi.first.units.Units.Volts.of(10), // Dynamic step voltage
-                null, // Use default timeout (10 s)
-                state -> {
-                  // Write to both HOOT and WPILib DataLog
-                  StatusCode result =
-                      SignalLogger.writeString("ShooterFlywheelSysId_State", state.toString());
-                  if (!result.isOK()) {
-                    DataLogManager.log(
-                        "SignalLogger.writeString failed for flywheel state: " + result);
-                  }
-                  m_mainShooterSysIdStateLog.append(state.toString());
-                }),
-            new SysIdRoutine.Mechanism(
-                volts -> {
-                  // Left motor follows right motor automatically
-                  m_shooterMotorRight.setControl(m_voltageRequest.withOutput(volts.in(Volts)));
-                },
-                null, // Use SignalLogger for logging
-                this));
-
-    // SysId routine for top roller
-    m_rollerSysId =
-        new SysIdRoutine(
-            new SysIdRoutine.Config(
-                null,
-                edu.wpi.first.units.Units.Volts.of(10),
-                null,
-                state -> {
-                  StatusCode result =
-                      SignalLogger.writeString("ShooterRollerSysId_State", state.toString());
-                  if (!result.isOK()) {
-                    DataLogManager.log(
-                        "SignalLogger.writeString failed for roller state: " + result);
-                  }
-                  m_rollerSysIdStateLog.append(state.toString());
-                }),
-            new SysIdRoutine.Mechanism(
-                volts ->
-                    m_shooterMotorTopRoller.setControl(
-                        m_voltageRequest.withOutput(volts.in(Volts))),
-                null,
-                this));
-
-    // Initialize SysId NetworkTables controls
-    NetworkTable sysIdTable = shooterTable.getSubTable("SysId");
-
-    // Toggle switches for direction and mechanism selection
-    m_sysIdForwardPub = sysIdTable.getBooleanTopic("Forward").publish();
-    m_sysIdForwardSub = sysIdTable.getBooleanTopic("Forward").subscribe(true);
-    m_sysIdForwardPub.set(true); // Default to forward
-
-    m_sysIdRollerPub = sysIdTable.getBooleanTopic("Roller").publish();
-    m_sysIdRollerSub = sysIdTable.getBooleanTopic("Roller").subscribe(false);
-    m_sysIdRollerPub.set(false); // Default to main flywheel
 
     // Initialize SOTF debug publishers
     NetworkTable sotfTable = shooterTable.getSubTable("SOTF");
@@ -887,91 +799,5 @@ public class Shooter extends SubsystemBase {
               }
             })
         .withName("ShooterTuning");
-  }
-
-  /**
-   * Creates a quasistatic SysId command for the main shooter flywheel. Use this to characterize the
-   * shooter's kS and kV gains.
-   *
-   * @param direction The direction to run the quasistatic test
-   * @return A command that runs the quasistatic test
-   */
-  public Command sysIdQuasistaticMainShooter(SysIdRoutine.Direction direction) {
-    return m_mainShooterSysId.quasistatic(direction);
-  }
-
-  /**
-   * Creates a dynamic SysId command for the main shooter flywheel. Use this to characterize the
-   * shooter's kA gain.
-   *
-   * @param direction The direction to run the dynamic test
-   * @return A command that runs the dynamic test
-   */
-  public Command sysIdDynamicMainShooter(SysIdRoutine.Direction direction) {
-    return m_mainShooterSysId.dynamic(direction);
-  }
-
-  /**
-   * Creates a quasistatic SysId command for the top roller. Use this to characterize the roller's
-   * kS and kV gains.
-   *
-   * @param direction The direction to run the quasistatic test
-   * @return A command that runs the quasistatic test
-   */
-  public Command sysIdQuasistaticRoller(SysIdRoutine.Direction direction) {
-    return m_rollerSysId.quasistatic(direction);
-  }
-
-  /**
-   * Creates a dynamic SysId command for the top roller. Use this to characterize the roller's kA
-   * gain.
-   *
-   * @param direction The direction to run the dynamic test
-   * @return A command that runs the dynamic test
-   */
-  public Command sysIdDynamicRoller(SysIdRoutine.Direction direction) {
-    return m_rollerSysId.dynamic(direction);
-  }
-
-  // =============================================================================
-  // SysId Commands using NetworkTables toggles
-  // =============================================================================
-
-  /**
-   * Creates a quasistatic SysId command using NT toggle settings. Direction is determined by
-   * Shooter/SysId/Forward toggle. Mechanism is determined by Shooter/SysId/Roller toggle.
-   *
-   * @return A command that runs the quasistatic test
-   */
-  public Command sysIdQuasistatic() {
-    return Commands.either(
-        Commands.either(
-            sysIdQuasistaticRoller(SysIdRoutine.Direction.kForward),
-            sysIdQuasistaticMainShooter(SysIdRoutine.Direction.kForward),
-            () -> m_sysIdRollerSub.get()),
-        Commands.either(
-            sysIdQuasistaticRoller(SysIdRoutine.Direction.kReverse),
-            sysIdQuasistaticMainShooter(SysIdRoutine.Direction.kReverse),
-            () -> m_sysIdRollerSub.get()),
-        () -> m_sysIdForwardSub.get());
-  }
-
-  /**
-   * Creates a dynamic SysId command using NT toggle settings. Direction is determined by
-   * Shooter/SysId/Forward toggle. Mechanism is determined by Shooter/SysId/Roller toggle.
-   *
-   * @return A command that runs the dynamic test
-   */
-  public Command sysIdDynamic() {
-    return Commands.either(
-        Commands.either(
-            sysIdDynamicRoller(SysIdRoutine.Direction.kForward),
-            sysIdDynamicMainShooter(SysIdRoutine.Direction.kForward),
-            () -> m_sysIdRollerSub.get()),
-        Commands.either(
-            sysIdDynamicRoller(SysIdRoutine.Direction.kReverse),
-            sysIdDynamicMainShooter(SysIdRoutine.Direction.kReverse),
-            () -> m_sysIdRollerSub.get()),
-        () -> m_sysIdForwardSub.get());
   }
 }

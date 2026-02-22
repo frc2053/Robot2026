@@ -92,13 +92,6 @@ public class RobotContainer {
     // Reset the field-centric heading on left bumper press.
     m_joystick.leftBumper().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
 
-    // Shooter SysId routines - use POV buttons while holding back
-    // Direction and mechanism are controlled by NetworkTables toggles:
-    //   Shooter/SysId/Forward - true=forward, false=reverse
-    //   Shooter/SysId/Roller - true=roller, false=main flywheel
-    m_joystick.back().and(m_joystick.povUp()).whileTrue(m_shooter.sysIdQuasistatic());
-    m_joystick.back().and(m_joystick.povDown()).whileTrue(m_shooter.sysIdDynamic());
-
     // Spin up shooter based on distance to goal while holding right bumper
     m_joystick
         .rightBumper()
