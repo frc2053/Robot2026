@@ -115,6 +115,19 @@
               "trajectory_color": 4294967295,
               "show_robot_outside_widget": true
             }
+          },
+          {
+            "title": "Shoot On The Move",
+            "x": 384.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Shoot On The Move",
+              "period": 0.06,
+              "data_type": "boolean"
+            }
           }
         ]
       }
