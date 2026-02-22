@@ -236,9 +236,9 @@ public final class Constants {
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
             new Translation3d(
-                Units.inchesToMeters(-1.875000),
-                Units.inchesToMeters(3.518814),
-                Units.inchesToMeters(25.102211)),
+                -0.0887618,
+                0.037973,
+                0.6394273),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
     public static final Transform3d kSideRobotToCam =
         new Transform3d(
