@@ -137,6 +137,7 @@ public class Shooter extends SubsystemBase {
   // Tuning mode NetworkTables controls
   private final BooleanSubscriber m_tuningEnabledSub;
   private final BooleanPublisher m_tuningEnabledPub;
+  private final Trigger m_tuningEnabledTrigger;
   private final DoubleSubscriber m_tuningMainShooterRpsSub;
   private final DoublePublisher m_tuningMainShooterRpsPub;
   private final DoubleSubscriber m_tuningRollerRpsSub;
@@ -371,6 +372,7 @@ public class Shooter extends SubsystemBase {
     m_tuningEnabledPub = tuningTable.getBooleanTopic("Enabled").publish();
     m_tuningEnabledSub = tuningTable.getBooleanTopic("Enabled").subscribe(false);
     m_tuningEnabledPub.set(false);
+    m_tuningEnabledTrigger = new Trigger(m_tuningEnabledSub::get);
     m_tuningMainShooterRpsPub = tuningTable.getDoubleTopic("MainShooterRPM").publish();
     m_tuningMainShooterRpsSub = tuningTable.getDoubleTopic("MainShooterRPM").subscribe(0.0);
     m_tuningMainShooterRpsPub.set(0.0);
@@ -655,8 +657,9 @@ public class Shooter extends SubsystemBase {
               double distance = distanceSupplier.getAsDouble();
 
               // Look up speeds from interpolating tree maps
-              double bottomSpeedRps = ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(distance);
-              double topRollerSpeedRps = ShooterConstants.TOP_ROLLER_SPEED_MAP.get(distance);
+              double bottomSpeedRps =
+                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(distance) / 60.0;
+              double topRollerSpeedRps = ShooterConstants.TOP_ROLLER_SPEED_MAP.get(distance) / 60.0;
 
               // Store target velocities for at-speed detection
               m_targetMainShooterRps = bottomSpeedRps;
@@ -740,8 +743,9 @@ public class Shooter extends SubsystemBase {
               double virtualDistance = result.virtualDistance();
 
               double bottomSpeedRps =
-                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(virtualDistance);
-              double topRollerSpeedRps = ShooterConstants.TOP_ROLLER_SPEED_MAP.get(virtualDistance);
+                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(virtualDistance) / 60.0;
+              double topRollerSpeedRps =
+                  ShooterConstants.TOP_ROLLER_SPEED_MAP.get(virtualDistance) / 60.0;
 
               // Store target velocities for at-speed detection
               m_targetMainShooterRps = bottomSpeedRps;
@@ -775,28 +779,37 @@ public class Shooter extends SubsystemBase {
   }
 
   /**
-   * Creates a command for tuning mode. When the Shooter/Tuning/Enabled toggle is true, the shooter
-   * runs at the RPM values from Shooter/Tuning/MainShooterRPM and Shooter/Tuning/RollerRPM
-   * (converted to RPS). When the toggle is false, the motors are stopped.
+   * Returns a trigger that is true when tuning mode is enabled via NetworkTables.
+   *
+   * @return the tuning enabled trigger
+   */
+  public Trigger tuningEnabledTrigger() {
+    return m_tuningEnabledTrigger;
+  }
+
+  /**
+   * Creates a command for tuning mode. Runs the shooter at the RPM values from
+   * Shooter/Tuning/MainShooterRPM and Shooter/Tuning/RollerRPM. Use with tuningEnabledTrigger() to
+   * schedule based on the Enabled entry.
    *
    * @return A command that runs the shooter in tuning mode.
    */
   public Command tuningCommand() {
     return this.run(
             () -> {
-              if (m_tuningEnabledSub.get()) {
-                double mainRps = m_tuningMainShooterRpsSub.get() / 60.0;
-                double rollerRps = m_tuningRollerRpsSub.get() / 60.0;
-                m_targetMainShooterRps = mainRps;
-                m_targetRollerRps = rollerRps;
-                m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
-                m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
-              } else {
-                m_targetMainShooterRps = 0.0;
-                m_targetRollerRps = 0.0;
-                m_shooterMotorRight.setControl(m_neutralRequest);
-                m_shooterMotorTopRoller.setControl(m_neutralRequest);
-              }
+              double mainRps = m_tuningMainShooterRpsSub.get() / 60.0;
+              double rollerRps = m_tuningRollerRpsSub.get() / 60.0;
+              m_targetMainShooterRps = mainRps;
+              m_targetRollerRps = rollerRps;
+              m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
+              m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
+            })
+        .finallyDo(
+            () -> {
+              m_targetMainShooterRps = 0.0;
+              m_targetRollerRps = 0.0;
+              m_shooterMotorRight.setControl(m_neutralRequest);
+              m_shooterMotorTopRoller.setControl(m_neutralRequest);
             })
         .withName("ShooterTuning");
   }

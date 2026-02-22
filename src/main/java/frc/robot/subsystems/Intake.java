@@ -50,6 +50,7 @@ import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.util.MechanismVisualizer;
 
@@ -133,6 +134,7 @@ public class Intake extends SubsystemBase {
   // Tuning mode NetworkTables controls
   private final BooleanSubscriber m_tuningEnabledSub;
   private final BooleanPublisher m_tuningEnabledPub;
+  private final Trigger m_tuningEnabledTrigger;
   private final DoubleSubscriber m_tuningPivotPositionSub;
   private final DoublePublisher m_tuningPivotPositionPub;
 
@@ -239,6 +241,7 @@ public class Intake extends SubsystemBase {
     m_tuningEnabledPub = tuningParent.getBooleanTopic("Enabled").publish();
     m_tuningEnabledSub = tuningParent.getBooleanTopic("Enabled").subscribe(false);
     m_tuningEnabledPub.set(false);
+    m_tuningEnabledTrigger = new Trigger(m_tuningEnabledSub::get);
     m_tuningPivotPositionPub = tuningParent.getDoubleTopic("PivotPositionRotations").publish();
     m_tuningPivotPositionSub =
         tuningParent
@@ -593,23 +596,29 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Creates a command for tuning mode. When the Intake/Tuning/Enabled toggle is true, the pivot
-   * moves to the position from Intake/Tuning/PivotPositionRotations. When the toggle is false, the
-   * pivot holds its current position.
+   * Returns a trigger that is true when tuning mode is enabled via NetworkTables.
+   *
+   * @return the tuning enabled trigger
+   */
+  public Trigger tuningEnabledTrigger() {
+    return m_tuningEnabledTrigger;
+  }
+
+  /**
+   * Creates a command for tuning mode. Moves the pivot to the position from
+   * Intake/Tuning/PivotPositionRotations. Use with tuningEnabledTrigger() to schedule based on the
+   * Enabled entry.
    *
    * @return A command that runs the intake in tuning mode.
    */
   public Command tuningCommand() {
     return this.run(
             () -> {
-              if (m_tuningEnabledSub.get()) {
-                double targetPosition = m_tuningPivotPositionSub.get();
-                m_pivotPositionSetpoint = targetPosition;
-                m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPosition));
-              } else {
-                m_pivotMotor.setControl(m_neutralRequest);
-              }
+              double targetPosition = m_tuningPivotPositionSub.get();
+              m_pivotPositionSetpoint = targetPosition;
+              m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPosition));
             })
+        .finallyDo(() -> m_pivotMotor.setControl(m_neutralRequest))
         .withName("IntakeTuning");
   }
 }

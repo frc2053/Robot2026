@@ -14,6 +14,8 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.BooleanSubscriber;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -28,6 +31,7 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Kicker;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Spindexer;
+import frc.robot.util.FuelVisualizer;
 import frc.robot.util.ShootingOnTheFly;
 
 public class RobotContainer {
@@ -60,9 +64,23 @@ public class RobotContainer {
   /* Path follower */
   private final SendableChooser<Command> m_autoChooser;
 
+  // Dashboard toggle for shooting on the fly mode
+  private final BooleanSubscriber m_sotfEnabledSub;
+  private final Trigger m_sotfEnabledTrigger;
+
   public RobotContainer() {
     m_autoChooser = AutoBuilder.buildAutoChooser("");
     SmartDashboard.putData("Auto Mode", m_autoChooser);
+
+    // Initialize SOTF toggle on dashboard
+    SmartDashboard.putBoolean("Shoot On The Move", false);
+    m_sotfEnabledSub =
+        NetworkTableInstance.getDefault()
+            .getTable("SmartDashboard")
+            .getBooleanTopic("Shoot On The Move")
+            .subscribe(false);
+    m_sotfEnabledTrigger = new Trigger(m_sotfEnabledSub::get);
+
     configureBindings();
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
   }
@@ -91,35 +109,37 @@ public class RobotContainer {
     RobotModeTriggers.disabled()
         .whileTrue(m_drivetrain.applyRequest(() -> idle).ignoringDisable(true));
 
-    // Reset the field-centric heading on left bumper press.
-    m_joystick.leftBumper().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
+    // Tuning commands - controlled via NetworkTables Enabled entry:
+    //   Shooter/Tuning/Enabled, MainShooterRPM, RollerRPM, MainShooterGains/*, RollerGains/*
+    //   Intake/Tuning/Enabled, PivotPositionRotations, PivotGains/*
+    m_shooter.tuningEnabledTrigger().whileTrue(m_shooter.tuningCommand());
+    m_intake.tuningEnabledTrigger().whileTrue(m_intake.tuningCommand());
 
-    // Spin up shooter based on distance to goal while holding right bumper
+    // Right trigger: Shoot (spin up, aim, and feed when at speed)
+    // Dashboard toggle "Shoot On The Move" switches between static and SOTF modes
+    // Static mode: spin up based on distance, aim at hub
     m_joystick
-        .rightBumper()
+        .rightTrigger()
+        .and(m_sotfEnabledTrigger.negate())
         .whileTrue(
-            m_shooter.spinUpForDistanceCommand(
-                () -> {
-                  Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
-                  Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
-                  return robotPosition.getDistance(goalPosition);
-                }))
-        .whileFalse(m_shooter.idleVoltage(2.0));
+            m_shooter
+                .spinUpForDistanceCommand(
+                    () -> {
+                      Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+                      Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
+                      return robotPosition.getDistance(goalPosition);
+                    })
+                .alongWith(
+                    m_drivetrain.lookAtPoint(
+                        () -> Constants.FieldSpots.getHubPosition(),
+                        () -> -m_joystick.getLeftY() * m_maxSpeed,
+                        () -> -m_joystick.getLeftX() * m_maxSpeed,
+                        m_maxSpeed * 0.1)));
 
-    // Look at the hub while holding A button (flips based on alliance)
+    // SOTF mode: spin up with velocity compensation, aim at SOTF-calculated point
     m_joystick
-        .a()
-        .whileTrue(
-            m_drivetrain.lookAtPoint(
-                () -> Constants.FieldSpots.getHubPosition(),
-                () -> -m_joystick.getLeftY() * m_maxSpeed,
-                () -> -m_joystick.getLeftX() * m_maxSpeed,
-                m_maxSpeed * 0.1));
-
-    // SHOOTING ON THE FLY: Hold Y to spin up shooter with velocity compensation
-    // and automatically aim at the SOTF-calculated point while driving
-    m_joystick
-        .y()
+        .rightTrigger()
+        .and(m_sotfEnabledTrigger)
         .whileTrue(
             m_shooter
                 .spinUpForSOTFCommand(
@@ -139,23 +159,36 @@ public class RobotContainer {
                         () -> -m_joystick.getLeftX() * m_maxSpeed,
                         m_maxSpeed * 0.1)));
 
-    // Tuning commands - toggle on/off with start (shooter) and X (intake)
-    // Use NetworkTables to set setpoints and enable:
-    //   Shooter/Tuning/Enabled, MainShooterRPM, RollerRPM, MainShooterGains/*, RollerGains/*
-    //   Intake/Tuning/Enabled, PivotPositionRotations, PivotGains/*
-    m_joystick.start().toggleOnTrue(m_shooter.tuningCommand());
-    m_joystick.x().toggleOnTrue(m_intake.tuningCommand());
+    // Idle shooter when not shooting
+    m_joystick.rightTrigger().whileFalse(m_shooter.idleVoltage(2.0));
 
-    // Spindexer: spin while holding right trigger, stop on release
-    m_joystick.rightTrigger().whileTrue(Commands.parallel(m_spindexer.spin(), m_kicker.spin()));
-
-    // Intake: deploy while holding left trigger, stow on release
-    m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
-    m_joystick.leftTrigger().onFalse(m_intake.stowCommand());
-
-    // Climber: D-pad right toggles between extend and retract
+    // Feed when shooter is at speed AND right trigger is held
     m_joystick
-        .povRight()
+        .rightTrigger()
+        .and(m_shooter.atSpeedTrigger())
+        .whileTrue(
+            Commands.parallel(
+                m_spindexer.spin(),
+                m_kicker.spin(),
+                Commands.run(
+                    () -> {
+                      Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+                      Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
+                      double distance = robotPosition.getDistance(hubPosition);
+                      FuelVisualizer.trySpawnFuel(
+                          m_drivetrain.getState().Pose, hubPosition, distance);
+                    })));
+
+    // Reset field-centric heading on back button press
+    m_joystick.back().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
+
+    // Intake: deploy while holding left trigger, stow on left bumper
+    m_joystick.leftTrigger().onTrue(m_intake.deployCommand());
+    m_joystick.leftBumper().onTrue(m_intake.stowCommand());
+
+    // Climber: D-pad up toggles between extend and retract
+    m_joystick
+        .povUp()
         .onTrue(
             Commands.either(
                 m_climber.retractCommand().until(m_climber::atPosition),
@@ -175,9 +208,9 @@ public class RobotContainer {
    *
    * @return Field-relative ChassisSpeeds.
    */
-    private ChassisSpeeds fieldRelativeSpeeds() {
-      ChassisSpeeds robotRelative = m_drivetrain.getState().Speeds;
-      return ChassisSpeeds.fromRobotRelativeSpeeds(
-          robotRelative, m_drivetrain.getState().Pose.getRotation());
-    }
+  private ChassisSpeeds fieldRelativeSpeeds() {
+    ChassisSpeeds robotRelative = m_drivetrain.getState().Speeds;
+    return ChassisSpeeds.fromRobotRelativeSpeeds(
+        robotRelative, m_drivetrain.getState().Pose.getRotation());
+  }
 }

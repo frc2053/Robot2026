@@ -308,4 +308,17 @@ public final class Constants {
     public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(4, 4, 8);
     public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(0.5, 0.5, 1);
   }
+
+  public static final class FuelConstants {
+    private FuelConstants() {}
+
+    // Shooter position offset from robot center (robot-relative)
+    // X = forward, Y = left, Z = up
+    public static final Translation3d kShooterOffset =
+        new Translation3d(
+            Units.inchesToMeters(-7.72), Units.inchesToMeters(5.4604), Units.inchesToMeters(22.99));
+
+    // Target height (hub opening height in meters)
+    public static final double kTargetHeight = Units.feetToMeters(6.0);
+  }
 }
