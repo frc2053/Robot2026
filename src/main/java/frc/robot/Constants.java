@@ -230,15 +230,57 @@ public final class Constants {
     public static final double kPivotPositionToleranceRotations = 0.02;
   }
 
+  public static class ClimberConstants {
+    public static final int CLIMBER_MOTOR_ID = 22;
+
+    public static final int CLIMBER_SUPPLY_LIMIT = 60;
+    public static final int CLIMBER_STATOR_LIMIT = 120;
+
+    // Gear ratio (81:1)
+    public static final double CLIMBER_GEAR_RATIO = 81.0;
+
+    // Total travel distance
+    public static final double kMaxHeightMeters = Units.inchesToMeters(5.0);
+    public static final double kMinHeightMeters = 0.0;
+
+    // Drum radius for converting rotations to linear distance (0.75 inch diameter)
+    public static final double kDrumRadiusMeters = Units.inchesToMeters(0.375);
+
+    // Position constants (in meters)
+    public static final double kRetractedPosition = 0.0;
+    public static final double kExtendedPosition = Units.inchesToMeters(5);
+
+    // Climber PID constants (Slot 0)
+    public static final double kClimberKS = 0.0;
+    public static final double kClimberKG = 0.0;
+    public static final double kClimberKV = 0.0;
+    public static final double kClimberKA = 0.0;
+    public static final double kClimberKP = 0.0;
+    public static final double kClimberKI = 0.0;
+    public static final double kClimberKD = 0.0;
+    public static final double kClimberMotionMagicCruiseVelocity = 10.0; // rotations per second
+    public static final double kClimberMotionMagicAcceleration = 20.0; // rotations per second^2
+
+    // Simulation constants
+    // Light load when extending up (just the climber hook/carriage)
+    public static final double CLIMBER_CARRIAGE_MASS_KG = Units.lbsToKilograms(2.0);
+    // Heavy load when climbing (lifting the robot)
+    public static final double CLIMBER_ROBOT_MASS_KG = Units.lbsToKilograms(200.0);
+
+    // Position tolerance for "at position" detection (meters)
+    public static final double kPositionToleranceMeters = 0.005;
+
+    // Climb voltage for manual control
+    public static final double kClimbVoltage = 12.0;
+    public static final double kRetractVoltage = -12.0;
+  }
+
   public static class VisionConstants {
     public static final String kFrontCameraName = "FrontCamera";
     public static final String kSideCameraName = "SideCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
-            new Translation3d(
-                -0.0887618,
-                0.037973,
-                0.6394273),
+            new Translation3d(-0.0887618, 0.037973, 0.6394273),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
     public static final Transform3d kSideRobotToCam =
         new Transform3d(

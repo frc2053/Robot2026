@@ -318,7 +318,7 @@ public class Intake extends SubsystemBase {
     }
 
     // Set initial position to stowed
-    //m_pivotMotor.setPosition(IntakeConstants.kPivotStowedPosition);
+    // m_pivotMotor.setPosition(IntakeConstants.kPivotStowedPosition);
   }
 
   private void configureRollerMotor() {

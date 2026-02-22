@@ -17,6 +17,7 @@ public final class MechanismVisualizer {
 
   /** Indices for each mechanism in the poses array. */
   public static final int INTAKE_INDEX = 0;
+
   public static final int HOPPER_INDEX = 1;
   public static final int CLIMBER_INDEX = 2;
 
