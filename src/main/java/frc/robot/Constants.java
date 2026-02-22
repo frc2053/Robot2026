@@ -129,9 +129,9 @@ public final class Constants {
 
     static {
       // Bottom shooter speeds (distance in meters -> speed in RPM)
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(5), 4000.0); 
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(6), 4500.0); 
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(7), 4500.0); 
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(5), 4000.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(6), 4500.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(7), 4500.0);
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(8), 4700.0);
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(9), 4700.0);
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(10), 5000.0);

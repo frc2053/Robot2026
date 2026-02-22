@@ -531,7 +531,8 @@ public class Climber extends SubsystemBase {
    */
   public boolean isExtended() {
     double currentPosition = rotationsToMeters(m_motorPosition.getValue().in(Rotations));
-    double midpoint = (ClimberConstants.kExtendedPosition + ClimberConstants.kRetractedPosition) / 2;
+    double midpoint =
+        (ClimberConstants.kExtendedPosition + ClimberConstants.kRetractedPosition) / 2;
     return currentPosition > midpoint;
   }
 
