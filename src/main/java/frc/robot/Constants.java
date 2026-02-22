@@ -128,30 +128,43 @@ public final class Constants {
     public static final double kVelocityUncertainty = 0.3;
 
     static {
-      // Bottom shooter speeds (distance in meters -> speed in RPS)
-      // TODO: Tune these values based on testing
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(39.37), 30.0); // ~1m
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(78.74), 40.0); // ~2m
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(118.11), 50.0); // ~3m
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(157.48), 60.0); // ~4m
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.inchesToMeters(196.85), 70.0); // ~5m
+      // Bottom shooter speeds (distance in meters -> speed in RPM)
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(5), 4000.0); 
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(6), 4500.0); 
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(7), 4500.0); 
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(8), 4700.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(9), 4700.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(10), 5000.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(11), 5100.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(12), 5200.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(13), 5200.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(14), 5300.0);
 
-      // Top roller speeds (distance in meters -> speed in RPS)
-      // TODO: Tune these values based on testing
-      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(39.37), 25.0); // ~1m
-      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(78.74), 35.0); // ~2m
-      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(118.11), 45.0); // ~3m
-      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(157.48), 55.0); // ~4m
-      TOP_ROLLER_SPEED_MAP.put(Units.inchesToMeters(196.85), 65.0); // ~5m
+      // Top roller speeds (distance in meters -> speed in RPM)
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(5), -3500.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(6), -3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(7), -3700.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(8), -3700.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(9), -3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(10), -3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(11), -3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(12), -3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(13), -3400.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(14), -3500.0);
 
-      // Time of flight values (distance in meters -> flight time in seconds)
-      // TODO: Measure these by recording shots at each distance with a phone camera
+      // Time of flight values (distance in feet -> flight time in seconds)
       // Count frames from ball leaving shooter to reaching goal, divide by framerate
-      TIME_OF_FLIGHT_MAP.put(1.0, 0.40); // 1m
-      TIME_OF_FLIGHT_MAP.put(2.0, 0.50); // 2m
-      TIME_OF_FLIGHT_MAP.put(3.0, 0.62); // 3m
-      TIME_OF_FLIGHT_MAP.put(4.0, 0.75); // 4m
-      TIME_OF_FLIGHT_MAP.put(5.0, 0.90); // 5m
+      // TODO: Tune these values based on testing with actual robot and camera
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(5), 0.40);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(6), 0.50);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(7), 0.62);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(8), 0.75);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(9), 0.90);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(10), 1.0);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(11), 1.1);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(12), 1.2);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(13), 1.3);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(14), 1.4);
     }
   }
 
