@@ -26,6 +26,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -249,6 +250,9 @@ public class Intake extends SubsystemBase {
     m_pivotSimState = m_pivotMotor.getSimState();
     m_rollerSimState = m_rollerMotor.getSimState();
 
+    // Set pivot sim orientation to match motor invert (Clockwise_Positive)
+    m_pivotSimState.Orientation = ChassisReference.Clockwise_Positive;
+
     // Pivot arm simulation (single jointed arm)
     m_pivotSim =
         new SingleJointedArmSim(
@@ -259,7 +263,7 @@ public class Intake extends SubsystemBase {
             Units.degreesToRadians(-10), // Min angle (slightly past stowed)
             Units.degreesToRadians(100), // Max angle (past deployed)
             true, // Simulate gravity
-            Units.degreesToRadians(0)); // Starting angle
+            Units.rotationsToRadians(0)); // Starting angle (stowed)
 
     // Roller flywheel simulation
     m_rollerSim =
@@ -314,7 +318,7 @@ public class Intake extends SubsystemBase {
     }
 
     // Set initial position to stowed
-    m_pivotMotor.setPosition(IntakeConstants.kPivotStowedPosition);
+    //m_pivotMotor.setPosition(IntakeConstants.kPivotStowedPosition);
   }
 
   private void configureRollerMotor() {
@@ -376,7 +380,17 @@ public class Intake extends SubsystemBase {
             Units.inchesToMeters(7.8296),
             0,
             Units.inchesToMeters(11.25),
-            new Rotation3d(0, -pivotAngleRad, 0)));
+            new Rotation3d(0, -pivotAngleRad + Units.degreesToRadians(102.2053), 0)));
+
+    // Update hopper pose based on intake contact point position
+    double contactDistanceMeters = Units.inchesToMeters(9.755401);
+    double pivotXMeters = Units.inchesToMeters(7.8296);
+    double actualAngle = -pivotAngleRad + Units.degreesToRadians(102.2053);
+    double contactX = pivotXMeters + contactDistanceMeters * Math.cos(actualAngle);
+    // Invert so hopper extends when intake deploys
+    double hopperX = (pivotXMeters + contactDistanceMeters) - contactX;
+    MechanismVisualizer.setPose(
+        MechanismVisualizer.HOPPER_INDEX, new Pose3d(hopperX, 0, 0, new Rotation3d()));
 
     // Check for tuning updates and apply if changed
     updateTunableGains();
