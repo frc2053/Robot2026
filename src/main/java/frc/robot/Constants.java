@@ -212,8 +212,8 @@ public final class Constants {
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
     // Pivot position constants (in rotations at mechanism)
-    public static final double kPivotDeployedPosition = 0.0;
-    public static final double kPivotStowedPosition = 0.25;
+    public static final double kPivotDeployedPosition = -0.048828;
+    public static final double kPivotStowedPosition = 0.243896;
 
     // Pivot PID constants (Slot 0)
     public static final double kPivotKS = 0.0;
