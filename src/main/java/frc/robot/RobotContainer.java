@@ -12,10 +12,16 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.BooleanSubscriber;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -24,6 +30,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Constants.FuelConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -50,6 +57,10 @@ public class RobotContainer {
               DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
   private final Telemetry m_logger = new Telemetry(m_maxSpeed);
+
+  /** Publisher for distance to goal (lookup table reference frame, in meters). */
+  private final DoublePublisher m_distanceToGoalPub =
+      NetworkTableInstance.getDefault().getDoubleTopic("Shooter/DistanceToGoal").publish();
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
@@ -115,30 +126,65 @@ public class RobotContainer {
     m_shooter.tuningEnabledTrigger().whileTrue(m_shooter.tuningCommand());
     m_intake.tuningEnabledTrigger().whileTrue(m_intake.tuningCommand());
 
-    // Right trigger: Shoot (spin up, aim, and feed when at speed)
+    // Left trigger: Shoot (spin up, aim)
     // Dashboard toggle "Shoot On The Move" switches between static and SOTF modes
     // Static mode: spin up based on distance, aim at hub
     m_joystick
-        .rightTrigger()
+        .leftTrigger()
         .and(m_sotfEnabledTrigger.negate())
         .whileTrue(
             m_shooter
                 .spinUpForDistanceCommand(
                     () -> {
-                      Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+                      // Calculate distance from shooter position to goal (with lookup table offset)
+                      Pose2d robotPose = m_drivetrain.getState().Pose;
+                      Translation2d shooterOffset2d =
+                          new Translation2d(
+                              FuelConstants.kShooterOffset.getX(),
+                              FuelConstants.kShooterOffset.getY());
+                      Translation2d shooterPosition =
+                          robotPose
+                              .getTranslation()
+                              .plus(shooterOffset2d.rotateBy(robotPose.getRotation()));
                       Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
-                      return robotPosition.getDistance(goalPosition);
+                      double realDistance = shooterPosition.getDistance(goalPosition);
+                      // Convert to lookup table reference frame
+                      double lookupDistance =
+                          Math.max(0, realDistance - FuelConstants.kLookupTableDistanceOffset);
+                      m_distanceToGoalPub.set(lookupDistance);
+                      return lookupDistance;
                     })
                 .alongWith(
                     m_drivetrain.lookAtPoint(
-                        () -> Constants.FieldSpots.getHubPosition(),
+                        () -> {
+                          Pose2d robotPose = m_drivetrain.getState().Pose;
+                          Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
+
+                          // Calculate shooter position (accounting for offset from robot center)
+                          Translation2d shooterOffset2d =
+                              new Translation2d(
+                                  FuelConstants.kShooterOffset.getX(),
+                                  FuelConstants.kShooterOffset.getY());
+                          Translation2d shooterPosition =
+                              robotPose
+                                  .getTranslation()
+                                  .plus(shooterOffset2d.rotateBy(robotPose.getRotation()));
+
+                          // Calculate aim angle from shooter to goal, project from robot center
+                          Rotation2d aimAngle = goalPosition.minus(shooterPosition).getAngle();
+                          return robotPose
+                              .getTranslation()
+                              .plus(
+                                  new Translation2d(aimAngle.getCos(), aimAngle.getSin())
+                                      .times(10.0));
+                        },
                         () -> -m_joystick.getLeftY() * m_maxSpeed,
                         () -> -m_joystick.getLeftX() * m_maxSpeed,
                         m_maxSpeed * 0.1)));
 
     // SOTF mode: spin up with velocity compensation, aim at SOTF-calculated point
     m_joystick
-        .rightTrigger()
+        .leftTrigger()
         .and(m_sotfEnabledTrigger)
         .whileTrue(
             m_shooter

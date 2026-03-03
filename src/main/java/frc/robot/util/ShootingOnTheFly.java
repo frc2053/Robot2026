@@ -5,10 +5,15 @@
 package frc.robot.util;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
+import frc.robot.Constants.FuelConstants;
 
 /**
  * Utility class for calculating Shooting On The Fly (SOTF) adjustments using iterative
@@ -90,12 +95,18 @@ public final class ShootingOnTheFly {
     Translation2d robotVelocity =
         new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond);
 
-    // Project robot position forward to compensate for system latency
-    Translation2d futurePosition =
-        robotPose.getTranslation().plus(robotVelocity.times(latencyCompensation));
+    // Calculate shooter position in field coordinates (accounting for lateral offset)
+    Translation2d shooterOffset2d =
+        new Translation2d(FuelConstants.kShooterOffset.getX(), FuelConstants.kShooterOffset.getY());
+    Translation2d shooterPosition =
+        robotPose.getTranslation().plus(shooterOffset2d.rotateBy(robotPose.getRotation()));
 
-    // Vector from (latency-compensated) robot to goal — this is our base displacement
-    Translation2d toGoal = goalPosition.minus(futurePosition);
+    // Project shooter position forward to compensate for system latency
+    Translation2d futureShooterPosition =
+        shooterPosition.plus(robotVelocity.times(latencyCompensation));
+
+    // Vector from (latency-compensated) shooter to goal — this is our base displacement
+    Translation2d toGoal = goalPosition.minus(futureShooterPosition);
     double staticDistance = toGoal.getNorm();
 
     // Degenerate case: very close to goal
@@ -105,7 +116,10 @@ public final class ShootingOnTheFly {
     }
 
     // Step 1: Initial TOF guess from the static distance
-    double tof = timeOfFlightMap.get(staticDistance);
+    // Subtract lookup table offset to convert from shooter-to-goal-center to table reference frame
+    // (table was measured from front of robot to front of hub)
+    double lookupDistance = Math.max(0, staticDistance - FuelConstants.kLookupTableDistanceOffset);
+    double tof = timeOfFlightMap.get(lookupDistance);
 
     // Step 2-4: Iterate — offset goal by velocity * TOF, look up new TOF, repeat
     int iterations = 0;
@@ -115,12 +129,14 @@ public final class ShootingOnTheFly {
     for (int i = 0; i < kMaxIterations; i++) {
       // Virtual target: offset the goal opposite to the robot's motion over the TOF
       // d(tau) = (goal - robot) - v * tau
-      Translation2d virtualTargetOffset = futurePosition.plus(robotVelocity.times(tof));
+      Translation2d virtualTargetOffset = futureShooterPosition.plus(robotVelocity.times(tof));
       Translation2d toVirtualTarget = goalPosition.minus(virtualTargetOffset);
       double virtualDistance = toVirtualTarget.getNorm();
 
-      // Look up the TOF for this virtual distance
-      double newTof = timeOfFlightMap.get(virtualDistance);
+      // Look up the TOF for this virtual distance (with table offset correction)
+      double virtualLookupDistance =
+          Math.max(0, virtualDistance - FuelConstants.kLookupTableDistanceOffset);
+      double newTof = timeOfFlightMap.get(virtualLookupDistance);
       double tofStep = Math.abs(newTof - tof);
 
       // Track the last two steps for contraction factor
@@ -137,7 +153,7 @@ public final class ShootingOnTheFly {
     }
 
     // Compute the final virtual target with the converged TOF
-    Translation2d finalVirtualOffset = futurePosition.plus(robotVelocity.times(tof));
+    Translation2d finalVirtualOffset = futureShooterPosition.plus(robotVelocity.times(tof));
     Translation2d toFinalVirtualTarget = goalPosition.minus(finalVirtualOffset);
     double finalVirtualDistance = toFinalVirtualTarget.getNorm();
 
@@ -189,16 +205,18 @@ public final class ShootingOnTheFly {
     SOTFResult result =
         calculate(robotPose, robotSpeeds, goalPosition, latencyCompensation, timeOfFlightMap, 0.0);
 
-    // Project a point far along the aiming direction so lookAtPoint gets the correct angle
-    Translation2d futurePosition =
+    // Project robot center forward for latency compensation
+    Translation2d futureRobotPosition =
         robotPose
             .getTranslation()
             .plus(
                 new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
                     .times(latencyCompensation));
 
+    // Return a point along the aiming direction from ROBOT CENTER (not shooter)
+    // so lookAtPoint calculates the correct heading
     Translation2d aimingDirection =
         new Translation2d(result.aimingAngle().getCos(), result.aimingAngle().getSin());
-    return futurePosition.plus(aimingDirection.times(10.0));
+    return futureRobotPosition.plus(aimingDirection.times(10.0));
   }
 }
