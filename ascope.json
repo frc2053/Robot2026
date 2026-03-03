@@ -1,10 +1,10 @@
 {
   "hubs": [
     {
-      "x": 1271,
-      "y": 184,
-      "width": 2146,
-      "height": 1240,
+      "x": -2568,
+      "y": -8,
+      "width": 2576,
+      "height": 1408,
       "state": {
         "sidebar": {
           "width": 300,
@@ -861,5 +861,5 @@
     }
   ],
   "satellites": [],
-  "version": "26.0.0"
+  "version": "26.0.1"
 }

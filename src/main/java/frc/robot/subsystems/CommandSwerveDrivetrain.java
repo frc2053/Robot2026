@@ -32,6 +32,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
+import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 import java.io.IOException;
@@ -415,5 +416,45 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   @Override
   public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
     return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
+  }
+
+  /**
+   * Gets the shooter position on the field, accounting for robot pose and shooter offset.
+   *
+   * @return the shooter position as a Translation2d.
+   */
+  public Translation2d getShooterPosition() {
+    Pose2d robotPose = getState().Pose;
+    Translation2d shooterOffset2d =
+        new Translation2d(FuelConstants.kShooterOffset.getX(), FuelConstants.kShooterOffset.getY());
+    return robotPose.getTranslation().plus(shooterOffset2d.rotateBy(robotPose.getRotation()));
+  }
+
+  /**
+   * Gets the distance from the shooter to the goal center for lookup table purposes.
+   *
+   * @return the lookup table distance in meters.
+   */
+  public double getLookupDistanceToGoal() {
+    Translation2d shooterPosition = getShooterPosition();
+    Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
+    double realDistance = shooterPosition.getDistance(goalPosition);
+    return Math.max(0, realDistance - FuelConstants.kLookupTableDistanceOffset);
+  }
+
+  /**
+   * Gets the aim point for looking at the goal. This projects the shooter-to-goal angle from the
+   * robot center to give a point 10m away that the drivetrain can aim at.
+   *
+   * @return the aim point as a Translation2d.
+   */
+  public Translation2d getGoalAimPoint() {
+    Pose2d robotPose = getState().Pose;
+    Translation2d shooterPosition = getShooterPosition();
+    Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
+    Rotation2d aimAngle = goalPosition.minus(shooterPosition).getAngle();
+    return robotPose
+        .getTranslation()
+        .plus(new Translation2d(aimAngle.getCos(), aimAngle.getSin()).times(10.0));
   }
 }
