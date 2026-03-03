@@ -317,9 +317,22 @@ public final class Constants {
     // X = forward, Y = left, Z = up
     public static final Translation3d kShooterOffset =
         new Translation3d(
-            Units.inchesToMeters(-7.72), Units.inchesToMeters(5.4604), Units.inchesToMeters(22.99));
+            Units.inchesToMeters(-7.72),
+            Units.inchesToMeters(6.720000),
+            Units.inchesToMeters(22.99));
 
     // Target height (hub opening height in meters)
     public static final double kTargetHeight = Units.feetToMeters(6.0);
+
+    // Robot frame dimensions
+    public static final double kHalfRobotLength = Units.inchesToMeters(13.25);
+
+    // Hub geometry (front face to aim point center)
+    public static final double kHubFrontToCenter = Units.inchesToMeters(23.51378);
+
+    // Lookup table distance offset
+    // Our table was measured from front of robot to front of hub,
+    // so we add this to convert to shooter-to-goal-center distance
+    public static final double kLookupTableDistanceOffset = kHalfRobotLength + kHubFrontToCenter;
   }
 }
