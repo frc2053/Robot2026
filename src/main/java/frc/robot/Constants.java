@@ -205,22 +205,22 @@ public final class Constants {
     public static final int PIVOT_SUPPLY_LIMIT = 40;
     public static final int PIVOT_STATOR_LIMIT = 60;
     public static final int ROLLER_SUPPLY_LIMIT = 40;
-    public static final int ROLLER_STATOR_LIMIT = 60;
+    public static final int ROLLER_STATOR_LIMIT = 80;
 
     // Gear ratios
     public static final double PIVOT_GEAR_RATIO = 56.0;
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
     // Pivot position constants (in rotations at mechanism)
-    public static final double kPivotDeployedPosition = -0.048828;
-    public static final double kPivotStowedPosition = 0.243896;
+    public static final double kPivotDeployedPosition = -0.293213;
+    public static final double kPivotStowedPosition = -0.003662;
 
     // Pivot PID constants (Slot 0)
-    public static final double kPivotKS = 0.0;
+    public static final double kPivotKS = 0.1;
     public static final double kPivotKG = 0.0;
     public static final double kPivotKV = 0.0;
     public static final double kPivotKA = 0.0;
-    public static final double kPivotKP = 0;
+    public static final double kPivotKP = 32.0;
     public static final double kPivotKI = 0.0;
     public static final double kPivotKD = 0.0;
     public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
@@ -228,6 +228,7 @@ public final class Constants {
 
     // Roller voltage for intaking
     public static final double kIntakeVoltage = 8.0;
+    public static final double nonheldVoltage = 0.0;
     public static final double kEjectVoltage = -6.0;
 
     // Simulation constants (from CAD)
