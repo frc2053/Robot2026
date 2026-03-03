@@ -291,15 +291,10 @@ public final class Constants {
 
   public static class VisionConstants {
     public static final String kFrontCameraName = "FrontCamera";
-    public static final String kSideCameraName = "SideCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
             new Translation3d(-0.0887618, 0.037973, 0.6394273),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
-    public static final Transform3d kSideRobotToCam =
-        new Transform3d(
-            new Translation3d(-0.342138, 0.342138, 0.7112),
-            new Rotation3d(0, Units.degreesToRadians(-15), Units.degreesToRadians(-90)));
     // The layout of the AprilTags on the field
     public static final AprilTagFieldLayout kTagLayout =
         AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
