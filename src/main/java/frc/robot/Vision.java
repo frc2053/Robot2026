@@ -31,7 +31,6 @@ import edu.wpi.first.math.geometry.Pose3d;
 
 public class Vision {
   private final Camera m_frontCamera;
-  private final Camera m_sideCamera;
 
   /**
    * Creates a new Vision instance.
@@ -48,15 +47,6 @@ public class Vision {
             VisionConstants.kMultiTagStdDevs,
             true,
             estConsumer);
-
-    m_sideCamera =
-        new Camera(
-            VisionConstants.kSideCameraName,
-            VisionConstants.kSideRobotToCam,
-            VisionConstants.kSingleTagStdDevs,
-            VisionConstants.kMultiTagStdDevs,
-            true,
-            estConsumer);
   }
 
   /**
@@ -66,7 +56,6 @@ public class Vision {
    */
   public void periodic(Pose3d robotPose) {
     m_frontCamera.updatePoseEstimator(robotPose);
-    m_sideCamera.updatePoseEstimator(robotPose);
   }
 
   /**
@@ -76,6 +65,5 @@ public class Vision {
    */
   public void simulationPeriodic(Pose2d robotSimPose) {
     m_frontCamera.simPeriodic(robotSimPose);
-    m_sideCamera.simPeriodic(robotSimPose);
   }
 }

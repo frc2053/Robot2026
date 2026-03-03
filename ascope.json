@@ -187,27 +187,10 @@
                   },
                   {
                     "type": "axes",
-                    "logKey": "NT:/Vision/SideCameratargetPoses",
-                    "logType": "Pose3d[]",
-                    "visible": true,
-                    "options": {}
-                  },
-                  {
-                    "type": "axes",
                     "logKey": "NT:/Vision/FrontCameratargetPoses",
                     "logType": "Pose3d[]",
                     "visible": true,
                     "options": {}
-                  },
-                  {
-                    "type": "ghost",
-                    "logKey": "NT:/Vision/SideCameraPoseEstimation",
-                    "logType": "Pose2d",
-                    "visible": false,
-                    "options": {
-                      "model": "Robot_2053",
-                      "color": "#ff00ff"
-                    }
                   },
                   {
                     "type": "cone",
@@ -828,16 +811,6 @@
                   {
                     "type": "plus",
                     "logKey": "NT:/Vision/FrontCameratargetCorners",
-                    "logType": "Translation2d[]",
-                    "visible": true,
-                    "options": {
-                      "size": "medium",
-                      "groupSize": "0"
-                    }
-                  },
-                  {
-                    "type": "circle",
-                    "logKey": "NT:/Vision/SideCameratargetCorners",
                     "logType": "Translation2d[]",
                     "visible": true,
                     "options": {
