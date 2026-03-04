@@ -524,6 +524,35 @@ public class Intake extends SubsystemBase {
         .withName("StowIntake");
   }
 
+  public Command runRollers(){
+    return this.run(
+            () -> {
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+            })
+        .finallyDo(
+            () -> {
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("RunIntakeRollers");
+  }
+    public Command runRollersReverse(){
+    return this.run(
+            () -> {
+              m_rollerVoltageSetpoint = -IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(-IntakeConstants.kIntakeVoltage));
+            })
+        .finallyDo(
+            () -> {
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("RunIntakeRollersReverse");
+  }
+
   /**
    * Creates a command to eject game pieces (run rollers in reverse).
    *
