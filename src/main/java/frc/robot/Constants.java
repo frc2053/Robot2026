@@ -290,7 +290,7 @@ public final class Constants {
   }
 
   public static class VisionConstants {
-    public static final String kFrontCameraName = "FrontCamera";
+    public static final String kFrontCameraName = "UpperPortCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
             new Translation3d(-0.0887618, 0.037973, 0.6394273),
