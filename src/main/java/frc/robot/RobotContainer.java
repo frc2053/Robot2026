@@ -190,11 +190,11 @@ public class RobotContainer {
     m_joystick.back().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
 
     // Intake: deploy while holding left trigger, stow on left bumper
-    m_joystick.leftTrigger().onTrue(m_intake.deployCommand());
+    m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
     m_joystick.leftBumper().onTrue(m_intake.stowCommand());
 
-    m_joystick.x().onTrue(m_intake.runRollers());
-    m_joystick.y().onTrue(m_intake.runRollersReverse());
+    m_joystick.x().whileTrue(m_intake.runRollers());
+    m_joystick.y().whileTrue(m_intake.runRollersReverse());
     
 
     // Climber: D-pad up toggles between extend and retract
