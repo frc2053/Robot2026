@@ -12,7 +12,6 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
-
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.BooleanSubscriber;
@@ -125,7 +124,7 @@ public class RobotContainer {
     // Dashboard toggle "Shoot On The Move" switches between static and SOTF modes
     // Static mode: spin up based on distance, aim at hub
     m_joystick
-        .leftTrigger()
+        .rightBumper()
         .and(m_sotfEnabledTrigger.negate())
         .whileTrue(
             m_shooter
@@ -144,7 +143,7 @@ public class RobotContainer {
 
     // SOTF mode: spin up with velocity compensation, aim at SOTF-calculated point
     m_joystick
-        .leftTrigger()
+        .rightBumper()
         .and(m_sotfEnabledTrigger)
         .whileTrue(
             m_shooter
@@ -171,7 +170,6 @@ public class RobotContainer {
     // Feed when shooter is at speed AND right trigger is held
     m_joystick
         .rightTrigger()
-        .or(m_joystick.rightBumper())
         .and(m_shooter.atSpeedTrigger())
         .whileTrue(
             Commands.parallel(
@@ -191,11 +189,9 @@ public class RobotContainer {
 
     // Intake: deploy while holding left trigger, stow on left bumper
     m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
-    m_joystick.leftBumper().onTrue(m_intake.stowCommand());
-
-    m_joystick.x().whileTrue(m_intake.runRollers());
+    m_joystick.a().onTrue(m_intake.stowCommand());
+    m_joystick.x().onTrue(m_intake.deployOnly());
     m_joystick.y().whileTrue(m_intake.runRollersReverse());
-    
 
     // Climber: D-pad up toggles between extend and retract
     m_joystick
