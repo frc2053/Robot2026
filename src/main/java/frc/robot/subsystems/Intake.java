@@ -106,6 +106,9 @@ public class Intake extends SubsystemBase {
   private double m_pivotPositionSetpoint;
   private double m_rollerVoltageSetpoint;
 
+  // State variable for feedingWigglePivotCommand oscillation direction
+  private boolean m_wiggleGoingToTop = false;
+
   // Tunable gains for pivot
   private final DoubleSubscriber m_pivotKSSub;
   private final DoubleSubscriber m_pivotKGSub;
@@ -647,6 +650,42 @@ public class Intake extends SubsystemBase {
    */
   public Trigger tuningEnabledTrigger() {
     return m_tuningEnabledTrigger;
+  }
+
+  /**
+   * Creates a command that continuously wiggles the pivot between the deployed position and 20
+   * degrees above it while feeding. Returns the pivot to the deployed position when the command
+   * ends.
+   *
+   * @return A command that wiggles the pivot during feeding.
+   */
+  public Command feedingWigglePivotCommand() {
+    return this.run(
+            () -> {
+              double targetPos =
+                  m_wiggleGoingToTop
+                      ? IntakeConstants.kPivotDeployedPosition
+                          + IntakeConstants.kPivotFeedingWiggleOffset
+                      : IntakeConstants.kPivotDeployedPosition;
+              m_pivotPositionSetpoint = targetPos;
+              m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPos));
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              if (atPosition()) {
+                m_wiggleGoingToTop = !m_wiggleGoingToTop;
+              }
+            })
+        .beforeStarting(() -> m_wiggleGoingToTop = false)
+        .finallyDo(
+            () -> {
+              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
+              m_pivotMotor.setControl(
+                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("FeedingWigglePivot");
   }
 
   /**
