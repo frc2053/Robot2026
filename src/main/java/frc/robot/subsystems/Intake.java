@@ -53,7 +53,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.util.MechanismVisualizer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Intake subsystem with a pivot arm and roller motor. */
 public class Intake extends SubsystemBase {
@@ -106,6 +105,9 @@ public class Intake extends SubsystemBase {
   // Track setpoints for logging
   private double m_pivotPositionSetpoint;
   private double m_rollerVoltageSetpoint;
+
+  // State variable for feedingWigglePivotCommand oscillation direction
+  private boolean m_wiggleGoingToTop = false;
 
   // Tunable gains for pivot
   private final DoubleSubscriber m_pivotKSSub;
@@ -658,26 +660,30 @@ public class Intake extends SubsystemBase {
    * @return A command that wiggles the pivot during feeding.
    */
   public Command feedingWigglePivotCommand() {
-    AtomicBoolean goingToTop = new AtomicBoolean(false);
     return this.run(
             () -> {
               double targetPos =
-                  goingToTop.get()
+                  m_wiggleGoingToTop
                       ? IntakeConstants.kPivotDeployedPosition
                           + IntakeConstants.kPivotFeedingWiggleOffset
                       : IntakeConstants.kPivotDeployedPosition;
               m_pivotPositionSetpoint = targetPos;
               m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPos));
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
               if (atPosition()) {
-                goingToTop.set(!goingToTop.get());
+                m_wiggleGoingToTop = !m_wiggleGoingToTop;
               }
             })
-        .beforeStarting(() -> goingToTop.set(false))
+        .beforeStarting(() -> m_wiggleGoingToTop = false)
         .finallyDo(
             () -> {
               m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
               m_pivotMotor.setControl(
                   m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
             })
         .withName("FeedingWigglePivot");
   }
