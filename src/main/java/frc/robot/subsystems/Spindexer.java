@@ -223,4 +223,13 @@ public class Spindexer extends SubsystemBase {
             })
         .withName("Spin");
   }
+
+  public Command stop() {
+    return this.runOnce(
+            () -> {
+              m_currentVoltageSetpoint = 0.0;
+              m_spindexerMotor.setControl(m_voltageRequest.withOutput(0));
+            })
+        .withName("Stop Spindexer");
+  }
 }
