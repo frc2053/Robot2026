@@ -167,11 +167,10 @@ public class RobotContainer {
     // Idle shooter when not shooting
     m_joystick.rightTrigger().whileFalse(m_shooter.idleVoltage(2.0));
 
+    Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
-    m_joystick
-        .rightTrigger()
-        .and(m_shooter.atSpeedTrigger())
-        .whileTrue(
+    actuallyShoot
+        .onTrue(
             Commands.parallel(
                 m_spindexer.spin(),
                 m_kicker.spin(),
@@ -183,6 +182,8 @@ public class RobotContainer {
                       FuelVisualizer.trySpawnFuel(
                           m_drivetrain.getState().Pose, hubPosition, distance);
                     })));
+    
+    m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
     // Reset field-centric heading on back button press
     m_joystick.back().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
