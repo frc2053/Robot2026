@@ -170,7 +170,7 @@ public class RobotContainer {
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
     actuallyShoot
-        .onTrue(
+        .whileTrue(
             Commands.parallel(
                 m_spindexer.spin(),
                 m_kicker.spin(),
