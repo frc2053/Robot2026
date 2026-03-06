@@ -142,6 +142,8 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_tuningMainShooterRpsPub;
   private final DoubleSubscriber m_tuningRollerRpsSub;
   private final DoublePublisher m_tuningRollerRpsPub;
+  private final DoubleSubscriber m_velocityToleranceRpsSub;
+  private final DoublePublisher m_velocityToleranceRpsPub;
 
   // Tunable gains for main shooter
   private final DoubleSubscriber m_mainShooterKSSub;
@@ -379,6 +381,12 @@ public class Shooter extends SubsystemBase {
     m_tuningRollerRpsPub = tuningTable.getDoubleTopic("RollerRPM").publish();
     m_tuningRollerRpsSub = tuningTable.getDoubleTopic("RollerRPM").subscribe(0.0);
     m_tuningRollerRpsPub.set(0.0);
+    m_velocityToleranceRpsPub = tuningTable.getDoubleTopic("VelocityToleranceRps").publish();
+    m_velocityToleranceRpsSub =
+        tuningTable
+            .getDoubleTopic("VelocityToleranceRps")
+            .subscribe(ShooterConstants.kVelocityToleranceRps);
+    m_velocityToleranceRpsPub.set(ShooterConstants.kVelocityToleranceRps);
 
     // Initialize tunable gains for main shooter
     NetworkTable mainShooterGains = tuningTable.getSubTable("MainShooterGains");
@@ -627,10 +635,9 @@ public class Shooter extends SubsystemBase {
   public boolean isAtSpeed() {
     double mainShooterVel = m_rightMotorVel.getValue().in(RotationsPerSecond);
     double rollerVel = m_rollerVel.getValue().in(RotationsPerSecond);
-    boolean mainAtSpeed =
-        Math.abs(mainShooterVel - m_targetMainShooterRps) < ShooterConstants.kVelocityToleranceRps;
-    boolean rollerAtSpeed =
-        Math.abs(rollerVel - m_targetRollerRps) < ShooterConstants.kVelocityToleranceRps;
+    double tolerance = m_velocityToleranceRpsSub.get();
+    boolean mainAtSpeed = Math.abs(mainShooterVel - m_targetMainShooterRps) < tolerance;
+    boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance;
     return mainAtSpeed && rollerAtSpeed;
   }
 
