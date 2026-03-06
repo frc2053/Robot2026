@@ -507,6 +507,21 @@ public class Intake extends SubsystemBase {
         .withName("DeployIntake");
   }
 
+  public Command deployOnly() {
+    return this.run(
+            () -> {
+              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
+              m_pivotMotor.setControl(
+                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+            })
+        .finallyDo(
+            () -> {
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("DeployOnly");
+  }
+
   /**
    * Creates a command to stow the intake (pivot up and stop rollers).
    *
@@ -522,6 +537,36 @@ public class Intake extends SubsystemBase {
               m_rollerMotor.setControl(m_neutralRequest);
             })
         .withName("StowIntake");
+  }
+
+  public Command runRollers() {
+    return this.run(
+            () -> {
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+            })
+        .finallyDo(
+            () -> {
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("RunIntakeRollers");
+  }
+
+  public Command runRollersReverse() {
+    return this.run(
+            () -> {
+              m_rollerVoltageSetpoint = -IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(-IntakeConstants.kIntakeVoltage));
+            })
+        .finallyDo(
+            () -> {
+              m_rollerVoltageSetpoint = 0.0;
+              m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("RunIntakeRollersReverse");
   }
 
   /**

@@ -215,4 +215,12 @@ public class Kicker extends SubsystemBase {
             })
         .withName("SpinKicker");
   }
+    public Command stop() {
+    return this.runOnce(
+            () -> {
+              m_currentVoltageSetpoint = 0.0;
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(0));
+            })
+        .withName("Stop Kicker");
+  }
 }

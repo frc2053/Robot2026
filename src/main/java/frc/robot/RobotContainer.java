@@ -124,7 +124,7 @@ public class RobotContainer {
     // Dashboard toggle "Shoot On The Move" switches between static and SOTF modes
     // Static mode: spin up based on distance, aim at hub
     m_joystick
-        .leftTrigger()
+        .rightBumper()
         .and(m_sotfEnabledTrigger.negate())
         .whileTrue(
             m_shooter
@@ -143,7 +143,7 @@ public class RobotContainer {
 
     // SOTF mode: spin up with velocity compensation, aim at SOTF-calculated point
     m_joystick
-        .leftTrigger()
+        .rightBumper()
         .and(m_sotfEnabledTrigger)
         .whileTrue(
             m_shooter
@@ -167,10 +167,9 @@ public class RobotContainer {
     // Idle shooter when not shooting
     m_joystick.rightTrigger().whileFalse(m_shooter.idleVoltage(2.0));
 
+    Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
-    m_joystick
-        .rightTrigger()
-        .and(m_shooter.atSpeedTrigger())
+    actuallyShoot
         .whileTrue(
             Commands.parallel(
                 m_spindexer.spin(),
@@ -183,13 +182,17 @@ public class RobotContainer {
                       FuelVisualizer.trySpawnFuel(
                           m_drivetrain.getState().Pose, hubPosition, distance);
                     })));
+    
+    m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
     // Reset field-centric heading on back button press
     m_joystick.back().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
 
     // Intake: deploy while holding left trigger, stow on left bumper
-    m_joystick.leftTrigger().onTrue(m_intake.deployCommand());
-    m_joystick.leftBumper().onTrue(m_intake.stowCommand());
+    m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
+    m_joystick.a().onTrue(m_intake.stowCommand());
+    m_joystick.x().onTrue(m_intake.deployOnly());
+    m_joystick.y().whileTrue(m_intake.runRollersReverse());
 
     // Climber: D-pad up toggles between extend and retract
     m_joystick
