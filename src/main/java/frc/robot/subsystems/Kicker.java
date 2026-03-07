@@ -216,6 +216,20 @@ public class Kicker extends SubsystemBase {
         .withName("SpinKicker");
   }
 
+  public Command spinReverse() {
+    return this.run(
+            () -> {
+              m_currentVoltageSetpoint = -KickerConstants.kSpinVoltage;
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(-KickerConstants.kSpinVoltage));
+            })
+        .finallyDo(
+            () -> {
+              m_currentVoltageSetpoint = 0.0;
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(0));
+            })
+        .withName("SpinReverseKicker");
+  }
+
   public Command stop() {
     return this.runOnce(
             () -> {
