@@ -239,6 +239,8 @@ public class RobotContainer {
     NamedCommands.registerCommand("IntakeDeploy", m_intake.deployCommand());
     NamedCommands.registerCommand(
         "ShooterWheelSpinUp", m_shooter.spinUpForDistanceCommand(() -> Units.feetToMeters(9.5)));
+    NamedCommands.registerCommand(
+        "SpinUp", m_shooter.spinUpForDistanceCommand(m_drivetrain::getLookupDistanceToGoal));
   }
 
   public Command getAutonomousCommand() {
