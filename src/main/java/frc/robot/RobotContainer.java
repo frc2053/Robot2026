@@ -11,7 +11,9 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
+
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.BooleanSubscriber;
@@ -169,18 +171,7 @@ public class RobotContainer {
 
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
-    actuallyShoot.whileTrue(
-        Commands.parallel(
-            m_spindexer.spin(),
-            m_kicker.spin(),
-            m_intake.feedingWigglePivotCommand(),
-            Commands.run(
-                () -> {
-                  Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
-                  Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
-                  double distance = robotPosition.getDistance(hubPosition);
-                  FuelVisualizer.trySpawnFuel(m_drivetrain.getState().Pose, hubPosition, distance);
-                })));
+    actuallyShoot.whileTrue(shootCommand());
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
@@ -207,6 +198,38 @@ public class RobotContainer {
                 m_climber::isExtended));
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
+  }
+
+  public Command alignToHub() {
+    return  m_drivetrain.lookAtPoint(
+                        m_drivetrain::getGoalAimPoint,
+                        () -> 0.0,
+                        () -> 0.0,
+                        m_maxSpeed * 0.1);
+  }
+
+  public Command shootCommand() {
+    return Commands.parallel(
+        m_spindexer.spin(),
+        m_kicker.spin(),
+        m_intake.feedingWigglePivotCommand(),
+        Commands.run(
+            () -> {
+                Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+                Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
+                double distance = robotPosition.getDistance(hubPosition);
+                FuelVisualizer.trySpawnFuel(m_drivetrain.getState().Pose, hubPosition, distance);
+            }));
+  }
+
+  public Command stopShooting() {
+    return Commands.parallel(m_spindexer.stop(), m_kicker.stop(), m_intake.deployCommand());
+  }
+
+  public void setupPathPlannerCommands() {
+    NamedCommands.registerCommand("Shoot", shootCommand());
+    NamedCommands.registerCommand("StopShooting", stopShooting());
+    NamedCommands.registerCommand("AlignToHub", alignToHub());
   }
 
   public Command getAutonomousCommand() {
