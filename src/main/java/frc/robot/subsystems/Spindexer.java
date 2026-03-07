@@ -223,6 +223,7 @@ public class Spindexer extends SubsystemBase {
             })
         .withName("Spin");
   }
+
   public Command spinReverse() {
     return this.run(
             () -> {

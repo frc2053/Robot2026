@@ -228,7 +228,7 @@ public final class Constants {
     public static final double kPivotKD = 0.0;
     public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
- 
+
     // Roller voltage for intaking
     public static final double kIntakeVoltage = 10.0;
     public static final double nonheldVoltage = 0.0;
