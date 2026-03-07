@@ -193,7 +193,7 @@ public class RobotContainer {
     m_joystick.x().onTrue(m_intake.deployOnly());
     m_joystick.y().whileTrue(m_intake.runRollersReverse());
 
-    //Reverse commands
+    // Reverse commands
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povUp().whileTrue(m_spindexer.spinReverse());
 
