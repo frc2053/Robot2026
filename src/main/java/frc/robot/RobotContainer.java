@@ -77,6 +77,7 @@ public class RobotContainer {
   private final Trigger m_sotfEnabledTrigger;
 
   public RobotContainer() {
+    setupPathPlannerCommands();
     m_autoChooser = AutoBuilder.buildAutoChooser("");
     SmartDashboard.putData("Auto Mode", m_autoChooser);
 
@@ -232,8 +233,13 @@ public class RobotContainer {
     return Commands.parallel(m_spindexer.stop(), m_kicker.stop(), m_intake.deployCommand());
   }
 
+  public Command intake() {
+    return m_intake.runRollers();
+  }
+
   public void setupPathPlannerCommands() {
     NamedCommands.registerCommand("Shoot", shootCommand());
+    NamedCommands.registerCommand("Intake", intake());
     NamedCommands.registerCommand("StopShooting", stopShooting());
     NamedCommands.registerCommand("AlignToHub", alignToHub());
     NamedCommands.registerCommand("IntakeDeploy", m_intake.deployCommand());
