@@ -13,9 +13,10 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
-
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -201,11 +202,16 @@ public class RobotContainer {
   }
 
   public Command alignToHub() {
-    return  m_drivetrain.lookAtPoint(
-                        m_drivetrain::getGoalAimPoint,
-                        () -> 0.0,
-                        () -> 0.0,
-                        m_maxSpeed * 0.1);
+    return m_drivetrain
+        .lookAtPoint(m_drivetrain::getGoalAimPoint, () -> 0.0, () -> 0.0, m_maxSpeed * 0.1)
+        .until(
+            () -> {
+              Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+              Translation2d targetPoint = m_drivetrain.getGoalAimPoint();
+              Rotation2d angleToTarget = targetPoint.minus(robotPosition).getAngle();
+              Rotation2d robotHeading = m_drivetrain.getState().Pose.getRotation();
+              return Math.abs(robotHeading.minus(angleToTarget).getDegrees()) <= 2.0;
+            });
   }
 
   public Command shootCommand() {
@@ -215,10 +221,10 @@ public class RobotContainer {
         m_intake.feedingWigglePivotCommand(),
         Commands.run(
             () -> {
-                Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
-                Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
-                double distance = robotPosition.getDistance(hubPosition);
-                FuelVisualizer.trySpawnFuel(m_drivetrain.getState().Pose, hubPosition, distance);
+              Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+              Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
+              double distance = robotPosition.getDistance(hubPosition);
+              FuelVisualizer.trySpawnFuel(m_drivetrain.getState().Pose, hubPosition, distance);
             }));
   }
 
@@ -230,6 +236,9 @@ public class RobotContainer {
     NamedCommands.registerCommand("Shoot", shootCommand());
     NamedCommands.registerCommand("StopShooting", stopShooting());
     NamedCommands.registerCommand("AlignToHub", alignToHub());
+    NamedCommands.registerCommand("IntakeDeploy", m_intake.deployCommand());
+    NamedCommands.registerCommand(
+        "ShooterWheelSpinUp", m_shooter.spinUpForDistanceCommand(() -> Units.feetToMeters(9.5)));
   }
 
   public Command getAutonomousCommand() {

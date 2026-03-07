@@ -107,7 +107,7 @@ public class Intake extends SubsystemBase {
   private double m_rollerVoltageSetpoint;
 
   // State variable for feedingWigglePivotCommand oscillation direction
-  private boolean m_wiggleGoingToTop = false;
+  private boolean m_wiggleGoingToTop;
 
   // Tunable gains for pivot
   private final DoubleSubscriber m_pivotKSSub;
