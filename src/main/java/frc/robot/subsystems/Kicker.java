@@ -215,7 +215,8 @@ public class Kicker extends SubsystemBase {
             })
         .withName("SpinKicker");
   }
-    public Command stop() {
+
+  public Command stop() {
     return this.runOnce(
             () -> {
               m_currentVoltageSetpoint = 0.0;
