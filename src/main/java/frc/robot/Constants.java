@@ -230,7 +230,7 @@ public final class Constants {
     public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
 
     // Roller voltage for intaking
-    public static final double kIntakeVoltage = 10.0;
+    public static final double kIntakeVoltage = 12.0;
     public static final double nonheldVoltage = 0.0;
     public static final double kEjectVoltage = -6.0;
 
