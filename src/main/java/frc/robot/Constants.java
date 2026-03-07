@@ -137,8 +137,8 @@ public final class Constants {
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(10), 5000.0);
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(11), 5100.0);
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(12), 5200.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(13), 5200.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(14), 5300.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(13), 5400.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(14), 5500.0);
 
       // Top roller speeds (distance in meters -> speed in RPM)
       TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(5), -3500.0);
@@ -216,7 +216,7 @@ public final class Constants {
     public static final double kPivotStowedPosition = -0.003662;
 
     // Offset (in rotations) above deployed position used when wiggling during feeding
-    public static final double kPivotFeedingWiggleOffset = 32.0 / 360.0;
+    public static final double kPivotFeedingWiggleOffset = 27.0 / 360.0;
 
     // Pivot PID constants (Slot 0)
     public static final double kPivotKS = 0.1;
@@ -296,7 +296,7 @@ public final class Constants {
     public static final String kFrontCameraName = "UpperPortCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
-            new Translation3d(-0.0887618, 0.037973, 0.6394273),
+            new Translation3d(-0.17435, 0.037973, 0.70871588),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
     // The layout of the AprilTags on the field
     public static final AprilTagFieldLayout kTagLayout =
