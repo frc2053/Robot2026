@@ -169,21 +169,19 @@ public class RobotContainer {
 
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
-    actuallyShoot
-        .whileTrue(
-            Commands.parallel(
-                m_spindexer.spin(),
-                m_kicker.spin(),
-                m_intake.feedingWigglePivotCommand(),
-                Commands.run(
-                    () -> {
-                      Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
-                      Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
-                      double distance = robotPosition.getDistance(hubPosition);
-                      FuelVisualizer.trySpawnFuel(
-                          m_drivetrain.getState().Pose, hubPosition, distance);
-                    })));
-    
+    actuallyShoot.whileTrue(
+        Commands.parallel(
+            m_spindexer.spin(),
+            m_kicker.spin(),
+            m_intake.feedingWigglePivotCommand(),
+            Commands.run(
+                () -> {
+                  Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
+                  Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
+                  double distance = robotPosition.getDistance(hubPosition);
+                  FuelVisualizer.trySpawnFuel(m_drivetrain.getState().Pose, hubPosition, distance);
+                })));
+
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
     // Reset field-centric heading on back button press

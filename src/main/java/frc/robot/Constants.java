@@ -102,7 +102,7 @@ public final class Constants {
     public static final double kRollerMotionMagicAccel = 400;
 
     // Velocity tolerance for "at speed" detection (rotations per second)
-    public static final double kVelocityToleranceRps = 2.0;
+    public static final double kVelocityToleranceRps = 20.53;
 
     // Interpolating maps for shooter speeds based on distance to goal (meters)
     // Maps distance (m) -> speed (rotations per second)
@@ -216,7 +216,7 @@ public final class Constants {
     public static final double kPivotStowedPosition = -0.003662;
 
     // Offset (in rotations) above deployed position used when wiggling during feeding
-    public static final double kPivotFeedingWiggleOffset = 20.0 / 360.0;
+    public static final double kPivotFeedingWiggleOffset = 32.0 / 360.0;
 
     // Pivot PID constants (Slot 0)
     public static final double kPivotKS = 0.1;
@@ -228,9 +228,9 @@ public final class Constants {
     public static final double kPivotKD = 0.0;
     public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
-
+ 
     // Roller voltage for intaking
-    public static final double kIntakeVoltage = 8.0;
+    public static final double kIntakeVoltage = 10.0;
     public static final double nonheldVoltage = 0.0;
     public static final double kEjectVoltage = -6.0;
 
