@@ -155,16 +155,17 @@ public final class Constants {
       // Time of flight values (distance in feet -> flight time in seconds)
       // Count frames from ball leaving shooter to reaching goal, divide by framerate
       // TODO: Tune these values based on testing with actual robot and camera
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(5), 0.40);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(6), 0.50);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(7), 0.62);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(8), 0.75);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(9), 0.90);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(10), 1.0);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(11), 1.1);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(12), 1.2);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(13), 1.3);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(14), 1.4);
+      // Measured 8FT averaging 61.875 frames 61.875frames/60fps
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(5), 0.83125);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(6), 0.89792);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(7), 0.96458);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(8), 1.03125);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(9), 1.09792);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(10), 1.16458);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(11), 1.23125);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(12), 1.29792);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(13), 1.36458);
+      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(14), 1.43125);
     }
   }
 
