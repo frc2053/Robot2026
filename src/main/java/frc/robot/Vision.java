@@ -32,6 +32,8 @@ import edu.wpi.first.math.geometry.Pose3d;
 public class Vision {
   private final Camera m_frontCamera;
 
+  private final Camera m_backCamera;
+
   /**
    * Creates a new Vision instance.
    *
