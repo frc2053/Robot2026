@@ -10,6 +10,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -58,6 +59,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
   private final SwerveRequest.FieldCentricFacingAngle m_fieldCentricFacingAngle =
       new SwerveRequest.FieldCentricFacingAngle();
+
+  private final SwerveRequest.Idle m_idle = new SwerveRequest.Idle();
 
   private final StructPublisher<Pose2d> m_lookAtPointPub =
       NetworkTableInstance.getDefault()
@@ -257,6 +260,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
           () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
           this // Subsystem for requirements
           );
+
+      // Register named command for use in PathPlanner autos
+      NamedCommands.registerCommand("StopModules", stopModules());
     } catch (IOException | ParseException ex) {
       DriverStation.reportError(
           "Failed to load PathPlanner config and configure AutoBuilder", ex.getStackTrace());
@@ -271,6 +277,16 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    */
   public Command applyRequest(Supplier<SwerveRequest> request) {
     return run(() -> this.setControl(request.get()));
+  }
+
+  /**
+   * Stops the drivetrain by applying an idle request. Use this to explicitly stop module targets
+   * from latching after autonomous paths complete.
+   *
+   * @return Command that idles the drivetrain.
+   */
+  public Command stopModules() {
+    return runOnce(() -> setControl(m_idle));
   }
 
   /**
