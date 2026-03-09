@@ -299,6 +299,12 @@ public final class Constants {
         new Transform3d(
             new Translation3d(-0.17435, 0.037973, 0.70871588),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
+
+    public static final String kBackCameraName = "LowerPortCamera";
+    public static final Transform3d kBackRobotToCam =
+        new Transform3d(
+            new Translation3d(-0.22780244, -0.28003246, 0.2122297),
+            new Rotation3d(0, Units.degreesToRadians(-20), Units.degreesToRadians(-20)));
     // The layout of the AprilTags on the field
     public static final AprilTagFieldLayout kTagLayout =
         AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
