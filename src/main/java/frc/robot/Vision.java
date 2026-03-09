@@ -47,6 +47,14 @@ public class Vision {
             VisionConstants.kMultiTagStdDevs,
             true,
             estConsumer);
+    m_backCamera =
+        new Camera(
+            VisionConstants.kBackCameraName,
+            VisionConstants.kBackRobotToCam,
+            VisionConstants.kSingleTagStdDevs,
+            VisionConstants.kMultiTagStdDevs,
+            true,
+            estConsumer);
   }
 
   /**
@@ -56,6 +64,7 @@ public class Vision {
    */
   public void periodic(Pose3d robotPose) {
     m_frontCamera.updatePoseEstimator(robotPose);
+    m_backCamera.updatePoseEstimator(robotPose);
   }
 
   /**
@@ -65,5 +74,6 @@ public class Vision {
    */
   public void simulationPeriodic(Pose2d robotSimPose) {
     m_frontCamera.simPeriodic(robotSimPose);
+    m_backCamera.simPeriodic(robotSimPose);
   }
 }
