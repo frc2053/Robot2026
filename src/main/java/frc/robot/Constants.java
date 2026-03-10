@@ -117,6 +117,11 @@ public final class Constants {
     public static final InterpolatingDoubleTreeMap TIME_OF_FLIGHT_MAP =
         new InterpolatingDoubleTreeMap();
 
+    // Passing mode speeds (RPM)
+    // Used for passing game pieces to teammates from across the field
+    public static final double kPassingMainShooterRPM = 3000.0;
+    public static final double kPassingRollerRPM = -2500.0;
+
     // SOTF (Shooting On The Fly) constants
     // Total latency compensation in seconds (camera + motor lag + ball flight through shooter)
     // TODO: Tune this value - start at 0.1s, increase if shots land behind target

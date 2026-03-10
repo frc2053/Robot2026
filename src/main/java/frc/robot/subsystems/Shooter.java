@@ -683,6 +683,33 @@ public class Shooter extends SubsystemBase {
         .withName("SpinUpForDistance");
   }
 
+  /**
+   * Creates a command that spins up the shooter wheels to the predefined passing speed. Used for
+   * passing game pieces to teammates across the field.
+   *
+   * @return A command that runs the shooter at the passing speeds
+   */
+  public Command spinUpForPassingCommand() {
+    return this.run(
+            () -> {
+              double bottomSpeedRps = ShooterConstants.kPassingMainShooterRPM / 60.0;
+              double topRollerSpeedRps = ShooterConstants.kPassingRollerRPM / 60.0;
+
+              // Store target velocities for at-speed detection
+              m_targetMainShooterRps = bottomSpeedRps;
+              m_targetRollerRps = topRollerSpeedRps;
+
+              // Command the bottom shooter (right motor is leader, left follows)
+              m_shooterMotorRight.setControl(
+                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
+
+              // Command the top roller
+              m_shooterMotorTopRoller.setControl(
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
+            })
+        .withName("SpinUpForPassing");
+  }
+
   public Command idleVoltage(double idleVoltage) {
     return this.run(
             () -> {
