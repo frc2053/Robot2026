@@ -221,7 +221,7 @@ public class RobotContainer {
 
   public Command shootCommand() {
     return Commands.parallel(
-        m_spindexer.spin(),
+        Commands.sequence(m_spindexer.spinReverse().withTimeout(0.2), m_spindexer.spin()),
         m_kicker.spin(),
         m_intake.feedingWigglePivotCommand(),
         Commands.run(
@@ -237,6 +237,10 @@ public class RobotContainer {
     return Commands.parallel(m_spindexer.stop(), m_kicker.stop(), m_intake.deployCommand());
   }
 
+  public Command doNothing() {
+    return Commands.none();
+  }
+
   public Command intake() {
     return m_intake.runRollers();
   }
@@ -247,6 +251,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("StopShooting", stopShooting());
     NamedCommands.registerCommand("AlignToHub", alignToHub());
     NamedCommands.registerCommand("IntakeDeploy", m_intake.deployCommand());
+    NamedCommands.registerCommand("doNothing", doNothing());
     NamedCommands.registerCommand(
         "ShooterWheelSpinUp", m_shooter.spinUpForDistanceCommand(() -> Units.feetToMeters(9.5)));
     NamedCommands.registerCommand(
