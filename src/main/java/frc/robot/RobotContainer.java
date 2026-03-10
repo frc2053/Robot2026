@@ -168,8 +168,12 @@ public class RobotContainer {
                         () -> -m_joystick.getLeftX() * m_maxSpeed,
                         m_maxSpeed * 0.1)));
 
-    // Idle shooter when not shooting
-    m_joystick.rightTrigger().whileFalse(m_shooter.idleVoltage(2.0));
+    // Idle shooter when not shooting and not aligning (bumper held keeps spin-up active)
+    m_joystick
+        .rightTrigger()
+        .negate()
+        .and(m_joystick.rightBumper().negate())
+        .whileTrue(m_shooter.idleVoltage(2.0));
 
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
