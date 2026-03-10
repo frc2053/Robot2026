@@ -223,7 +223,7 @@ public class RobotContainer {
 
   public Command shootCommand() {
     return Commands.parallel(
-        m_spindexer.spin(),
+        Commands.sequence(m_spindexer.spinReverse().withTimeout(0.2), m_spindexer.spin()),
         m_kicker.spin(),
         m_intake.feedingWigglePivotCommand(),
         Commands.run(
