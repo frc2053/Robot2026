@@ -188,7 +188,7 @@ public class RobotContainer {
 
     // Reverse commands
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
-    m_joystick.povUp().whileTrue(m_spindexer.spinReverse());
+    m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
     // Climber: D-pad up toggles between extend and retract
     m_joystick
