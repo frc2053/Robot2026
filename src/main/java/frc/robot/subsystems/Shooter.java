@@ -12,13 +12,11 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -82,6 +80,8 @@ public class Shooter extends SubsystemBase {
   private final StatusSignal<Current> m_leftMotorSupplyCurrent;
   private final StatusSignal<Current> m_rightMotorSupplyCurrent;
   private final StatusSignal<Current> m_rollerSupplyCurrent;
+  private final StatusSignal<Current> m_torqueCurrentMain;
+  private final StatusSignal<Current> m_torqueCurrentRoller;
 
   // Simulation objects
   private final TalonFXSimState m_leftMotorSimState;
@@ -146,6 +146,8 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_tuningRollerRpsPub;
   private final DoubleSubscriber m_velocityToleranceRpsSub;
   private final DoublePublisher m_velocityToleranceRpsPub;
+  private final DoublePublisher m_torqueCurrentMainPub;
+  private final DoublePublisher m_torqueCurrentRollerPub;
 
   // Tunable gains for main shooter
   private final DoubleSubscriber m_mainShooterKSSub;
@@ -207,7 +209,8 @@ public class Shooter extends SubsystemBase {
                     .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
-            .withTorqueCurrent(new TorqueCurrentConfigs()
+            .withTorqueCurrent(
+                new TorqueCurrentConfigs()
                     .withPeakForwardTorqueCurrent(ShooterConstants.SHOOTER_STATOR_LIMIT)
                     .withPeakReverseTorqueCurrent(0))
             .withSlot0(
@@ -233,7 +236,8 @@ public class Shooter extends SubsystemBase {
                     .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
-            .withTorqueCurrent(new TorqueCurrentConfigs()
+            .withTorqueCurrent(
+                new TorqueCurrentConfigs()
                     .withPeakForwardTorqueCurrent(ShooterConstants.SHOOTER_STATOR_LIMIT)
                     .withPeakReverseTorqueCurrent(0))
             .withSlot0(
@@ -279,6 +283,9 @@ public class Shooter extends SubsystemBase {
     m_rightMotorSupplyCurrent = m_shooterMotorRight.getSupplyCurrent();
     m_rollerSupplyCurrent = m_shooterMotorTopRoller.getSupplyCurrent();
 
+    m_torqueCurrentMain = m_shooterMotorLeft.getTorqueCurrent();
+    m_torqueCurrentRoller = m_shooterMotorTopRoller.getTorqueCurrent();
+
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
             100,
@@ -296,7 +303,9 @@ public class Shooter extends SubsystemBase {
             m_rollerStatorCurrent,
             m_leftMotorSupplyCurrent,
             m_rightMotorSupplyCurrent,
-            m_rollerSupplyCurrent);
+            m_rollerSupplyCurrent,
+            m_torqueCurrentMain,
+            m_torqueCurrentRoller);
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for shooter subsystem!");
     }
@@ -330,6 +339,8 @@ public class Shooter extends SubsystemBase {
     m_atSpeedPub = shooterTable.getBooleanTopic("AtSpeed").publish();
     m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPM").publish();
     m_rollerSetpointPub = shooterTable.getDoubleTopic("RollerSetpointRPM").publish();
+    m_torqueCurrentMainPub = shooterTable.getDoubleTopic("TorqueCurrentMain").publish();
+    m_torqueCurrentRollerPub = shooterTable.getDoubleTopic("TorqueCurrentRoller").publish();
 
     // Initialize at-speed trigger
     m_atSpeedTrigger = new Trigger(this::isAtSpeed);
@@ -483,7 +494,9 @@ public class Shooter extends SubsystemBase {
         m_rollerStatorCurrent,
         m_leftMotorSupplyCurrent,
         m_rightMotorSupplyCurrent,
-        m_rollerSupplyCurrent);
+        m_rollerSupplyCurrent,
+        m_torqueCurrentMain,
+        m_torqueCurrentRoller);
 
     // Publish velocity signals to NetworkTables in RPM
     m_leftMotorVelPub.set(m_leftMotorVel.getValue().in(RotationsPerSecond) * 60.0);
@@ -502,6 +515,8 @@ public class Shooter extends SubsystemBase {
     m_leftMotorSupplyCurrentPub.set(m_leftMotorSupplyCurrent.getValue().in(Amps));
     m_rightMotorSupplyCurrentPub.set(m_rightMotorSupplyCurrent.getValue().in(Amps));
     m_rollerSupplyCurrentPub.set(m_rollerSupplyCurrent.getValue().in(Amps));
+    m_torqueCurrentMainPub.set(m_torqueCurrentMain.getValue().in(Amps));
+    m_torqueCurrentRollerPub.set(m_torqueCurrentRoller.getValue().in(Amps));
 
     // Publish current command name
     Command currentCommand = getCurrentCommand();
