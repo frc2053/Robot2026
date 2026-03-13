@@ -84,22 +84,20 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Main shooter PID constants (Slot 0)
-    public static final double kMainShooterKS = 0.2;
-    public static final double kMainShooterKV = 0.117;
+    public static final double kMainShooterKS = 0.0;
+    public static final double kMainShooterKV = 0.0;
     public static final double kMainShooterKA = 0.0;
-    public static final double kMainShooterKP = 0.5;
-    public static final double kMainShooterKI = 0;
-    public static final double kMainShooterKD = 0;
-    public static final double kMainShooterMotionMagicAccel = 400;
+    public static final double kMainShooterKP = 0.0;
+    public static final double kMainShooterKI = 0.0;
+    public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 0.19;
-    public static final double kRollerKV = 0.115;
-    public static final double kRollerKA = 0.00;
-    public static final double kRollerKP = 0.5;
-    public static final double kRollerKI = 0;
-    public static final double kRollerKD = 0;
-    public static final double kRollerMotionMagicAccel = 400;
+    public static final double kRollerKS = 0.0;
+    public static final double kRollerKV = 0.0;
+    public static final double kRollerKA = 0.0;
+    public static final double kRollerKP = 0.0;
+    public static final double kRollerKI = 0.0;
+    public static final double kRollerKD = 0.0;
 
     // Velocity tolerance for "at speed" detection (rotations per second)
     public static final double kVelocityToleranceRps = 20.53;

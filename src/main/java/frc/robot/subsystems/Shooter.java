@@ -16,9 +16,11 @@ import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -127,10 +129,10 @@ public class Shooter extends SubsystemBase {
   private final Trigger m_atSpeedTrigger;
 
   // Control requests
-  private final MotionMagicVelocityVoltage m_mainShooterVelocityRequest =
-      new MotionMagicVelocityVoltage(0).withSlot(0).withEnableFOC(true);
-  private final MotionMagicVelocityVoltage m_rollerVelocityRequest =
-      new MotionMagicVelocityVoltage(0).withSlot(0).withEnableFOC(true);
+  private final VelocityTorqueCurrentFOC m_mainShooterVelocityRequest =
+      new VelocityTorqueCurrentFOC(0).withSlot(0);
+  private final VelocityTorqueCurrentFOC m_rollerVelocityRequest =
+      new VelocityTorqueCurrentFOC(0).withSlot(0);
   private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
@@ -205,6 +207,9 @@ public class Shooter extends SubsystemBase {
                     .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
+            .withTorqueCurrent(new TorqueCurrentConfigs()
+                    .withPeakForwardTorqueCurrent(ShooterConstants.SHOOTER_STATOR_LIMIT)
+                    .withPeakReverseTorqueCurrent(0))
             .withSlot0(
                 new Slot0Configs()
                     .withKS(ShooterConstants.kMainShooterKS)
@@ -212,10 +217,7 @@ public class Shooter extends SubsystemBase {
                     .withKA(ShooterConstants.kMainShooterKA)
                     .withKP(ShooterConstants.kMainShooterKP)
                     .withKI(ShooterConstants.kMainShooterKI)
-                    .withKD(ShooterConstants.kMainShooterKD))
-            .withMotionMagic(
-                new MotionMagicConfigs()
-                    .withMotionMagicAcceleration(ShooterConstants.kMainShooterMotionMagicAccel));
+                    .withKD(ShooterConstants.kMainShooterKD));
 
     // Roller config with different PID gains and inverted direction (clockwise positive)
     TalonFXConfiguration rollerConfig =
@@ -225,6 +227,15 @@ public class Shooter extends SubsystemBase {
                 new MotorOutputConfigs()
                     .withNeutralMode(NeutralModeValue.Coast)
                     .withInverted(InvertedValue.Clockwise_Positive))
+            .withCurrentLimits(
+                new CurrentLimitsConfigs()
+                    .withStatorCurrentLimitEnable(true)
+                    .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
+                    .withSupplyCurrentLimitEnable(true)
+                    .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
+            .withTorqueCurrent(new TorqueCurrentConfigs()
+                    .withPeakForwardTorqueCurrent(ShooterConstants.SHOOTER_STATOR_LIMIT)
+                    .withPeakReverseTorqueCurrent(0))
             .withSlot0(
                 new Slot0Configs()
                     .withKS(ShooterConstants.kRollerKS)
@@ -232,10 +243,7 @@ public class Shooter extends SubsystemBase {
                     .withKA(ShooterConstants.kRollerKA)
                     .withKP(ShooterConstants.kRollerKP)
                     .withKI(ShooterConstants.kRollerKI)
-                    .withKD(ShooterConstants.kRollerKD))
-            .withMotionMagic(
-                new MotionMagicConfigs()
-                    .withMotionMagicAcceleration(ShooterConstants.kMainShooterMotionMagicAccel));
+                    .withKD(ShooterConstants.kRollerKD));
 
     StatusCode shooterLeftConfigResult =
         m_shooterMotorLeft.getConfigurator().apply(mainShooterConfig);
