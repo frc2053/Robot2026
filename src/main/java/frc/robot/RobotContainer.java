@@ -181,10 +181,16 @@ public class RobotContainer {
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
+    // Passing mode: spin up wheels to passing speed on left bumper hold, feed when at speed
+    m_joystick.leftBumper().whileTrue(m_shooter.spinUpForPassingCommand());
+    Trigger actuallyPass = m_joystick.leftBumper().and(m_shooter.atSpeedTrigger());
+    actuallyPass.whileTrue(shootCommand());
+    m_joystick.leftBumper().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
+
     // Reset field-centric heading on back button press
     m_joystick.back().onTrue(m_drivetrain.runOnce(m_drivetrain::seedFieldCentric));
 
-    // Intake: deploy while holding left trigger, stow on left bumper
+    // Intake: deploy while holding left trigger, stow on A button
     m_joystick.leftTrigger().whileTrue(m_intake.deployCommand());
     m_joystick.a().onTrue(m_intake.stowCommand());
     m_joystick.x().onTrue(m_intake.deployOnly());
