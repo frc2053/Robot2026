@@ -75,7 +75,7 @@ public final class Constants {
     public static final int SHOOTER_MOTOR_TOP_ROLLER_ID = 17;
 
     public static final int SHOOTER_SUPPLY_LIMIT = 60;
-    public static final int SHOOTER_STATOR_LIMIT = 80;
+    public static final int SHOOTER_STATOR_LIMIT = 120;
 
     // Simulation constants
     public static final double MAIN_SHOOTER_GEAR_RATIO = 1.0;
@@ -87,7 +87,7 @@ public final class Constants {
     public static final double kMainShooterKS = 2.71;
     public static final double kMainShooterKV = 0.00055;
     public static final double kMainShooterKA = 0.0;
-    public static final double kMainShooterKP = 2.0;
+    public static final double kMainShooterKP = 5.1;
     public static final double kMainShooterKI = 0.0;
     public static final double kMainShooterKD = 0.0;
 

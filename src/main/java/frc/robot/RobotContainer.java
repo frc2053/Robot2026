@@ -220,7 +220,11 @@ public class RobotContainer {
               Translation2d targetPoint = m_drivetrain.getGoalAimPoint();
               Rotation2d angleToTarget = targetPoint.minus(robotPosition).getAngle();
               Rotation2d robotHeading = m_drivetrain.getState().Pose.getRotation();
-              return Math.abs(robotHeading.minus(angleToTarget).getDegrees()) <= 2.0;
+              double deg = robotHeading.minus(angleToTarget).getDegrees();
+              SmartDashboard.putNumber("robot heading", robotHeading.getDegrees());
+              SmartDashboard.putNumber("goal heading", angleToTarget.getDegrees());
+              SmartDashboard.putNumber("align diff", deg);
+              return Math.abs(deg) <= 2.0;
             });
     // .finallyDo(() -> m_drivetrain.stopModules());
   }
@@ -229,7 +233,7 @@ public class RobotContainer {
     return Commands.parallel(
         m_spindexer.spin(),
         m_kicker.spin(),
-        m_intake.feedingWigglePivotCommand(),
+        //m_intake.feedingWigglePivotCommand(),
         Commands.run(
             () -> {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
@@ -261,7 +265,7 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "ShooterWheelSpinUp", m_shooter.spinUpForDistanceCommand(() -> Units.feetToMeters(9.5)));
     NamedCommands.registerCommand(
-        "SpinUp", m_shooter.spinUpForDistanceCommand(m_drivetrain::getLookupDistanceToGoal));
+        "SpinUp", m_shooter.spinUpForDistanceCommand(m_drivetrain::getLookupDistanceToGoal).until(m_shooter.atSpeedTrigger()));
   }
 
   public Command getAutonomousCommand() {
