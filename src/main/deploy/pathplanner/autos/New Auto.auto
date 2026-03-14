@@ -17,12 +17,6 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "IntakeDeploy"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
                   "name": "ShooterWheelSpinUp"
                 }
               }
