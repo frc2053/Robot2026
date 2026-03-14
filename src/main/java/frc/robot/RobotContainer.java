@@ -29,7 +29,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Kicker;
@@ -66,7 +65,7 @@ public class RobotContainer {
   public final Spindexer m_spindexer = new Spindexer();
   public final Kicker m_kicker = new Kicker();
   public final Intake m_intake = new Intake();
-  public final Climber m_climber = new Climber();
+  // public final Climber m_climber = new Climber();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   /* Path follower */
@@ -201,13 +200,13 @@ public class RobotContainer {
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
     // Climber: D-pad up toggles between extend and retract
-    m_joystick
-        .povUp()
-        .onTrue(
-            Commands.either(
-                m_climber.retractCommand().until(m_climber::atPosition),
-                m_climber.extendCommand().until(m_climber::atPosition),
-                m_climber::isExtended));
+    // m_joystick
+    //     .povUp()
+    //     .onTrue(
+    //         Commands.either(
+    //             m_climber.retractCommand().until(m_climber::atPosition),
+    //             m_climber.extendCommand().until(m_climber::atPosition),
+    //             m_climber::isExtended));
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
@@ -223,12 +222,12 @@ public class RobotContainer {
               Rotation2d robotHeading = m_drivetrain.getState().Pose.getRotation();
               return Math.abs(robotHeading.minus(angleToTarget).getDegrees()) <= 2.0;
             });
-        // .finallyDo(() -> m_drivetrain.stopModules());
+    // .finallyDo(() -> m_drivetrain.stopModules());
   }
 
   public Command shootCommand() {
     return Commands.parallel(
-        Commands.sequence(m_spindexer.spinReverse().withTimeout(0.2), m_spindexer.spin()),
+        m_spindexer.spin(),
         m_kicker.spin(),
         m_intake.feedingWigglePivotCommand(),
         Commands.run(
