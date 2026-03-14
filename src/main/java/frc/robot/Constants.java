@@ -87,21 +87,21 @@ public final class Constants {
     public static final double kMainShooterKS = 2.71;
     public static final double kMainShooterKV = 0.00055;
     public static final double kMainShooterKA = 0.0;
-    public static final double kMainShooterKP = 0.68;
+    public static final double kMainShooterKP = 2.0;
     public static final double kMainShooterKI = 0.0;
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 1.378;
-    public static final double kRollerKV = 0.0003618;
+    public static final double kRollerKS = 1.502;
+    public static final double kRollerKV = 0.000248;
     public static final double kRollerKA = 0.0;
-    public static final double kRollerKP = 0.67;
+    public static final double kRollerKP = 1.3;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
 
     // Velocity tolerance for "at speed" detection (rotations per second)
     public static final double kVelocityToleranceRps = 20.53;
-
+      // .finallyDo(() -> m_drivetrain.stopModules());
     // Interpolating maps for shooter speeds based on distance to goal (meters)
     // Maps distance (m) -> speed (rotations per second)
     public static final InterpolatingDoubleTreeMap BOTTOM_SHOOTER_SPEED_MAP =
@@ -144,16 +144,16 @@ public final class Constants {
       BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(14), 5500.0);
 
       // Top roller speeds (distance in meters -> speed in RPM)
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(5), -3500.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(6), -3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(7), -3700.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(8), -3700.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(9), -3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(10), -3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(11), -3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(12), -3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(13), -3400.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(14), -3500.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(5), 3500.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(6), 3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(7), 3700.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(8), 3700.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(9), 3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(10), 3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(11), 3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(12), 3800.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(13), 3400.0);
+      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(14), 3500.0);
 
       // Time of flight values (distance in feet -> flight time in seconds)
       // Count frames from ball leaving shooter to reaching goal, divide by framerate
@@ -303,7 +303,7 @@ public final class Constants {
             new Translation3d(-0.17435, 0.037973, 0.70871588),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
 
-    public static final String kBackCameraName = "LowerPortCamera";
+    public static final String kBackCameraName = "BottomPortCamera";
     public static final Transform3d kBackRobotToCam =
         new Transform3d(
             new Translation3d(-0.22780244, -0.28003246, 0.2122297),

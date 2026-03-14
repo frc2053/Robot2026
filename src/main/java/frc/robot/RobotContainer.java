@@ -223,6 +223,7 @@ public class RobotContainer {
               Rotation2d robotHeading = m_drivetrain.getState().Pose.getRotation();
               return Math.abs(robotHeading.minus(angleToTarget).getDegrees()) <= 2.0;
             });
+        // .finallyDo(() -> m_drivetrain.stopModules());
   }
 
   public Command shootCommand() {
