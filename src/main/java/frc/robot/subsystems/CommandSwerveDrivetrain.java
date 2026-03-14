@@ -452,10 +452,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    * @return the lookup table distance in meters.
    */
   public double getLookupDistanceToGoal() {
-    Translation2d shooterPosition = getShooterPosition();
     Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
-    double realDistance = shooterPosition.getDistance(goalPosition);
-    return Math.max(0, realDistance - FuelConstants.kLookupTableDistanceOffset);
+    double realDistance = getState().Pose.getTranslation().getDistance(goalPosition);
+    return Math.max(0, realDistance);
   }
 
   /**

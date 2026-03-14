@@ -101,7 +101,7 @@ public final class Constants {
 
     // Velocity tolerance for "at speed" detection (rotations per second)
     public static final double kVelocityToleranceRps = 20.53;
-      // .finallyDo(() -> m_drivetrain.stopModules());
+    // .finallyDo(() -> m_drivetrain.stopModules());
     // Interpolating maps for shooter speeds based on distance to goal (meters)
     // Maps distance (m) -> speed (rotations per second)
     public static final InterpolatingDoubleTreeMap BOTTOM_SHOOTER_SPEED_MAP =
@@ -132,28 +132,24 @@ public final class Constants {
 
     static {
       // Bottom shooter speeds (distance in meters -> speed in RPM)
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(5), 4000.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(6), 4500.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(7), 4500.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(8), 4700.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(9), 4700.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(10), 5000.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(11), 5100.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(12), 5200.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(13), 5400.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(Units.feetToMeters(14), 5500.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(1.292, 2300.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(1.63, 2500.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(1.93, 2700.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(2.30, 2700.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(2.49, 1600.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(2.82, 1600.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(3.24, 1600.0);
+      BOTTOM_SHOOTER_SPEED_MAP.put(3.9, 1700.0);
 
       // Top roller speeds (distance in meters -> speed in RPM)
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(5), 3500.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(6), 3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(7), 3700.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(8), 3700.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(9), 3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(10), 3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(11), 3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(12), 3800.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(13), 3400.0);
-      TOP_ROLLER_SPEED_MAP.put(Units.feetToMeters(14), 3500.0);
+      TOP_ROLLER_SPEED_MAP.put(1.292, 250.0);
+      TOP_ROLLER_SPEED_MAP.put(1.63, 250.0);
+      TOP_ROLLER_SPEED_MAP.put(1.93, 250.0);
+      TOP_ROLLER_SPEED_MAP.put(2.30, 550.0);
+      TOP_ROLLER_SPEED_MAP.put(2.49, 3400.0);
+      TOP_ROLLER_SPEED_MAP.put(2.82, 3700.0);
+      TOP_ROLLER_SPEED_MAP.put(3.24, 4100.0);
+      TOP_ROLLER_SPEED_MAP.put(3.9, 4350.0);
 
       // Time of flight values (distance in feet -> flight time in seconds)
       // Count frames from ball leaving shooter to reaching goal, divide by framerate
@@ -192,7 +188,7 @@ public final class Constants {
     public static final int KICKER_MOTOR_ID = 19;
 
     public static final int KICKER_SUPPLY_LIMIT = 40;
-    public static final int KICKER_STATOR_LIMIT = 60;
+    public static final int KICKER_STATOR_LIMIT = 120;
 
     // Spin voltage for feeding game pieces
     public static final double kSpinVoltage = 12.0;
