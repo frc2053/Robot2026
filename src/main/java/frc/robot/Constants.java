@@ -1,5 +1,7 @@
 package frc.robot;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
@@ -12,8 +14,12 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import frc.robot.util.ShootingDataPoint;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class Constants {
 
@@ -67,6 +73,9 @@ public final class Constants {
 
     // Deadband percentage for translation (0.1 = 10%)
     public static final double kDeadbandPercent = 0.1;
+
+    public static final LinearVelocity translationMaxSpeed = MetersPerSecond.of(4.58);
+    public static final LinearVelocity sotmMaxSpeed = MetersPerSecond.of(1.5);
   }
 
   public static class ShooterConstants {
@@ -117,54 +126,36 @@ public final class Constants {
 
     // Passing mode speeds (RPM)
     // Used for passing game pieces to teammates from across the field
-    public static final double kPassingMainShooterRPM = 5500.0;
-    public static final double kPassingRollerRPM = 3000.0;
+    public static final double kPassingMainShooterRPM = 1500;
+    public static final double kPassingRollerRPM = 5500;
 
     // SOTF (Shooting On The Fly) constants
     // Total latency compensation in seconds (camera + motor lag + ball flight through shooter)
     // TODO: Tune this value - start at 0.1s, increase if shots land behind target
-    public static final double kSOTFLatencyCompensation = 0.15;
+    public static final double kSOTFLatencyCompensation = 0.075;
 
-    // Estimated velocity uncertainty in m/s (for first-order miss metric)
-    // This is how uncertain we are about our robot's velocity from odometry
-    // TODO: Tune based on odometry quality — lower is better
-    public static final double kVelocityUncertainty = 0.3;
+    public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
     static {
-      // Bottom shooter speeds (distance in meters -> speed in RPM)
-      BOTTOM_SHOOTER_SPEED_MAP.put(1.292, 2300.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(1.63, 2500.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(1.93, 2700.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(2.30, 2700.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(2.49, 1600.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(2.82, 1600.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(3.24, 1600.0);
-      BOTTOM_SHOOTER_SPEED_MAP.put(3.9, 1700.0);
+      shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 250.0, 1.06));
+      shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 250.0));
+      shootingDataPoints.add(new ShootingDataPoint(1.93, 2700.0, 250.0));
+      shootingDataPoints.add(new ShootingDataPoint(2.30, 2700.0, 550.0, 1.20));
+      shootingDataPoints.add(new ShootingDataPoint(2.49, 1600.0, 3400.0));
+      shootingDataPoints.add(new ShootingDataPoint(2.82, 1600.0, 3700.0, 1.22));
+      shootingDataPoints.add(new ShootingDataPoint(3.24, 1600.0, 4100.0));
+      shootingDataPoints.add(new ShootingDataPoint(3.55, 1500.0, 4300.0, 1.16));
+      shootingDataPoints.add(new ShootingDataPoint(3.90, 1700.0, 4350.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.95, 1500.0, 5300.0, 1.58));
+      shootingDataPoints.add(new ShootingDataPoint(5.40, 1700.0, 5500.0, 1.63));
 
-      // Top roller speeds (distance in meters -> speed in RPM)
-      TOP_ROLLER_SPEED_MAP.put(1.292, 250.0);
-      TOP_ROLLER_SPEED_MAP.put(1.63, 250.0);
-      TOP_ROLLER_SPEED_MAP.put(1.93, 250.0);
-      TOP_ROLLER_SPEED_MAP.put(2.30, 550.0);
-      TOP_ROLLER_SPEED_MAP.put(2.49, 3400.0);
-      TOP_ROLLER_SPEED_MAP.put(2.82, 3700.0);
-      TOP_ROLLER_SPEED_MAP.put(3.24, 4100.0);
-      TOP_ROLLER_SPEED_MAP.put(3.9, 4350.0);
-
-      // Time of flight values (distance in feet -> flight time in seconds)
-      // Count frames from ball leaving shooter to reaching goal, divide by framerate
-      // TODO: Tune these values based on testing with actual robot and camera
-      // Measured 8FT averaging 61.875 frames 61.875frames/60fps
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(5), 0.83125);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(6), 0.89792);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(7), 0.96458);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(8), 1.03125);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(9), 1.09792);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(10), 1.16458);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(11), 1.23125);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(12), 1.29792);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(13), 1.36458);
-      TIME_OF_FLIGHT_MAP.put(Units.feetToMeters(14), 1.43125);
+      for (ShootingDataPoint point : shootingDataPoints) {
+        BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
+        TOP_ROLLER_SPEED_MAP.put(point.distance(), point.topRollerRpm());
+        if (point.tof() != null) {
+          TIME_OF_FLIGHT_MAP.put(point.distance(), point.tof());
+        }
+      }
     }
   }
 

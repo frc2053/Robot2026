@@ -22,12 +22,13 @@ import frc.robot.Constants.FuelConstants;
  * explicit ballistic modeling at runtime.
  */
 public final class ShootingOnTheFly {
+  public static record ShootingParams(Translation2d noIdea, double bottomRpm, double topRpm) {}
 
   /** Maximum number of TOF recursion iterations before giving up. */
-  private static final int kMaxIterations = 10;
+  private static final int kMaxIterations = 20;
 
-  /** TOF convergence tolerance in seconds. */
-  private static final double kTofToleranceSeconds = 0.001;
+  /** Distance convergence tolerance in meters. */
+  private static final double kDistanceToleranceMeters = 0.001;
 
   /** Private constructor to prevent instantiation. */
   private ShootingOnTheFly() {}
@@ -41,11 +42,6 @@ public final class ShootingOnTheFly {
    * @param timeOfFlight The converged time-of-flight in seconds.
    * @param iterations The number of iterations it took to converge.
    * @param converged Whether the iteration converged within the iteration budget.
-   * @param contractionFactor The contraction rate of the fixed-point iteration (0 = stable, 1 =
-   *     fragile). This indicates how much platform velocity error is amplified by the shot
-   *     geometry.
-   * @param firstOrderMiss The estimated miss distance in meters due to velocity uncertainty (tau *
-   *     |delta_v|).
    */
   public record SOTFResult(
       Translation2d virtualTarget,
@@ -53,9 +49,7 @@ public final class ShootingOnTheFly {
       double virtualDistance,
       double timeOfFlight,
       int iterations,
-      boolean converged,
-      double contractionFactor,
-      double firstOrderMiss) {}
+      boolean converged) {}
 
   /**
    * Calculates the SOTF-adjusted shot parameters using iterative TOF recursion.
@@ -76,20 +70,22 @@ public final class ShootingOnTheFly {
    * @param goalPosition The target position to shoot at.
    * @param latencyCompensation Total latency to compensate for in seconds (camera + motor lag).
    * @param timeOfFlightMap Map of distance (m) to time of flight (s) for stationary shots.
-   * @param velocityUncertainty Estimated velocity uncertainty magnitude in m/s (for miss metric).
    * @return The calculated SOTF result.
    */
   public static SOTFResult calculate(
       Pose2d robotPose,
       ChassisSpeeds robotSpeeds,
+      ChassisSpeeds robotAccel,
       Translation2d goalPosition,
       double latencyCompensation,
-      InterpolatingDoubleTreeMap timeOfFlightMap,
-      double velocityUncertainty) {
+      InterpolatingDoubleTreeMap timeOfFlightMap) {
 
     // Convert chassis speeds to field-relative velocity vector
     Translation2d robotVelocity =
         new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond);
+
+    Translation2d robotAcceleration =
+        new Translation2d(robotAccel.vxMetersPerSecond, robotAccel.vyMetersPerSecond);
 
     // Calculate shooter position in field coordinates (accounting for lateral offset)
     Translation2d shooterOffset2d =
@@ -107,8 +103,7 @@ public final class ShootingOnTheFly {
 
     // Degenerate case: very close to goal
     if (staticDistance < 0.1) {
-      return new SOTFResult(
-          goalPosition, toGoal.getAngle(), staticDistance, 0.0, 0, true, 0.0, 0.0);
+      return new SOTFResult(goalPosition, toGoal.getAngle(), staticDistance, 0.0, 0, true);
     }
 
     // Step 1: Initial TOF guess from the static distance
@@ -119,31 +114,32 @@ public final class ShootingOnTheFly {
 
     // Step 2-4: Iterate — offset goal by velocity * TOF, look up new TOF, repeat
     int iterations = 0;
-    double secondToLastTofStep = 0.0;
-    double lastTofStep = 0.0;
+    double prevVirtualDistance = staticDistance;
+    boolean converged = false;
 
     for (int i = 0; i < kMaxIterations; i++) {
       // Virtual target: offset the goal opposite to the robot's motion over the TOF
       // d(tau) = (goal - robot) - v * tau
-      Translation2d virtualTargetOffset = futureShooterPosition.plus(robotVelocity.times(tof));
+      Translation2d virtualTargetOffset =
+          futureShooterPosition
+              .plus(robotVelocity.times(tof))
+              .plus(robotAcceleration.times(0.5 * latencyCompensation * latencyCompensation));
       Translation2d toVirtualTarget = goalPosition.minus(virtualTargetOffset);
       double virtualDistance = toVirtualTarget.getNorm();
+
+      // Track distance convergence
+      double distStep = Math.abs(virtualDistance - prevVirtualDistance);
+      prevVirtualDistance = virtualDistance;
 
       // Look up the TOF for this virtual distance (with table offset correction)
       double virtualLookupDistance =
           Math.max(0, virtualDistance - FuelConstants.kLookupTableDistanceOffset);
-      double newTof = timeOfFlightMap.get(virtualLookupDistance);
-      double tofStep = Math.abs(newTof - tof);
-
-      // Track the last two steps for contraction factor
-      secondToLastTofStep = lastTofStep;
-      lastTofStep = tofStep;
-
-      tof = newTof;
+      tof = timeOfFlightMap.get(virtualLookupDistance);
       iterations = i + 1;
 
-      // Check convergence
-      if (tofStep < kTofToleranceSeconds) {
+      // Check convergence based on distance stability
+      if (distStep < kDistanceToleranceMeters) {
+        converged = true;
         break;
       }
     }
@@ -156,26 +152,13 @@ public final class ShootingOnTheFly {
     // The aiming angle is from the robot toward the virtual target
     Rotation2d aimingAngle = toFinalVirtualTarget.getAngle();
 
-    // Contraction factor: ratio of last two TOF steps (0 = good, 1 = fragile)
-    double contractionFactor = 0.0;
-    if (secondToLastTofStep > kTofToleranceSeconds) {
-      contractionFactor = lastTofStep / secondToLastTofStep;
-    }
-
-    // First-order platform miss: tau * |delta_v|
-    double firstOrderMiss = tof * velocityUncertainty;
-
-    boolean converged = lastTofStep < kTofToleranceSeconds;
-
     return new SOTFResult(
         goalPosition.minus(robotVelocity.times(tof)),
         aimingAngle,
         finalVirtualDistance,
         tof,
         iterations,
-        converged,
-        contractionFactor,
-        firstOrderMiss);
+        converged);
   }
 
   /**
@@ -194,12 +177,19 @@ public final class ShootingOnTheFly {
   public static Translation2d calculateAimingPoint(
       Pose2d robotPose,
       ChassisSpeeds robotSpeeds,
+      ChassisSpeeds robotAcceleration,
       Translation2d goalPosition,
       double latencyCompensation,
       InterpolatingDoubleTreeMap timeOfFlightMap) {
 
     SOTFResult result =
-        calculate(robotPose, robotSpeeds, goalPosition, latencyCompensation, timeOfFlightMap, 0.0);
+        calculate(
+            robotPose,
+            robotSpeeds,
+            robotAcceleration,
+            goalPosition,
+            latencyCompensation,
+            timeOfFlightMap);
 
     // Project robot center forward for latency compensation
     Translation2d futureRobotPosition =

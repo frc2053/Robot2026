@@ -1,0 +1,67 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeDeploy"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "OverBump.0"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ResetOdomOverBump"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "DrewAuto.0"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "OverBump.1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "AlignToHub"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "SpinUp"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shoot"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": true
+}

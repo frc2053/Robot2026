@@ -45,7 +45,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
@@ -406,29 +405,6 @@ public class Intake extends SubsystemBase {
 
     // Check for tuning updates and apply if changed
     updateTunableGains();
-
-    // Switch pivot to coast after 5 seconds disabled so the arm can be repositioned,
-    // then seed the motor position and switch back to brake on re-enable.
-    if (DriverStation.isDisabled()) {
-      if (!m_isCoasting) {
-        m_disabledTimer.start();
-        if (m_disabledTimer.hasElapsed(5.0)) {
-          m_pivotMotor.setNeutralMode(NeutralModeValue.Coast);
-          m_isCoasting = true;
-        }
-      }
-    } else {
-      if (m_isCoasting) {
-        double currentPosition = m_pivotPosition.getValue().in(Rotations);
-        m_pivotMotor.setPosition(currentPosition);
-        m_pivotPositionSetpoint = currentPosition;
-        m_pivotMotor.setControl(m_neutralRequest);
-        m_pivotMotor.setNeutralMode(NeutralModeValue.Brake);
-        m_isCoasting = false;
-      }
-      m_disabledTimer.stop();
-      m_disabledTimer.reset();
-    }
   }
 
   /** Checks for tunable gain updates from NetworkTables and applies them to the pivot motor. */
@@ -539,17 +515,39 @@ public class Intake extends SubsystemBase {
         .withName("DeployIntake");
   }
 
-  public Command deployOnly() {
+  /**
+   * Creates a command to deploy the intake (pivot down and run rollers).
+   *
+   * @return A command that deploys the intake.
+   */
+  public Command autoDeployCommand() {
     return this.run(
             () -> {
               m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
               m_pivotMotor.setControl(
                   m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+            })
+        .until(
+            () -> {
+              return atPosition();
             })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("AutoDeployIntake");
+  }
+
+  public Command deployOnly() {
+    return this.runOnce(
+            () -> {
+              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
+              m_pivotMotor.setControl(
+                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
             })
         .withName("DeployOnly");
   }
@@ -582,6 +580,16 @@ public class Intake extends SubsystemBase {
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+            })
+        .withName("RunIntakeRollers");
+  }
+
+  public Command runAutoRollers() {
+    return this.runOnce(
+            () -> {
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
         .withName("RunIntakeRollers");
   }
