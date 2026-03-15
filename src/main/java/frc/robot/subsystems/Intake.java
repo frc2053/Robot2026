@@ -45,7 +45,9 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -108,6 +110,10 @@ public class Intake extends SubsystemBase {
 
   // State variable for feedingWigglePivotCommand oscillation direction
   private boolean m_wiggleGoingToTop;
+
+  // Disabled coast mode tracking
+  private final Timer m_disabledTimer = new Timer();
+  private boolean m_isCoasting;
 
   // Tunable gains for pivot
   private final DoubleSubscriber m_pivotKSSub;
@@ -400,6 +406,26 @@ public class Intake extends SubsystemBase {
 
     // Check for tuning updates and apply if changed
     updateTunableGains();
+
+    // Switch pivot to coast after 5 seconds disabled so the arm can be repositioned,
+    // then seed the motor position and switch back to brake on re-enable.
+    if (DriverStation.isDisabled()) {
+      if (!m_isCoasting) {
+        m_disabledTimer.start();
+        if (m_disabledTimer.hasElapsed(5.0)) {
+          m_pivotMotor.setNeutralMode(NeutralModeValue.Coast);
+          m_isCoasting = true;
+        }
+      }
+    } else {
+      if (m_isCoasting) {
+        m_pivotMotor.setPosition(m_pivotPosition.getValue().in(Rotations));
+        m_pivotMotor.setNeutralMode(NeutralModeValue.Brake);
+        m_isCoasting = false;
+      }
+      m_disabledTimer.stop();
+      m_disabledTimer.reset();
+    }
   }
 
   /** Checks for tunable gain updates from NetworkTables and applies them to the pivot motor. */
