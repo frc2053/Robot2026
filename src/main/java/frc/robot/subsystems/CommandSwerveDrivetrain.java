@@ -15,6 +15,7 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -30,12 +31,14 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.util.ShootingOnTheFly;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -326,8 +329,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       Supplier<Double> xVelocitySupplier,
       Supplier<Double> yVelocitySupplier,
       double deadband) {
-    return run(
-        () -> {
+    return run(() -> {
           Translation2d targetPoint = targetPointSupplier.get();
           m_lookAtPointPub.set(new Pose2d(targetPoint, Rotation2d.kZero));
 
@@ -346,7 +348,48 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                   .withVelocityX(xVelocitySupplier.get())
                   .withVelocityY(yVelocitySupplier.get())
                   .withTargetDirection(angleToTarget));
-        }).finallyDo(() -> { System.out.println("ENDING ALIGN!!!!\n\n\n\n");});
+        })
+        .finallyDo(
+            () -> {
+              System.out.println("ENDING ALIGN!!!!\n\n\n\n");
+            });
+  }
+
+  /**
+   * Overrides path-following rotation to aim at the SOTF-calculated aim point while the
+   * translational path is still followed. Uses ShootingOnTheFly to lead the target based on robot
+   * velocity and time-of-flight. Run this alongside a path-following command via .alongWith() or as
+   * a named command event marker.
+   *
+   * @return Command that overrides rotation during path following to aim at the hub.
+   */
+  public Command aimAtHubDuringPath() {
+    PIDController aimPid =
+        new PIDController(
+            SwerveConstants.kRotationP, SwerveConstants.kRotationI, SwerveConstants.kRotationD);
+    aimPid.enableContinuousInput(-Math.PI, Math.PI);
+
+    return Commands.startEnd(
+        () ->
+            PPHolonomicDriveController.overrideRotationFeedback(
+                () -> {
+                  Pose2d robotPose = getState().Pose;
+                  ChassisSpeeds fieldSpeeds =
+                      ChassisSpeeds.fromRobotRelativeSpeeds(
+                          getState().Speeds, robotPose.getRotation());
+                  Translation2d aimPoint =
+                      ShootingOnTheFly.calculateAimingPoint(
+                          robotPose,
+                          fieldSpeeds,
+                          Constants.FieldSpots.getHubPosition(),
+                          Constants.ShooterConstants.kSOTFLatencyCompensation,
+                          Constants.ShooterConstants.TIME_OF_FLIGHT_MAP);
+                  double desiredHeading =
+                      aimPoint.minus(robotPose.getTranslation()).getAngle().getRadians();
+                  double currentHeading = robotPose.getRotation().getRadians();
+                  return aimPid.calculate(currentHeading, desiredHeading);
+                }),
+        PPHolonomicDriveController::clearRotationFeedbackOverride);
   }
 
   @Override
