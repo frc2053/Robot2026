@@ -52,7 +52,7 @@ import org.json.simple.parser.ParseException;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 @SuppressWarnings("PMD.SingularField")
-public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Subsystem {
+public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
   private static final double kSimLoopPeriod = 0.004; // 4 ms
   private Notifier m_simNotifier;
   private double m_lastSimTime;
@@ -154,6 +154,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   /* The SysId routine to test */
   private final SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
 
+  private ChassisSpeeds m_prevFieldSpeeds = new ChassisSpeeds();
+  private ChassisSpeeds m_currentFieldSpeeds = new ChassisSpeeds();
+
   /**
    * Constructs a CTRE SwerveDrivetrain using the specified constants.
    *
@@ -163,7 +166,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    * @param drivetrainConstants Drivetrain-wide constants for the swerve drive
    * @param modules Constants for each specific module
    */
-  public CommandSwerveDrivetrain(
+  public Swerve(
       SwerveDrivetrainConstants drivetrainConstants, SwerveModuleConstants<?, ?, ?>... modules) {
     super(drivetrainConstants, modules);
     if (Utils.isSimulation()) {
@@ -184,7 +187,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    *     0 Hz, this is 250 Hz on CAN FD, and 100 Hz on CAN 2.0.
    * @param modules Constants for each specific module
    */
-  public CommandSwerveDrivetrain(
+  public Swerve(
       SwerveDrivetrainConstants drivetrainConstants,
       double odometryUpdateFrequency,
       SwerveModuleConstants<?, ?, ?>... modules) {
@@ -211,7 +214,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
    *     theta] transposed, with units in meters and radians
    * @param modules Constants for each specific module
    */
-  public CommandSwerveDrivetrain(
+  public Swerve(
       SwerveDrivetrainConstants drivetrainConstants,
       double odometryUpdateFrequency,
       Matrix<N3, N1> odometryStandardDeviation,
@@ -233,6 +236,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
   private void configureHeadingController() {
     m_fieldCentricFacingAngle.HeadingController.setPID(
         SwerveConstants.kRotationP, SwerveConstants.kRotationI, SwerveConstants.kRotationD);
+  }
+
+  public Command resetRobotPoseOverBump() {
+    return this.runOnce(
+        () -> {
+          resetPose(
+              new Pose2d(5.850689888000488, 2.484062433242798, new Rotation2d(0.5890486225480862)));
+        });
   }
 
   private void configureAutoBuilder() {
@@ -329,7 +340,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
       Supplier<Double> xVelocitySupplier,
       Supplier<Double> yVelocitySupplier,
       double deadband) {
-    return run(() -> {
+    return run(
+        () -> {
           Translation2d targetPoint = targetPointSupplier.get();
           m_lookAtPointPub.set(new Pose2d(targetPoint, Rotation2d.kZero));
 
@@ -348,8 +360,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                   .withVelocityX(xVelocitySupplier.get())
                   .withVelocityY(yVelocitySupplier.get())
                   .withTargetDirection(angleToTarget));
-        })
-;
+        });
   }
 
   /**
@@ -374,10 +385,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                   ChassisSpeeds fieldSpeeds =
                       ChassisSpeeds.fromRobotRelativeSpeeds(
                           getState().Speeds, robotPose.getRotation());
+                  ChassisSpeeds fieldAccel =
+                      ChassisSpeeds.fromRobotRelativeSpeeds(
+                          getAcceleration(), robotPose.getRotation());
                   Translation2d aimPoint =
                       ShootingOnTheFly.calculateAimingPoint(
                           robotPose,
                           fieldSpeeds,
+                          fieldAccel,
                           Constants.FieldSpots.getHubPosition(),
                           Constants.ShooterConstants.kSOTFLatencyCompensation,
                           Constants.ShooterConstants.TIME_OF_FLIGHT_MAP);
@@ -410,6 +425,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
               });
     }
+
+    m_prevFieldSpeeds = m_currentFieldSpeeds;
+    m_currentFieldSpeeds = getState().Speeds;
   }
 
   private void startSimThread() {
@@ -511,5 +529,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     return robotPose
         .getTranslation()
         .plus(new Translation2d(aimAngle.getCos(), aimAngle.getSin()).times(10.0));
+  }
+
+  public ChassisSpeeds getAcceleration() {
+    ChassisSpeeds currentSpeeds = getState().Speeds;
+
+    return currentSpeeds.minus(m_prevFieldSpeeds).div(0.02);
   }
 }

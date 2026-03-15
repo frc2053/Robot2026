@@ -116,8 +116,6 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_sotfTimeOfFlightPub;
   private final IntegerPublisher m_sotfIterationsPub;
   private final BooleanPublisher m_sotfConvergedPub;
-  private final DoublePublisher m_sotfContractionFactorPub;
-  private final DoublePublisher m_sotfFirstOrderMissPub;
   private final DoublePublisher m_sotfRobotSpeedPub;
   private final DoublePublisher m_sotfAimingAngleDegPub;
 
@@ -383,8 +381,6 @@ public class Shooter extends SubsystemBase {
     m_sotfTimeOfFlightPub = sotfTable.getDoubleTopic("TimeOfFlightS").publish();
     m_sotfIterationsPub = sotfTable.getIntegerTopic("Iterations").publish();
     m_sotfConvergedPub = sotfTable.getBooleanTopic("Converged").publish();
-    m_sotfContractionFactorPub = sotfTable.getDoubleTopic("ContractionFactor").publish();
-    m_sotfFirstOrderMissPub = sotfTable.getDoubleTopic("FirstOrderMissM").publish();
     m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
     m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
 
@@ -761,11 +757,13 @@ public class Shooter extends SubsystemBase {
   public Command spinUpForSOTFCommand(
       Supplier<Pose2d> robotPoseSupplier,
       Supplier<ChassisSpeeds> robotSpeedsSupplier,
+      Supplier<ChassisSpeeds> robotAccelSupplier,
       Supplier<Translation2d> goalPositionSupplier) {
     return this.run(
             () -> {
               Pose2d robotPose = robotPoseSupplier.get();
               ChassisSpeeds robotSpeeds = robotSpeedsSupplier.get();
+              ChassisSpeeds robotAccel = robotAccelSupplier.get();
               Translation2d goalPosition = goalPositionSupplier.get();
 
               // Calculate SOTF via iterative TOF recursion
@@ -773,10 +771,10 @@ public class Shooter extends SubsystemBase {
                   ShootingOnTheFly.calculate(
                       robotPose,
                       robotSpeeds,
+                      robotAccel,
                       goalPosition,
                       ShooterConstants.kSOTFLatencyCompensation,
-                      ShooterConstants.TIME_OF_FLIGHT_MAP,
-                      ShooterConstants.kVelocityUncertainty);
+                      ShooterConstants.TIME_OF_FLIGHT_MAP);
 
               // Publish SOTF debug data to NetworkTables
               Translation2d virtualTarget = result.virtualTarget();
@@ -788,8 +786,6 @@ public class Shooter extends SubsystemBase {
               m_sotfTimeOfFlightPub.set(result.timeOfFlight());
               m_sotfIterationsPub.set(result.iterations());
               m_sotfConvergedPub.set(result.converged());
-              m_sotfContractionFactorPub.set(result.contractionFactor());
-              m_sotfFirstOrderMissPub.set(result.firstOrderMiss());
               double robotSpeed =
                   Math.hypot(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond);
               m_sotfRobotSpeedPub.set(robotSpeed);
