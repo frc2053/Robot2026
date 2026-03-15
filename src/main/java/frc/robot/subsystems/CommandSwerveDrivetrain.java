@@ -349,10 +349,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                   .withVelocityY(yVelocitySupplier.get())
                   .withTargetDirection(angleToTarget));
         })
-        .finallyDo(
-            () -> {
-              System.out.println("ENDING ALIGN!!!!\n\n\n\n");
-            });
+;
   }
 
   /**
