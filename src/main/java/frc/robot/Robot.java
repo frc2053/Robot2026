@@ -8,10 +8,13 @@ import com.ctre.phoenix6.HootAutoReplay;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.util.WPILibVersion;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.generated.BuildConstants;
 import frc.robot.util.FuelVisualizer;
 import frc.robot.util.GameState;
+import frc.robot.util.LogUtil;
 import frc.robot.util.MechanismVisualizer;
 
 public class Robot extends TimedRobot {
@@ -25,10 +28,36 @@ public class Robot extends TimedRobot {
       new HootAutoReplay().withTimestampReplay().withJoystickReplay();
 
   public Robot() {
-    m_robotContainer = new RobotContainer();
-    m_gameState = new GameState(() -> m_robotContainer.m_drivetrain.getState().Pose);
     DataLogManager.start();
     DriverStation.startDataLog(DataLogManager.getLog());
+
+    LogUtil.recordMetadata("Java Vendor", System.getProperty("java.vendor"));
+    LogUtil.recordMetadata("Java Version", System.getProperty("java.version"));
+    LogUtil.recordMetadata("WPILib Version", WPILibVersion.Version);
+
+    LogUtil.recordMetadata("Runtime Type", getRuntimeType().toString());
+
+    // Git and build information
+    LogUtil.recordMetadata("Project Name", BuildConstants.MAVEN_NAME);
+    LogUtil.recordMetadata("Build Date", BuildConstants.BUILD_DATE);
+    LogUtil.recordMetadata("Git SHA", BuildConstants.GIT_SHA);
+    LogUtil.recordMetadata("Git Date", BuildConstants.GIT_DATE);
+    LogUtil.recordMetadata("Git Revision", BuildConstants.GIT_REVISION);
+    LogUtil.recordMetadata("Git Branch", BuildConstants.GIT_BRANCH);
+    switch (BuildConstants.DIRTY) {
+      case 0:
+        LogUtil.recordMetadata("Git Dirty", "All changes committed");
+        break;
+      case 1:
+        LogUtil.recordMetadata("Git Dirty", "Uncommitted changes");
+        break;
+      default:
+        LogUtil.recordMetadata("Git Dirty", "Unknown");
+        break;
+    }
+
+    m_robotContainer = new RobotContainer();
+    m_gameState = new GameState(() -> m_robotContainer.m_drivetrain.getState().Pose);
   }
 
   @Override
