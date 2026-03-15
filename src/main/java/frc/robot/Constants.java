@@ -118,7 +118,7 @@ public final class Constants {
     // Passing mode speeds (RPM)
     // Used for passing game pieces to teammates from across the field
     public static final double kPassingMainShooterRPM = 5500.0;
-    public static final double kPassingRollerRPM = -3000.0;
+    public static final double kPassingRollerRPM = 3000.0;
 
     // SOTF (Shooting On The Fly) constants
     // Total latency compensation in seconds (camera + motor lag + ball flight through shooter)
