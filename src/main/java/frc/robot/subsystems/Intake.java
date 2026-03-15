@@ -419,7 +419,10 @@ public class Intake extends SubsystemBase {
       }
     } else {
       if (m_isCoasting) {
-        m_pivotMotor.setPosition(m_pivotPosition.getValue().in(Rotations));
+        double currentPosition = m_pivotPosition.getValue().in(Rotations);
+        m_pivotMotor.setPosition(currentPosition);
+        m_pivotPositionSetpoint = currentPosition;
+        m_pivotMotor.setControl(m_neutralRequest);
         m_pivotMotor.setNeutralMode(NeutralModeValue.Brake);
         m_isCoasting = false;
       }
