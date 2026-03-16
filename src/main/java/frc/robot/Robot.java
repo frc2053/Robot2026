@@ -148,6 +148,9 @@ public class Robot extends TimedRobot {
   @Override
   public void simulationPeriodic() {
     m_robotContainer.m_vision.simulationPeriodic(m_robotContainer.m_drivetrain.getState().Pose);
+    if (RobotContainer.m_fuelSim != null) {
+      RobotContainer.m_fuelSim.updateSim();
+    }
   }
 
   private static final class GcStatsCollector {

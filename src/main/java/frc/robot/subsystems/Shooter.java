@@ -675,6 +675,23 @@ public class Shooter extends SubsystemBase {
   }
 
   /**
+   * Sets the target speeds of the shooter motors
+   *
+   * @param mainSpeed the main shooter motor speed
+   * @param topSpeed the speed of the top roller
+   */
+  public void setTargetSpeeds(double mainSpeed, double topSpeed) {
+    m_targetMainShooterRps = mainSpeed;
+    m_targetRollerRps = topSpeed;
+
+    // Command the bottom shooter (right motor is leader, left follows)
+    m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
+
+    // Command the top roller
+    m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
+  }
+
+  /**
    * Creates a command that spins up the shooter wheels based on distance to goal. Uses
    * interpolating tree maps to determine the appropriate speeds for the bottom shooter and top
    * roller based on the supplied distance.
