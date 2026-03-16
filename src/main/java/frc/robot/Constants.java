@@ -39,6 +39,7 @@ public final class Constants {
     private FieldSpots() {}
 
     public static final double kFieldLength = Units.inchesToMeters(651.25); // 54 ft 3.25 in
+    public static final double kFieldWidth = Units.inchesToMeters(323.25); // 26 ft 11.25 in
     public static final Translation2d kBlueMiddleHub =
         new Translation2d(Units.inchesToMeters(181.907204), Units.inchesToMeters(158.843750));
 
