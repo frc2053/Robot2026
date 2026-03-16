@@ -11,9 +11,11 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -41,6 +43,7 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.util.ShootingOnTheFly;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.json.simple.parser.ParseException;
 
@@ -157,6 +160,8 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
   private ChassisSpeeds m_prevFieldSpeeds = new ChassisSpeeds();
   private ChassisSpeeds m_currentFieldSpeeds = new ChassisSpeeds();
 
+  private BooleanSupplier m_shouldMirrorPath = () -> false;
+
   /**
    * Constructs a CTRE SwerveDrivetrain using the specified constants.
    *
@@ -238,41 +243,99 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
         SwerveConstants.kRotationP, SwerveConstants.kRotationI, SwerveConstants.kRotationD);
   }
 
-  public Command resetRobotPoseOverBump() {
+  /**
+   * Resets the robot pose to a known position over the bump. The base pose is defined for the blue
+   * alliance near side. It is automatically mirrored for red alliance, and optionally mirrored
+   * horizontally (across the field centerline) for the far side based on the supplier.
+   *
+   * @param mirrorHorizontally supplier that returns true to mirror the Y coordinate.
+   * @return Command that resets the pose.
+   */
+  public Command resetRobotPoseOverBump(BooleanSupplier mirrorHorizontally) {
     return this.runOnce(
         () -> {
-          resetPose(
-              new Pose2d(5.850689888000488, 2.484062433242798, new Rotation2d(0.5890486225480862)));
+          Pose2d bluePose =
+              new Pose2d(
+                  5.850689888000488, 2.484062433242798, new Rotation2d(0.5890486225480862));
+
+          if (mirrorHorizontally.getAsBoolean()) {
+            bluePose =
+                new Pose2d(
+                    bluePose.getX(),
+                    Constants.FieldSpots.kFieldWidth - bluePose.getY(),
+                    bluePose.getRotation().unaryMinus());
+          }
+
+          if (!Constants.ifOnBlue()) {
+            bluePose =
+                com.pathplanner.lib.util.FlippingUtil.flipFieldPose(bluePose);
+          }
+
+          resetPose(bluePose);
         });
+  }
+
+  /**
+   * Sets the supplier that determines whether paths should be mirrored horizontally (left/right).
+   * This must be called before auto commands are built (i.e., before the auto chooser is created).
+   *
+   * @param shouldMirror supplier returning true to mirror paths across the field centerline.
+   */
+  public void setShouldMirrorPath(BooleanSupplier shouldMirror) {
+    m_shouldMirrorPath = shouldMirror;
   }
 
   private void configureAutoBuilder() {
     try {
       var config = RobotConfig.fromGUISettings();
-      AutoBuilder.configure(
-          () -> getState().Pose, // Supplier of current robot pose
-          this::resetPose, // Consumer for seeding pose against auto
-          () -> getState().Speeds, // Supplier of current robot speeds
-          // Consumer of ChassisSpeeds and feedforwards to drive the robot
-          (speeds, feedforwards) ->
-              setControl(
-                  m_pathApplyRobotSpeeds
-                      .withSpeeds(ChassisSpeeds.discretize(speeds, 0.020))
-                      .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
-                      .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())),
-          new PPHolonomicDriveController(
-              new PIDConstants(
-                  SwerveConstants.kPathTranslationP,
-                  SwerveConstants.kPathTranslationI,
-                  SwerveConstants.kPathTranslationD),
-              new PIDConstants(
-                  SwerveConstants.kRotationP,
-                  SwerveConstants.kRotationI,
-                  SwerveConstants.kRotationD)),
-          config,
-          // Assume the path needs to be flipped for Red vs Blue, this is normally the case
-          () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
-          this // Subsystem for requirements
+      BooleanSupplier shouldFlip =
+          () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+
+      AutoBuilder.configureCustom(
+          (PathPlannerPath path) ->
+              Commands.defer(
+                  () -> {
+                    PathPlannerPath pathToFollow =
+                        m_shouldMirrorPath.getAsBoolean() ? path.mirrorPath() : path;
+                    return new FollowPathCommand(
+                        pathToFollow,
+                        () -> getState().Pose,
+                        () -> getState().Speeds,
+                        (speeds, feedforwards) ->
+                            setControl(
+                                m_pathApplyRobotSpeeds
+                                    .withSpeeds(ChassisSpeeds.discretize(speeds, 0.020))
+                                    .withWheelForceFeedforwardsX(
+                                        feedforwards.robotRelativeForcesXNewtons())
+                                    .withWheelForceFeedforwardsY(
+                                        feedforwards.robotRelativeForcesYNewtons())),
+                        new PPHolonomicDriveController(
+                            new PIDConstants(
+                                SwerveConstants.kPathTranslationP,
+                                SwerveConstants.kPathTranslationI,
+                                SwerveConstants.kPathTranslationD),
+                            new PIDConstants(
+                                SwerveConstants.kRotationP,
+                                SwerveConstants.kRotationI,
+                                SwerveConstants.kRotationD)),
+                        config,
+                        shouldFlip,
+                        this);
+                  },
+                  java.util.Set.of(this)),
+          () -> getState().Pose,
+          pose -> {
+            if (m_shouldMirrorPath.getAsBoolean()) {
+              pose =
+                  new Pose2d(
+                      pose.getX(),
+                      Constants.FieldSpots.kFieldWidth - pose.getY(),
+                      pose.getRotation().unaryMinus());
+            }
+            resetPose(pose);
+          },
+          shouldFlip,
+          true // isHolonomic
           );
 
       // Register named command for use in PathPlanner autos

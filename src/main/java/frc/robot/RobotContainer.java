@@ -78,7 +78,19 @@ public class RobotContainer {
   private final BooleanSubscriber m_sotfEnabledSub;
   private final Trigger m_sotfEnabledTrigger;
 
+  // Dashboard toggle for horizontal pose mirroring
+  private final BooleanSubscriber m_mirrorSub;
+
   public RobotContainer() {
+    // Initialize mirror toggle on dashboard (before setupPathPlannerCommands which references it)
+    SmartDashboard.putBoolean("Left Side", false);
+    m_mirrorSub =
+        NetworkTableInstance.getDefault()
+            .getTable("SmartDashboard")
+            .getBooleanTopic("Left Side")
+            .subscribe(false);
+
+    m_drivetrain.setShouldMirrorPath(m_mirrorSub::get);
     setupPathPlannerCommands();
     m_autoChooser = AutoBuilder.buildAutoChooser("");
     SmartDashboard.putData("Auto Mode", m_autoChooser);
@@ -282,7 +294,8 @@ public class RobotContainer {
     NamedCommands.registerCommand("AlignToHub", alignToHub());
     NamedCommands.registerCommand("IntakeDeploy", m_intake.deployOnly());
     NamedCommands.registerCommand("doNothing", doNothing());
-    NamedCommands.registerCommand("ResetOdomOverBump", m_drivetrain.resetRobotPoseOverBump());
+    NamedCommands.registerCommand(
+        "ResetOdomOverBump", m_drivetrain.resetRobotPoseOverBump(m_mirrorSub::get));
     NamedCommands.registerCommand(
         "ShooterWheelSpinUp", m_shooter.spinUpForDistanceCommand(() -> Units.feetToMeters(9.5)));
     NamedCommands.registerCommand(
