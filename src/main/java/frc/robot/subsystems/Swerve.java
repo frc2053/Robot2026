@@ -572,7 +572,8 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
    */
   public double getLookupDistanceToGoal() {
     Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
-    double realDistance = getState().Pose.getTranslation().getDistance(goalPosition);
+    //idk why we are shooting far only at comp, hack to adjust distance lookup table
+    double realDistance = getState().Pose.getTranslation().getDistance(goalPosition) - .610;
     return Math.max(0, realDistance);
   }
 
