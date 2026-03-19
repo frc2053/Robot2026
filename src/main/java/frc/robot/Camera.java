@@ -52,6 +52,8 @@ public class Camera {
   private final StructArrayPublisher<Pose3d> m_targetPosesPub;
   private final StructArrayPublisher<Translation2d> m_cornersPub;
 
+  private static final List<Integer> allowedTargets = new ArrayList<>();
+
   // Simulation
   private VisionSystemSim m_visionSim;
 
@@ -79,6 +81,23 @@ public class Camera {
     this.m_consumer = visionConsumer;
     this.m_singleTagDevs = singleTagStdDev;
     this.m_multiTagDevs = multiTagDevs;
+
+    allowedTargets.add(5);
+    allowedTargets.add(8);
+    allowedTargets.add(9);
+    allowedTargets.add(10);
+    allowedTargets.add(11);
+    allowedTargets.add(2);
+    allowedTargets.add(3);
+    allowedTargets.add(4);
+    allowedTargets.add(18);
+    allowedTargets.add(19);
+    allowedTargets.add(20);
+    allowedTargets.add(21);
+    allowedTargets.add(24);
+    allowedTargets.add(25);
+    allowedTargets.add(26);
+    allowedTargets.add(27);
 
     // Initialize NetworkTables
     m_nt = NetworkTableInstance.getDefault().getTable("Vision");
@@ -130,6 +149,18 @@ public class Camera {
 
     for (PhotonPipelineResult result : allUnread) {
       // Try multi-tag estimation first (most accurate)
+
+      boolean shouldSkip = false;
+      for (PhotonTrackedTarget tag : result.targets) {
+        if (!allowedTargets.contains(tag.fiducialId)) {
+          shouldSkip = true;
+        }
+      }
+
+      if (shouldSkip) {
+        continue;
+      }
+
       Optional<EstimatedRobotPose> visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
 
       // Fallback to lowest ambiguity single-tag if multi-tag unavailable

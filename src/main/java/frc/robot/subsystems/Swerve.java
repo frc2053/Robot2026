@@ -255,8 +255,7 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
     return this.runOnce(
         () -> {
           Pose2d bluePose =
-              new Pose2d(
-                  5.850689888000488, 2.484062433242798, new Rotation2d(0.5890486225480862));
+              new Pose2d(5.850689888000488, 2.484062433242798, new Rotation2d(0.5890486225480862));
 
           if (mirrorHorizontally.getAsBoolean()) {
             bluePose =
@@ -267,8 +266,7 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
           }
 
           if (!Constants.ifOnBlue()) {
-            bluePose =
-                com.pathplanner.lib.util.FlippingUtil.flipFieldPose(bluePose);
+            bluePose = com.pathplanner.lib.util.FlippingUtil.flipFieldPose(bluePose);
           }
 
           resetPose(bluePose);
