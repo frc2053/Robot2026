@@ -780,7 +780,7 @@ public class Shooter extends SubsystemBase {
               Translation2d virtualTarget = result.virtualTarget();
               m_sotfVirtualTargetPub.set(new Pose2d(virtualTarget, result.aimingAngle()));
               m_sotfGoalPub.set(new Pose2d(goalPosition, new Rotation2d()));
-              double staticDistance = goalPosition.getDistance(robotPose.getTranslation());
+              double staticDistance = goalPosition.getDistance(robotPose.getTranslation()) - 0.610;
               m_sotfStaticDistancePub.set(staticDistance);
               m_sotfVirtualDistancePub.set(result.virtualDistance());
               m_sotfTimeOfFlightPub.set(result.timeOfFlight());
