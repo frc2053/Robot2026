@@ -20,6 +20,9 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotBase;
+
+import static frc.robot.Constants.ifOnBlue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,7 +55,8 @@ public class Camera {
   private final StructArrayPublisher<Pose3d> m_targetPosesPub;
   private final StructArrayPublisher<Translation2d> m_cornersPub;
 
-  private static final List<Integer> allowedTargets = new ArrayList<>();
+  private static final List<Integer> blueAllowedTargets = new ArrayList<>();
+  private static final List<Integer> redAllowedTargets = new ArrayList<>();
 
   // Simulation
   private VisionSystemSim m_visionSim;
@@ -82,22 +86,23 @@ public class Camera {
     this.m_singleTagDevs = singleTagStdDev;
     this.m_multiTagDevs = multiTagDevs;
 
-    allowedTargets.add(5);
-    allowedTargets.add(8);
-    allowedTargets.add(9);
-    allowedTargets.add(10);
-    allowedTargets.add(11);
-    allowedTargets.add(2);
-    allowedTargets.add(3);
-    allowedTargets.add(4);
-    allowedTargets.add(18);
-    allowedTargets.add(19);
-    allowedTargets.add(20);
-    allowedTargets.add(21);
-    allowedTargets.add(24);
-    allowedTargets.add(25);
-    allowedTargets.add(26);
-    allowedTargets.add(27);
+    redAllowedTargets.add(5);
+    redAllowedTargets.add(8);
+    redAllowedTargets.add(9);
+    redAllowedTargets.add(10);
+    redAllowedTargets.add(11);
+    redAllowedTargets.add(2);
+    redAllowedTargets.add(3);
+    redAllowedTargets.add(4);
+    
+    blueAllowedTargets.add(18);
+    blueAllowedTargets.add(19);
+    blueAllowedTargets.add(20);
+    blueAllowedTargets.add(21);
+    blueAllowedTargets.add(24);
+    blueAllowedTargets.add(25);
+    blueAllowedTargets.add(26);
+    blueAllowedTargets.add(27);
 
     // Initialize NetworkTables
     m_nt = NetworkTableInstance.getDefault().getTable("Vision");
@@ -152,9 +157,17 @@ public class Camera {
 
       boolean shouldSkip = false;
       for (PhotonTrackedTarget tag : result.targets) {
-        if (!allowedTargets.contains(tag.fiducialId)) {
-          shouldSkip = true;
+        if(ifOnBlue()) {
+          if (!blueAllowedTargets.contains(tag.fiducialId)) {
+            shouldSkip = true;
+          }
         }
+        else {
+          if (!redAllowedTargets.contains(tag.fiducialId)) {
+            shouldSkip = true;
+          }
+        }
+
       }
 
       if (shouldSkip) {
