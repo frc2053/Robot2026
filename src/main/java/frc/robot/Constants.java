@@ -140,6 +140,7 @@ public final class Constants {
     static {
       shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 250.0, 1.06));
       shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 250.0));
+      shootingDataPoints.add(new ShootingDataPoint(1.77, 2500.0, 280.0));
       shootingDataPoints.add(new ShootingDataPoint(1.93, 2700.0, 250.0));
       shootingDataPoints.add(new ShootingDataPoint(2.30, 2700.0, 550.0, 1.20));
       shootingDataPoints.add(new ShootingDataPoint(2.49, 1600.0, 3400.0));
