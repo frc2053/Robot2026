@@ -211,7 +211,7 @@ public final class Constants {
     public static final double kPivotStowedPosition = -0.003662;
 
     // Offset (in rotations) above deployed position used when wiggling during feeding
-    public static final double kPivotFeedingWiggleOffset = 14.4 / 360.0;
+    public static final double kPivotFeedingWiggleOffset = 20.53 / 360.0;
 
     // Pivot PID constants (Slot 0)
     public static final double kPivotKS = 0.1;

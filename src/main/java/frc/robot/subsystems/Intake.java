@@ -130,6 +130,8 @@ public class Intake extends SubsystemBase {
   private final DoublePublisher m_pivotKIPub;
   private final DoublePublisher m_pivotKDPub;
 
+  private Timer m_wiggleTimer;
+
   // Track last known gain values to detect changes
   private double m_lastPivotKS;
   private double m_lastPivotKG;
@@ -168,6 +170,8 @@ public class Intake extends SubsystemBase {
     m_pivotSupplyCurrent = m_pivotMotor.getSupplyCurrent();
     m_rollerStatorCurrent = m_rollerMotor.getStatorCurrent();
     m_rollerSupplyCurrent = m_rollerMotor.getSupplyCurrent();
+
+    m_wiggleTimer = new Timer();
 
     // Set update frequencies
     StatusCode setUpdateFreqResult =
@@ -709,11 +713,17 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
-              if (atPosition()) {
+              if (m_wiggleTimer.hasElapsed(.60)) {
                 m_wiggleGoingToTop = !m_wiggleGoingToTop;
+                m_wiggleTimer.reset();
+                m_wiggleTimer.start();
               }
             })
-        .beforeStarting(() -> m_wiggleGoingToTop = false)
+        .beforeStarting(() -> {
+          m_wiggleGoingToTop = false;
+          m_wiggleTimer.reset();
+          m_wiggleTimer.start();
+        })
         .finallyDo(
             () -> {
               m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;

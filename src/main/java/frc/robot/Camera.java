@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static frc.robot.Constants.ifOnBlue;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -20,9 +22,6 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotBase;
-
-import static frc.robot.Constants.ifOnBlue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -94,7 +93,7 @@ public class Camera {
     redAllowedTargets.add(2);
     redAllowedTargets.add(3);
     redAllowedTargets.add(4);
-    
+
     blueAllowedTargets.add(18);
     blueAllowedTargets.add(19);
     blueAllowedTargets.add(20);
@@ -157,17 +156,15 @@ public class Camera {
 
       boolean shouldSkip = false;
       for (PhotonTrackedTarget tag : result.targets) {
-        if(ifOnBlue()) {
+        if (ifOnBlue()) {
           if (!blueAllowedTargets.contains(tag.fiducialId)) {
             shouldSkip = true;
           }
-        }
-        else {
+        } else {
           if (!redAllowedTargets.contains(tag.fiducialId)) {
             shouldSkip = true;
           }
         }
-
       }
 
       if (shouldSkip) {
