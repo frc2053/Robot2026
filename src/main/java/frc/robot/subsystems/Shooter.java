@@ -791,14 +791,18 @@ public class Shooter extends SubsystemBase {
               m_sotfRobotSpeedPub.set(robotSpeed);
               m_sotfAimingAngleDegPub.set(result.aimingAngle().getDegrees());
 
-              // The virtual distance is the distance to the converged virtual target —
-              // use it directly for RPM lookup from our tuned tables
-              double virtualDistance = result.virtualDistance();
+              // Use robot-center-to-virtual-target minus the same 0.610 calibration
+              // offset as getLookupDistanceToGoal so SOTF matches the static path
+              // reference frame. When stationary this equals the static lookup exactly.
+              double lookupDistance =
+                  Math.max(
+                      0,
+                      result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.610);
 
               double bottomSpeedRps =
-                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(virtualDistance) / 60.0;
+                  ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(lookupDistance) / 60.0;
               double topRollerSpeedRps =
-                  ShooterConstants.TOP_ROLLER_SPEED_MAP.get(virtualDistance) / 60.0;
+                  ShooterConstants.TOP_ROLLER_SPEED_MAP.get(lookupDistance) / 60.0;
 
               // Store target velocities for at-speed detection
               m_targetMainShooterRps = bottomSpeedRps;
