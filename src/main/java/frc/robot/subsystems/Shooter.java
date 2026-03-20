@@ -121,6 +121,7 @@ public class Shooter extends SubsystemBase {
 
   // SOTF distance fix toggle (dashboard killswitch)
   private final BooleanSubscriber m_sotfFixSub;
+  private final BooleanSubscriber m_rollerToleranceKillswitch;
 
   // Target velocities for at-speed detection
   private double m_targetMainShooterRps;
@@ -387,7 +388,10 @@ public class Shooter extends SubsystemBase {
     m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
     m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
     sotfTable.getBooleanTopic("UseDistanceFix").publish().setDefault(true);
+    shooterTable.getBooleanTopic("UseToleranceFix").publish().setDefault(true);
     m_sotfFixSub = sotfTable.getBooleanTopic("UseDistanceFix").subscribe(true);
+    m_rollerToleranceKillswitch = shooterTable.getBooleanTopic("UseToleranceFix").subscribe(true);
+
 
     // Initialize tuning mode NetworkTables controls
     NetworkTable tuningTable = shooterTable.getSubTable("Tuning");
@@ -661,8 +665,13 @@ public class Shooter extends SubsystemBase {
     double rollerVel = m_rollerVel.getValue().in(RotationsPerSecond);
     double tolerance = m_velocityToleranceRpsSub.get();
     boolean mainAtSpeed = Math.abs(mainShooterVel - m_targetMainShooterRps) < tolerance;
-    boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance;
-    return mainAtSpeed && rollerAtSpeed;
+    if(m_rollerToleranceKillswitch.get()) {
+        return mainAtSpeed;
+    }
+    else {
+        boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance;
+        return mainAtSpeed && rollerAtSpeed;
+    }
   }
 
   /**
@@ -804,8 +813,7 @@ public class Shooter extends SubsystemBase {
               if (m_sotfFixSub.get()) {
                 lookupDistance =
                     Math.max(
-                        0,
-                        result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.305);
+                        0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.305);
               } else {
                 lookupDistance = result.virtualDistance();
               }
