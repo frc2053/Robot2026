@@ -119,6 +119,9 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_sotfRobotSpeedPub;
   private final DoublePublisher m_sotfAimingAngleDegPub;
 
+  // SOTF distance fix toggle (dashboard killswitch)
+  private final BooleanSubscriber m_sotfFixSub;
+
   // Target velocities for at-speed detection
   private double m_targetMainShooterRps;
   private double m_targetRollerRps;
@@ -383,6 +386,8 @@ public class Shooter extends SubsystemBase {
     m_sotfConvergedPub = sotfTable.getBooleanTopic("Converged").publish();
     m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
     m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
+    sotfTable.getBooleanTopic("UseDistanceFix").publish().setDefault(true);
+    m_sotfFixSub = sotfTable.getBooleanTopic("UseDistanceFix").subscribe(true);
 
     // Initialize tuning mode NetworkTables controls
     NetworkTable tuningTable = shooterTable.getSubTable("Tuning");
@@ -791,13 +796,19 @@ public class Shooter extends SubsystemBase {
               m_sotfRobotSpeedPub.set(robotSpeed);
               m_sotfAimingAngleDegPub.set(result.aimingAngle().getDegrees());
 
-              // Use robot-center-to-virtual-target minus the same 0.610 calibration
+              // New path: robot-center-to-virtual-target minus the same 0.610 calibration
               // offset as getLookupDistanceToGoal so SOTF matches the static path
               // reference frame. When stationary this equals the static lookup exactly.
-              double lookupDistance =
-                  Math.max(
-                      0,
-                      result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.610);
+              // Old path: raw virtualDistance (known to overshoot at medium range)
+              double lookupDistance;
+              if (m_sotfFixSub.get()) {
+                lookupDistance =
+                    Math.max(
+                        0,
+                        result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.610);
+              } else {
+                lookupDistance = result.virtualDistance();
+              }
 
               double bottomSpeedRps =
                   ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(lookupDistance) / 60.0;
