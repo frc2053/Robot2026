@@ -121,6 +121,7 @@ public class Shooter extends SubsystemBase {
 
   // SOTF distance fix toggle (dashboard killswitch)
   private final BooleanSubscriber m_sotfFixSub;
+  private final BooleanSubscriber m_redSideFixSub;
 
   // Target velocities for at-speed detection
   private double m_targetMainShooterRps;
@@ -386,8 +387,10 @@ public class Shooter extends SubsystemBase {
     m_sotfConvergedPub = sotfTable.getBooleanTopic("Converged").publish();
     m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
     m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
+    shooterTable.getBooleanTopic("RedSideOvershootFix").publish().setDefault(true);
     sotfTable.getBooleanTopic("UseDistanceFix").publish().setDefault(true);
     m_sotfFixSub = sotfTable.getBooleanTopic("UseDistanceFix").subscribe(true);
+    m_redSideFixSub = shooterTable.getBooleanTopic("RedSideOvershootFix").subscribe(true);
 
 
     // Initialize tuning mode NetworkTables controls
@@ -803,9 +806,12 @@ public class Shooter extends SubsystemBase {
               // Old path: raw virtualDistance (known to overshoot at medium range)
               double lookupDistance;
               if (m_sotfFixSub.get()) {
-                lookupDistance =
-                    Math.max(
-                        0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.305);
+                if (m_redSideFixSub.get()) {
+                    lookupDistance = Math.max(0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.915);
+                }
+                else {
+                    lookupDistance = Math.max(0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.305);
+                }
               } else {
                 lookupDistance = result.virtualDistance();
               }
