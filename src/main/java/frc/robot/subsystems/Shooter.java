@@ -121,7 +121,6 @@ public class Shooter extends SubsystemBase {
 
   // SOTF distance fix toggle (dashboard killswitch)
   private final BooleanSubscriber m_sotfFixSub;
-  private final BooleanSubscriber m_rollerToleranceKillswitch;
 
   // Target velocities for at-speed detection
   private double m_targetMainShooterRps;
@@ -388,9 +387,7 @@ public class Shooter extends SubsystemBase {
     m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
     m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
     sotfTable.getBooleanTopic("UseDistanceFix").publish().setDefault(true);
-    shooterTable.getBooleanTopic("UseToleranceFix").publish().setDefault(true);
     m_sotfFixSub = sotfTable.getBooleanTopic("UseDistanceFix").subscribe(true);
-    m_rollerToleranceKillswitch = shooterTable.getBooleanTopic("UseToleranceFix").subscribe(true);
 
 
     // Initialize tuning mode NetworkTables controls
@@ -665,13 +662,8 @@ public class Shooter extends SubsystemBase {
     double rollerVel = m_rollerVel.getValue().in(RotationsPerSecond);
     double tolerance = m_velocityToleranceRpsSub.get();
     boolean mainAtSpeed = Math.abs(mainShooterVel - m_targetMainShooterRps) < tolerance;
-    if(m_rollerToleranceKillswitch.get()) {
-        return mainAtSpeed;
-    }
-    else {
-        boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance;
-        return mainAtSpeed && rollerAtSpeed;
-    }
+    boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance;
+    return mainAtSpeed && rollerAtSpeed;
   }
 
   /**
