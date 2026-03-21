@@ -823,7 +823,7 @@ public class Shooter extends SubsystemBase {
               double lookupDistance;
               if (m_sotfFixSub.get()) {
                 if (m_redSideFixSub.get()) {
-                    lookupDistance = Math.max(0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.915);
+                    lookupDistance = Math.max(0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.7625);
                 }
                 else {
                     lookupDistance = Math.max(0, result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.305);
