@@ -22,8 +22,6 @@ import frc.robot.Constants.FuelConstants;
  * explicit ballistic modeling at runtime.
  */
 public final class ShootingOnTheFly {
-  public record ShootingParams(Translation2d noIdea, double bottomRpm, double topRpm) {}
-
   /** Maximum number of TOF recursion iterations before giving up. */
   private static final int kMaxIterations = 20;
 
