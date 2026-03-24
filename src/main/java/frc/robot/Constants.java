@@ -189,7 +189,7 @@ public final class Constants {
     public static final double kSpinVoltage = 12.0;
 
     // Simulation constants
-    public static final double KICKER_GEAR_RATIO = 5.0;
+    public static final double KICKER_GEAR_RATIO = 1.0;
     public static final double KICKER_MOI = 0.002; // kg*m^2
   }
 
