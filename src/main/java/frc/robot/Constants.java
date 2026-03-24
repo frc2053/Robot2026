@@ -203,15 +203,28 @@ public final class Constants {
     public static final int ROLLER_STATOR_LIMIT = 80;
 
     // Gear ratios
-    public static final double RACK_GEAR_RATIO = 56.0;
+    public static final double RACK_GEAR_RATIO = 5.0; // Motor to pinion gearbox ratio
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
-    // Rack position constants (in rotations at mechanism)
-    public static final double kRackDeployedPosition = -0.293213;
-    public static final double kRackStowedPosition = -0.003662;
+    // Rack and pinion parameters (10 DP, 10 tooth pinion, 53 tooth rack)
+    public static final int RACK_PINION_TEETH = 10;
+    public static final int RACK_TEETH = 53;
+    public static final int RACK_DIAMETRAL_PITCH = 10;
+    // Pinion pitch diameter = teeth / DP = 10/10 = 1 inch
+    public static final double RACK_PINION_PITCH_RADIUS_METERS = Units.inchesToMeters(0.5);
+    // Max rack travel = rack teeth × circular pitch = 53 × (π/10) ≈ 16.65 inches
+    public static final double RACK_MAX_TRAVEL_METERS = Units.inchesToMeters(53.0 * Math.PI / 10.0);
+    // Rack angle (degrees down from horizontal)
+    public static final double RACK_ANGLE_DEGREES = 22.022506;
 
-    // Offset (in rotations) above deployed position used when wiggling during feeding
-    public static final double kRackFeedingWiggleOffset = 20.53 / 360.0;
+    // Rack position constants (in rotations at mechanism/pinion)
+    // Max travel = rack teeth / pinion teeth = 53 / 10 = 5.3 rotations
+    public static final double kRackDeployedPosition = 5.3;
+    public static final double kRackStowedPosition = 0.0;
+
+    // Offset (in rotations) from deployed position when wiggling during feeding
+    // Negative to retract 75% of the way back toward stowed
+    public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
 
     // Rack PID constants (Slot 0)
     public static final double kRackKS = 0.1;
@@ -230,61 +243,15 @@ public final class Constants {
     public static final double kEjectVoltage = -6.0;
 
     // Simulation constants (from CAD)
-    // COM distance from pivot
-    public static final double RACK_ARM_LENGTH_METERS = Units.inchesToMeters(11.549);
-    public static final double RACK_ARM_MASS_KG = Units.lbsToKilograms(10.224711);
-    // MOI conversion: in^2*lb to kg*m^2
-    public static final double RACK_MOI =
-        1585.915769 * Math.pow(Units.inchesToMeters(1), 2) * Units.lbsToKilograms(1);
+    // Mass of the moving rack carriage
+    public static final double RACK_CARRIAGE_MASS_KG = Units.lbsToKilograms(10.224711);
+    // Min/max positions for simulation (in meters)
+    public static final double RACK_MIN_EXTENSION_METERS = 0.0;
+    public static final double RACK_MAX_EXTENSION_METERS = RACK_MAX_TRAVEL_METERS;
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Position tolerance for "at position" detection (rotations)
     public static final double kRackPositionToleranceRotations = 0.02;
-  }
-
-  public static class ClimberConstants {
-    public static final int CLIMBER_MOTOR_ID = 22;
-
-    public static final int CLIMBER_SUPPLY_LIMIT = 60;
-    public static final int CLIMBER_STATOR_LIMIT = 120;
-
-    // Gear ratio (81:1)
-    public static final double CLIMBER_GEAR_RATIO = 81.0;
-
-    // Total travel distance
-    public static final double kMaxHeightMeters = Units.inchesToMeters(5.0);
-    public static final double kMinHeightMeters = 0.0;
-
-    // Drum radius for converting rotations to linear distance (0.75 inch diameter)
-    public static final double kDrumRadiusMeters = Units.inchesToMeters(0.375);
-
-    // Position constants (in meters)
-    public static final double kRetractedPosition = 0.0;
-    public static final double kExtendedPosition = Units.inchesToMeters(5);
-
-    // Climber PID constants (Slot 0)
-    public static final double kClimberKS = 0.0;
-    public static final double kClimberKG = 0.0;
-    public static final double kClimberKV = 0.0;
-    public static final double kClimberKA = 0.0;
-    public static final double kClimberKP = 0.0;
-    public static final double kClimberKI = 0.0;
-    public static final double kClimberKD = 0.0;
-    public static final double kClimberMotionMagicCruiseVelocity = 10.0; // rotations per second
-    public static final double kClimberMotionMagicAcceleration = 20.0; // rotations per second^2
-
-    // Simulation constants
-    // Light load when extending up (just the climber hook/carriage)
-    public static final double CLIMBER_CARRIAGE_MASS_KG = Units.lbsToKilograms(2.0);
-    // Heavy load when climbing (lifting the robot)
-    public static final double CLIMBER_ROBOT_MASS_KG = Units.lbsToKilograms(200.0);
-
-    // Position tolerance for "at position" detection (meters)
-    public static final double kPositionToleranceMeters = 0.005;
-
-    // Climb voltage for manual control
-    public static final double kClimbVoltage = 12.0;
-    public static final double kRetractVoltage = -12.0;
   }
 
   public static class VisionConstants {
