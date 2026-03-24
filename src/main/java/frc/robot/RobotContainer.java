@@ -241,6 +241,13 @@ public class RobotContainer {
         () -> m_drivetrain.getState().Speeds);
 
     m_fuelSim.start();
+
+    m_fuelSim.registerIntake(
+        SwerveConstants.kRobotLength / 2,
+        SwerveConstants.kRobotLength / 2 + Units.inchesToMeters(12),
+        -SwerveConstants.kRobotWidth / 2,
+        SwerveConstants.kRobotWidth / 2,
+        m_joystick.leftTrigger());
   }
 
   public Command alignToHub() {
