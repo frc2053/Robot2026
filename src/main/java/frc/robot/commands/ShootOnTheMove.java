@@ -32,8 +32,8 @@ public class ShootOnTheMove extends Command {
   private final DoubleSupplier m_forwardSupplier;
   private final DoubleSupplier m_strafeSupplier;
 
-  private Swerve m_swerve;
-  private Shooter m_shooter;
+  private final Swerve m_swerve;
+  private final Shooter m_shooter;
 
   private final SwerveRequest.FieldCentricFacingAngle m_swerveRequest =
       new FieldCentricFacingAngle()
