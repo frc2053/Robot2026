@@ -7,19 +7,19 @@
       "height": 1408,
       "state": {
         "sidebar": {
-          "width": 300,
+          "width": 450,
           "expanded": [
             "/DriveState/ModuleStates",
             "/photonvision/FrontCamera",
             "/photonvision/FrontCamera/rawBytes/multitagResult",
             "/Drivetrain",
             "/Drivetrain/LookAtPoint",
-            "/Mechanism",
-            "/Intake"
+            "/Drivetrain/ControlRequest",
+            "/Fuel Simulation"
           ]
         },
         "tabs": {
-          "selected": 4,
+          "selected": 2,
           "tabs": [
             {
               "type": 0,
@@ -172,42 +172,51 @@
                     "visible": false,
                     "options": {
                       "model": "Robot_2053",
-                      "color": "#ff0000"
+                      "color": "#0000ff"
                     }
                   },
                   {
                     "type": "ghost",
-                    "logKey": "NT:/Vision/FrontCameraPoseEstimation",
+                    "logKey": "NT:/Vision/UpperPortCameraPoseEstimation",
                     "logType": "Pose2d",
-                    "visible": false,
+                    "visible": true,
                     "options": {
                       "model": "Robot_2053",
                       "color": "#00ff00"
                     }
                   },
                   {
-                    "type": "axes",
-                    "logKey": "NT:/Vision/FrontCameratargetPoses",
-                    "logType": "Pose3d[]",
-                    "visible": true,
-                    "options": {}
-                  },
-                  {
-                    "type": "cone",
-                    "logKey": "NT:Drivetrain/LookAtPoint/TargetPoint",
+                    "type": "ghost",
+                    "logKey": "NT:/Vision/BottomPortCameraPoseEstimation",
                     "logType": "Pose2d",
                     "visible": true,
                     "options": {
-                      "color": "#00ff00",
-                      "position": "center"
+                      "model": "Robot_2053",
+                      "color": "#ff0000"
                     }
                   },
                   {
                     "type": "axes",
-                    "logKey": "NT:/Vision/FrontCameraCameraPose",
+                    "logKey": "NT:/Vision/UpperPortCameraCameraPose",
                     "logType": "Pose3d",
                     "visible": true,
                     "options": {}
+                  },
+                  {
+                    "type": "axes",
+                    "logKey": "NT:/Vision/BottomPortCameraCameraPose",
+                    "logType": "Pose3d",
+                    "visible": true,
+                    "options": {}
+                  },
+                  {
+                    "type": "gamePiece",
+                    "logKey": "NT:/Fuel Simulation/Fuels",
+                    "logType": "Translation3d[]",
+                    "visible": true,
+                    "options": {
+                      "variant": "Fuel"
+                    }
                   }
                 ],
                 "game": "FRC:2026 Field"
@@ -217,14 +226,14 @@
                 "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -5.517310837726306,
-                  0.7378151230165839,
-                  4.622052190305668
+                  -8.688033748370156,
+                  3.5134770666201813,
+                  8.21907751748766
                 ],
                 "cameraTarget": [
-                  -6.582271497688954,
-                  -0.3189884679656605,
-                  0.13403834849454876
+                  -4.35766368414634,
+                  1.0395323455519974,
+                  -1.087037947854374
                 ]
               },
               "controlsHeight": 200
@@ -589,7 +598,7 @@
                 "leftSources": [
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/PivotPositionRotations",
+                    "logKey": "NT:/Intake/RackPositionRotations",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -599,7 +608,7 @@
                   },
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/PivotSetpoint",
+                    "logKey": "NT:/Intake/RackSetpoint",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -611,7 +620,7 @@
                 "rightSources": [
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/PivotVelocityRPM",
+                    "logKey": "NT:/Intake/RackVelocityRPM",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -621,7 +630,7 @@
                   },
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/PivotVoltage",
+                    "logKey": "NT:/Intake/RackVoltage",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -661,7 +670,7 @@
                   },
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/PivotStatorCurrent",
+                    "logKey": "NT:/Intake/RackStatorCurrent",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -671,7 +680,7 @@
                   },
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/PivotSupplyCurrent",
+                    "logKey": "NT:/Intake/RackSupplyCurrent",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -724,7 +733,12 @@
                 "rightLockedRange": null,
                 "leftUnitConversion": {
                   "autoTarget": null,
-                  "preset": null
+                  "preset": {
+                    "type": "angle",
+                    "factor": 1,
+                    "from": "rotations",
+                    "to": "degrees"
+                  }
                 },
                 "rightUnitConversion": {
                   "autoTarget": null,

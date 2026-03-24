@@ -194,35 +194,35 @@ public final class Constants {
   }
 
   public static class IntakeConstants {
-    public static final int PIVOT_MOTOR_ID = 20;
+    public static final int RACK_MOTOR_ID = 20;
     public static final int ROLLER_MOTOR_ID = 21;
 
-    public static final int PIVOT_SUPPLY_LIMIT = 40;
-    public static final int PIVOT_STATOR_LIMIT = 60;
+    public static final int RACK_SUPPLY_LIMIT = 40;
+    public static final int RACK_STATOR_LIMIT = 60;
     public static final int ROLLER_SUPPLY_LIMIT = 40;
     public static final int ROLLER_STATOR_LIMIT = 80;
 
     // Gear ratios
-    public static final double PIVOT_GEAR_RATIO = 56.0;
+    public static final double RACK_GEAR_RATIO = 56.0;
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
-    // Pivot position constants (in rotations at mechanism)
-    public static final double kPivotDeployedPosition = -0.293213;
-    public static final double kPivotStowedPosition = -0.003662;
+    // Rack position constants (in rotations at mechanism)
+    public static final double kRackDeployedPosition = -0.293213;
+    public static final double kRackStowedPosition = -0.003662;
 
     // Offset (in rotations) above deployed position used when wiggling during feeding
-    public static final double kPivotFeedingWiggleOffset = 20.53 / 360.0;
+    public static final double kRackFeedingWiggleOffset = 20.53 / 360.0;
 
-    // Pivot PID constants (Slot 0)
-    public static final double kPivotKS = 0.1;
-    public static final double kPivotKG = 0.0;
-    public static final double kPivotKV = 0.0;
-    public static final double kPivotKA = 0.0;
-    public static final double kPivotKP = 32.0;
-    public static final double kPivotKI = 0.0;
-    public static final double kPivotKD = 0.0;
-    public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
-    public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
+    // Rack PID constants (Slot 0)
+    public static final double kRackKS = 0.1;
+    public static final double kRackKG = 0.0;
+    public static final double kRackKV = 0.0;
+    public static final double kRackKA = 0.0;
+    public static final double kRackKP = 32.0;
+    public static final double kRackKI = 0.0;
+    public static final double kRackKD = 0.0;
+    public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
+    public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
     // Roller voltage for intaking
     public static final double kIntakeVoltage = 12.0;
@@ -231,15 +231,15 @@ public final class Constants {
 
     // Simulation constants (from CAD)
     // COM distance from pivot
-    public static final double PIVOT_ARM_LENGTH_METERS = Units.inchesToMeters(11.549);
-    public static final double PIVOT_ARM_MASS_KG = Units.lbsToKilograms(10.224711);
+    public static final double RACK_ARM_LENGTH_METERS = Units.inchesToMeters(11.549);
+    public static final double RACK_ARM_MASS_KG = Units.lbsToKilograms(10.224711);
     // MOI conversion: in^2*lb to kg*m^2
-    public static final double PIVOT_MOI =
+    public static final double RACK_MOI =
         1585.915769 * Math.pow(Units.inchesToMeters(1), 2) * Units.lbsToKilograms(1);
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Position tolerance for "at position" detection (rotations)
-    public static final double kPivotPositionToleranceRotations = 0.02;
+    public static final double kRackPositionToleranceRotations = 0.02;
   }
 
   public static class ClimberConstants {

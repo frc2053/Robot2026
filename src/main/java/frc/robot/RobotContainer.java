@@ -153,7 +153,7 @@ public class RobotContainer {
 
     // Tuning commands - controlled via NetworkTables Enabled entry:
     //   Shooter/Tuning/Enabled, MainShooterRPM, RollerRPM, MainShooterGains/*, RollerGains/*
-    //   Intake/Tuning/Enabled, PivotPositionRotations, PivotGains/*
+    //   Intake/Tuning/Enabled, RackPositionRotations, RackGains/*
     m_shooter.tuningEnabledTrigger().whileTrue(m_shooter.tuningCommand());
     m_intake.tuningEnabledTrigger().whileTrue(m_intake.tuningCommand());
 
@@ -273,7 +273,7 @@ public class RobotContainer {
     return Commands.parallel(
         m_spindexer.spin(),
         m_kicker.spin(),
-        m_intake.feedingWigglePivotCommand(),
+        m_intake.feedingWiggleRackCommand(),
         Commands.run(
             () -> {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
