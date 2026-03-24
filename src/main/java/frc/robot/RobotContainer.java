@@ -68,7 +68,6 @@ public class RobotContainer {
   public final Spindexer m_spindexer = new Spindexer();
   public final Kicker m_kicker = new Kicker();
   public final Intake m_intake = new Intake();
-  // public final Climber m_climber = new Climber();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   private static FuelSim m_fuelSim;
