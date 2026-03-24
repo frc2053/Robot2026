@@ -15,11 +15,12 @@
             "/Drivetrain",
             "/Drivetrain/LookAtPoint",
             "/Drivetrain/ControlRequest",
-            "/Fuel Simulation"
+            "/Fuel Simulation",
+            "/Intake"
           ]
         },
         "tabs": {
-          "selected": 2,
+          "selected": 6,
           "tabs": [
             {
               "type": 0,
@@ -223,17 +224,17 @@
               },
               "controllerUUID": "3dx6zqgy4emytq4a31bxbsb4sxbxxpkj",
               "renderer": {
-                "cameraIndex": -1,
+                "cameraIndex": -2,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -8.688033748370156,
-                  3.5134770666201813,
-                  8.21907751748766
+                  -0.9747320206155144,
+                  2.430048927642508,
+                  3.633747393347813
                 ],
                 "cameraTarget": [
-                  -4.35766368414634,
-                  1.0395323455519974,
-                  -1.087037947854374
+                  -0.24763673561209246,
+                  0.5258544794971307,
+                  -0.002329809631054048
                 ]
               },
               "controlsHeight": 200
@@ -620,7 +621,7 @@
                 "rightSources": [
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/RackVelocityRPM",
+                    "logKey": "NT:/Intake/RollerVoltage",
                     "logType": "Number",
                     "visible": true,
                     "options": {
@@ -630,81 +631,11 @@
                   },
                   {
                     "type": "stepped",
-                    "logKey": "NT:/Intake/RackVoltage",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#c0b487",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
-                    "logKey": "NT:/Intake/RollerVelocityRPM",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#858584",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
-                    "logKey": "NT:/Intake/RollerVoltage",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#3b875a",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
                     "logKey": "NT:/Intake/RollerVoltageSetpoint",
                     "logType": "Number",
                     "visible": true,
                     "options": {
-                      "color": "#d993aa",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
-                    "logKey": "NT:/Intake/RackStatorCurrent",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#5f4528",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
-                    "logKey": "NT:/Intake/RackSupplyCurrent",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#2b66a2",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
-                    "logKey": "NT:/Intake/RollerStatorCurrent",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#e5b31b",
-                      "size": "normal"
-                    }
-                  },
-                  {
-                    "type": "stepped",
-                    "logKey": "NT:/Intake/RollerSupplyCurrent",
-                    "logType": "Number",
-                    "visible": true,
-                    "options": {
-                      "color": "#af2437",
+                      "color": "#c0b487",
                       "size": "normal"
                     }
                   }
