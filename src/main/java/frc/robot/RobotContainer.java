@@ -247,7 +247,8 @@ public class RobotContainer {
         SwerveConstants.kRobotLength / 2 + Units.inchesToMeters(12),
         -SwerveConstants.kRobotWidth / 2,
         SwerveConstants.kRobotWidth / 2,
-        m_joystick.leftTrigger());
+        m_joystick.leftTrigger(),
+        FuelVisualizer::addFuel);
   }
 
   public Command alignToHub() {
