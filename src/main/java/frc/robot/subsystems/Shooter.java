@@ -675,7 +675,7 @@ public class Shooter extends SubsystemBase {
   }
 
   /**
-   * Sets the target speeds of the shooter motors
+   * Sets the target speeds of the shooter motors.
    *
    * @param mainSpeed the main shooter motor speed
    * @param topSpeed the speed of the top roller

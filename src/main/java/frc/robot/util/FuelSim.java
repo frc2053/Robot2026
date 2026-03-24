@@ -1,4 +1,5 @@
 // https://github.com/hammerheads5000/FuelSim
+
 package frc.robot.util;
 
 import static edu.wpi.first.units.Units.Meters;
@@ -103,12 +104,12 @@ public class FuelSim {
   };
 
   protected static class Fuel {
-    protected Translation3d pos;
-    protected Translation3d vel;
+    protected Translation3d m_pos;
+    protected Translation3d m_vel;
 
     protected Fuel(Translation3d pos, Translation3d vel) {
-      this.pos = pos;
-      this.vel = vel;
+      this.m_pos = pos;
+      this.m_vel = vel;
     }
 
     protected Fuel(Translation3d pos) {
@@ -116,54 +117,58 @@ public class FuelSim {
     }
 
     protected void update(boolean simulateAirResistance, int subticks) {
-      pos = pos.plus(vel.times(PERIOD / subticks));
-      if (pos.getZ() > FUEL_RADIUS) {
-        Translation3d Fg = GRAVITY.times(FUEL_MASS);
-        Translation3d Fd = new Translation3d();
+      m_pos = m_pos.plus(m_vel.times(PERIOD / subticks));
+      if (m_pos.getZ() > FUEL_RADIUS) {
+        Translation3d fg = GRAVITY.times(FUEL_MASS);
+        Translation3d fd = new Translation3d();
 
-        if (simulateAirResistance) {
-          double speed = vel.getNorm();
-          if (speed > 1e-6) {
-            Fd = vel.times(-DRAG_FORCE_FACTOR * speed);
-          }
+        double speed = m_vel.getNorm();
+        if (simulateAirResistance && speed > 1e-6) {
+          fd = m_vel.times(-DRAG_FORCE_FACTOR * speed);
         }
 
-        Translation3d accel = Fg.plus(Fd).div(FUEL_MASS);
-        vel = vel.plus(accel.times(PERIOD / subticks));
+        Translation3d accel = fg.plus(fd).div(FUEL_MASS);
+        m_vel = m_vel.plus(accel.times(PERIOD / subticks));
       }
-      if (Math.abs(vel.getZ()) < 0.05 && pos.getZ() <= FUEL_RADIUS + 0.03) {
-        vel = new Translation3d(vel.getX(), vel.getY(), 0);
-        vel = vel.times(1 - FRICTION * PERIOD / subticks);
-        // pos = new Translation3d(pos.getX(), pos.getY(), FUEL_RADIUS);
+      if (Math.abs(m_vel.getZ()) < 0.05 && m_pos.getZ() <= FUEL_RADIUS + 0.03) {
+        m_vel = new Translation3d(m_vel.getX(), m_vel.getY(), 0);
+        m_vel = m_vel.times(1 - FRICTION * PERIOD / subticks);
+        // m_pos = new Translation3d(m_pos.getX(), m_pos.getY(), FUEL_RADIUS);
       }
       handleFieldCollisions(subticks);
     }
 
     protected void handleXZLineCollision(Translation3d lineStart, Translation3d lineEnd) {
-      if (pos.getY() < lineStart.getY() || pos.getY() > lineEnd.getY())
+      if (m_pos.getY() < lineStart.getY() || m_pos.getY() > lineEnd.getY()) {
         return; // not within y range
+      }
       // Convert into 2D
       Translation2d start2d = new Translation2d(lineStart.getX(), lineStart.getZ());
       Translation2d end2d = new Translation2d(lineEnd.getX(), lineEnd.getZ());
-      Translation2d pos2d = new Translation2d(pos.getX(), pos.getZ());
+      Translation2d pos2d = new Translation2d(m_pos.getX(), m_pos.getZ());
       Translation2d lineVec = end2d.minus(start2d);
 
       // Get closest point on line
       Translation2d projected =
           start2d.plus(lineVec.times(pos2d.minus(start2d).dot(lineVec) / lineVec.getSquaredNorm()));
 
-      if (projected.getDistance(start2d) + projected.getDistance(end2d) > lineVec.getNorm())
+      if (projected.getDistance(start2d) + projected.getDistance(end2d) > lineVec.getNorm()) {
         return; // projected point not on line
+      }
       double dist = pos2d.getDistance(projected);
-      if (dist > FUEL_RADIUS) return; // not intersecting line
+      if (dist > FUEL_RADIUS) {
+        return; // not intersecting line
+      }
       // Back into 3D
       Translation3d normal =
           new Translation3d(-lineVec.getY(), 0, lineVec.getX()).div(lineVec.getNorm());
 
       // Apply collision response
-      pos = pos.plus(normal.times(FUEL_RADIUS - dist));
-      if (vel.dot(normal) > 0) return; // already moving away from line
-      vel = vel.minus(normal.times((1 + FIELD_COR) * vel.dot(normal)));
+      m_pos = m_pos.plus(normal.times(FUEL_RADIUS - dist));
+      if (m_vel.dot(normal) > 0) {
+        return; // already moving away from line
+      }
+      m_vel = m_vel.minus(normal.times((1 + FIELD_COR) * m_vel.dot(normal)));
     }
 
     protected void handleFieldCollisions(int subticks) {
@@ -173,20 +178,20 @@ public class FuelSim {
       }
 
       // edges
-      if (pos.getX() < FUEL_RADIUS && vel.getX() < 0) {
-        pos = pos.plus(new Translation3d(FUEL_RADIUS - pos.getX(), 0, 0));
-        vel = vel.plus(new Translation3d(-(1 + FIELD_COR) * vel.getX(), 0, 0));
-      } else if (pos.getX() > FIELD_LENGTH - FUEL_RADIUS && vel.getX() > 0) {
-        pos = pos.plus(new Translation3d(FIELD_LENGTH - FUEL_RADIUS - pos.getX(), 0, 0));
-        vel = vel.plus(new Translation3d(-(1 + FIELD_COR) * vel.getX(), 0, 0));
+      if (m_pos.getX() < FUEL_RADIUS && m_vel.getX() < 0) {
+        m_pos = m_pos.plus(new Translation3d(FUEL_RADIUS - m_pos.getX(), 0, 0));
+        m_vel = m_vel.plus(new Translation3d(-(1 + FIELD_COR) * m_vel.getX(), 0, 0));
+      } else if (m_pos.getX() > FIELD_LENGTH - FUEL_RADIUS && m_vel.getX() > 0) {
+        m_pos = m_pos.plus(new Translation3d(FIELD_LENGTH - FUEL_RADIUS - m_pos.getX(), 0, 0));
+        m_vel = m_vel.plus(new Translation3d(-(1 + FIELD_COR) * m_vel.getX(), 0, 0));
       }
 
-      if (pos.getY() < FUEL_RADIUS && vel.getY() < 0) {
-        pos = pos.plus(new Translation3d(0, FUEL_RADIUS - pos.getY(), 0));
-        vel = vel.plus(new Translation3d(0, -(1 + FIELD_COR) * vel.getY(), 0));
-      } else if (pos.getY() > FIELD_WIDTH - FUEL_RADIUS && vel.getY() > 0) {
-        pos = pos.plus(new Translation3d(0, FIELD_WIDTH - FUEL_RADIUS - pos.getY(), 0));
-        vel = vel.plus(new Translation3d(0, -(1 + FIELD_COR) * vel.getY(), 0));
+      if (m_pos.getY() < FUEL_RADIUS && m_vel.getY() < 0) {
+        m_pos = m_pos.plus(new Translation3d(0, FUEL_RADIUS - m_pos.getY(), 0));
+        m_vel = m_vel.plus(new Translation3d(0, -(1 + FIELD_COR) * m_vel.getY(), 0));
+      } else if (m_pos.getY() > FIELD_WIDTH - FUEL_RADIUS && m_vel.getY() > 0) {
+        m_pos = m_pos.plus(new Translation3d(0, FIELD_WIDTH - FUEL_RADIUS - m_pos.getY(), 0));
+        m_vel = m_vel.plus(new Translation3d(0, -(1 + FIELD_COR) * m_vel.getY(), 0));
       }
 
       // hubs
@@ -202,8 +207,8 @@ public class FuelSim {
 
       double netCollision = hub.fuelHitNet(this);
       if (netCollision != 0) {
-        pos = pos.plus(new Translation3d(netCollision, 0, 0));
-        vel = new Translation3d(-vel.getX() * NET_COR, vel.getY() * NET_COR, vel.getZ());
+        m_pos = m_pos.plus(new Translation3d(netCollision, 0, 0));
+        m_vel = new Translation3d(-m_vel.getX() * NET_COR, m_vel.getY() * NET_COR, m_vel.getZ());
       }
     }
 
@@ -255,22 +260,22 @@ public class FuelSim {
     }
 
     protected void addImpulse(Translation3d impulse) {
-      vel = vel.plus(impulse);
+      m_vel = m_vel.plus(impulse);
     }
   }
 
   protected static void handleFuelCollision(Fuel a, Fuel b) {
-    Translation3d normal = a.pos.minus(b.pos);
+    Translation3d normal = a.m_pos.minus(b.m_pos);
     double distance = normal.getNorm();
     if (distance == 0) {
       normal = new Translation3d(1, 0, 0);
       distance = 1;
     }
     normal = normal.div(distance);
-    double impulse = 0.5 * (1 + FUEL_COR) * (b.vel.minus(a.vel).dot(normal));
+    double impulse = 0.5 * (1 + FUEL_COR) * (b.m_vel.minus(a.m_vel).dot(normal));
     double intersection = FUEL_RADIUS * 2 - distance;
-    a.pos = a.pos.plus(normal.times(intersection / 2));
-    b.pos = b.pos.minus(normal.times(intersection / 2));
+    a.m_pos = a.m_pos.plus(normal.times(intersection / 2));
+    b.m_pos = b.m_pos.minus(normal.times(intersection / 2));
     a.addImpulse(normal.times(impulse));
     b.addImpulse(normal.times(-impulse));
   }
@@ -280,44 +285,44 @@ public class FuelSim {
   protected static final int GRID_ROWS = (int) Math.ceil(FIELD_WIDTH / CELL_SIZE);
 
   @SuppressWarnings("unchecked")
-  protected final ArrayList<Fuel>[][] grid = new ArrayList[GRID_COLS][GRID_ROWS];
+  protected final ArrayList<Fuel>[][] m_grid = new ArrayList[GRID_COLS][GRID_ROWS];
 
-  private final ArrayList<ArrayList<Fuel>> activeCells = new ArrayList<>();
+  private final ArrayList<ArrayList<Fuel>> m_activeCells = new ArrayList<>();
 
   protected void handleFuelCollisions(ArrayList<Fuel> fuels) {
     // Clear grid
-    for (ArrayList<Fuel> cell : activeCells) {
+    for (ArrayList<Fuel> cell : m_activeCells) {
       cell.clear();
     }
-    activeCells.clear();
+    m_activeCells.clear();
 
     // Populate grid
     for (Fuel fuel : fuels) {
-      int col = (int) (fuel.pos.getX() / CELL_SIZE);
-      int row = (int) (fuel.pos.getY() / CELL_SIZE);
+      int col = (int) (fuel.m_pos.getX() / CELL_SIZE);
+      int row = (int) (fuel.m_pos.getY() / CELL_SIZE);
 
       if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
-        grid[col][row].add(fuel);
-        if (grid[col][row].size() == 1) {
-          activeCells.add(grid[col][row]);
+        m_grid[col][row].add(fuel);
+        if (m_grid[col][row].size() == 1) {
+          m_activeCells.add(m_grid[col][row]);
         }
       }
     }
 
     // Check collisions
     for (Fuel fuel : fuels) {
-      int col = (int) (fuel.pos.getX() / CELL_SIZE);
-      int row = (int) (fuel.pos.getY() / CELL_SIZE);
+      int col = (int) (fuel.m_pos.getX() / CELL_SIZE);
+      int row = (int) (fuel.m_pos.getY() / CELL_SIZE);
 
       // Check 3x3 neighbor cells
       for (int i = col - 1; i <= col + 1; i++) {
         for (int j = row - 1; j <= row + 1; j++) {
           if (i >= 0 && i < GRID_COLS && j >= 0 && j < GRID_ROWS) {
-            for (Fuel other : grid[i][j]) {
-              if (fuel != other && fuel.pos.getDistance(other.pos) < FUEL_RADIUS * 2) {
-                if (fuel.hashCode() < other.hashCode()) {
-                  handleFuelCollision(fuel, other);
-                }
+            for (Fuel other : m_grid[i][j]) {
+              if (!fuel.equals(other)
+                  && fuel.m_pos.getDistance(other.m_pos) < FUEL_RADIUS * 2
+                  && fuel.hashCode() < other.hashCode()) {
+                handleFuelCollision(fuel, other);
               }
             }
           }
@@ -326,21 +331,21 @@ public class FuelSim {
     }
   }
 
-  protected ArrayList<Fuel> fuels = new ArrayList<>();
-  protected boolean running = false;
-  protected boolean simulateAirResistance = false;
-  protected Supplier<Pose2d> robotPoseSupplier = null;
-  protected Supplier<ChassisSpeeds> robotFieldSpeedsSupplier = null;
-  protected double robotWidth; // size along the robot's y axis
-  protected double robotLength; // size along the robot's x axis
-  protected double bumperHeight;
-  protected ArrayList<SimIntake> intakes = new ArrayList<>();
-  protected int subticks = 5;
-  protected double loggingFreqHz = 10;
-  protected Timer loggingTimer = new Timer();
+  protected ArrayList<Fuel> m_fuels = new ArrayList<>();
+  protected boolean m_running;
+  protected boolean m_simulateAirResistance;
+  protected Supplier<Pose2d> m_robotPoseSupplier;
+  protected Supplier<ChassisSpeeds> m_robotFieldSpeedsSupplier;
+  protected double m_robotWidth; // size along the robot's y axis
+  protected double m_robotLength; // size along the robot's x axis
+  protected double m_bumperHeight;
+  protected ArrayList<SimIntake> m_intakes = new ArrayList<>();
+  protected int m_subticks = 5;
+  protected double m_loggingFreqHz = 10;
+  protected Timer m_loggingTimer = new Timer();
 
   /**
-   * Creates a new instance of FuelSim
+   * Creates a new instance of FuelSim.
    *
    * @param tableKey NetworkTable to log fuel positions to as an array of {@link Translation3d}
    *     structs.
@@ -349,42 +354,42 @@ public class FuelSim {
     // Initialize grid
     for (int i = 0; i < GRID_COLS; i++) {
       for (int j = 0; j < GRID_ROWS; j++) {
-        grid[i][j] = new ArrayList<Fuel>();
+        m_grid[i][j] = new ArrayList<Fuel>();
       }
     }
 
-    fuelPublisher =
+    m_fuelPublisher =
         NetworkTableInstance.getDefault()
             .getStructArrayTopic(tableKey + "/Fuels", Translation3d.struct)
             .publish();
   }
 
-  /** Creates a new instance of FuelSim with log path "/Fuel Simulation" */
+  /** Creates a new instance of FuelSim with log path "/Fuel Simulation". */
   public FuelSim() {
     this("/Fuel Simulation");
   }
 
-  /** Clears the field of fuel */
+  /** Clears the field of fuel. */
   public void clearFuel() {
-    fuels.clear();
+    m_fuels.clear();
   }
 
-  /** Spawns fuel in the neutral zone and depots */
+  /** Spawns fuel in the neutral zone and depots. */
   public void spawnStartingFuel() {
     // Center fuel
     Translation3d center = new Translation3d(FIELD_LENGTH / 2, FIELD_WIDTH / 2, FUEL_RADIUS);
     for (int i = 0; i < 15; i++) {
       for (int j = 0; j < 6; j++) {
-        fuels.add(
+        m_fuels.add(
             new Fuel(
                 center.plus(new Translation3d(0.076 + 0.152 * j, 0.0254 + 0.076 + 0.152 * i, 0))));
-        fuels.add(
+        m_fuels.add(
             new Fuel(
                 center.plus(new Translation3d(-0.076 - 0.152 * j, 0.0254 + 0.076 + 0.152 * i, 0))));
-        fuels.add(
+        m_fuels.add(
             new Fuel(
                 center.plus(new Translation3d(0.076 + 0.152 * j, -0.0254 - 0.076 - 0.152 * i, 0))));
-        fuels.add(
+        m_fuels.add(
             new Fuel(
                 center.plus(
                     new Translation3d(-0.076 - 0.152 * j, -0.0254 - 0.076 - 0.152 * i, 0))));
@@ -394,15 +399,15 @@ public class FuelSim {
     // Depots
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 4; j++) {
-        fuels.add(
+        m_fuels.add(
             new Fuel(new Translation3d(0.076 + 0.152 * j, 5.95 + 0.076 + 0.152 * i, FUEL_RADIUS)));
-        fuels.add(
+        m_fuels.add(
             new Fuel(new Translation3d(0.076 + 0.152 * j, 5.95 - 0.076 - 0.152 * i, FUEL_RADIUS)));
-        fuels.add(
+        m_fuels.add(
             new Fuel(
                 new Translation3d(
                     FIELD_LENGTH - 0.076 - 0.152 * j, 2.09 + 0.076 + 0.152 * i, FUEL_RADIUS)));
-        fuels.add(
+        m_fuels.add(
             new Fuel(
                 new Translation3d(
                     FIELD_LENGTH - 0.076 - 0.152 * j, 2.09 - 0.076 - 0.152 * i, FUEL_RADIUS)));
@@ -419,57 +424,57 @@ public class FuelSim {
     // Logger.recordOutput("Fuel Simulation/Lines (debug)", lines);
   }
 
-  protected StructArrayPublisher<Translation3d> fuelPublisher;
+  protected StructArrayPublisher<Translation3d> m_fuelPublisher;
 
-  /** Adds array of `Translation3d`'s to NetworkTables at tableKey + "/Fuels" */
+  /** Adds array of Translation3d's to NetworkTables at tableKey + "/Fuels". */
   public void logFuels() {
-    fuelPublisher.set(fuels.stream().map((fuel) -> fuel.pos).toArray(Translation3d[]::new));
+    m_fuelPublisher.set(m_fuels.stream().map(fuel -> fuel.m_pos).toArray(Translation3d[]::new));
   }
 
-  /** Start the simulation. `updateSim` must still be called every loop */
+  /** Starts the simulation. updateSim must still be called every loop. */
   public void start() {
-    running = true;
-    loggingTimer.restart();
+    m_running = true;
+    m_loggingTimer.restart();
   }
 
-  /** Pause the simulation. */
+  /** Pauses the simulation. */
   public void stop() {
-    running = false;
-    loggingTimer.stop();
+    m_running = false;
+    m_loggingTimer.stop();
   }
 
-  /** Enables accounting for drag force in physics step * */
+  /** Enables accounting for drag force in physics step. */
   public void enableAirResistance() {
-    simulateAirResistance = true;
+    m_simulateAirResistance = true;
   }
 
   /**
-   * Sets the number of physics iterations per loop (0.02s)
+   * Sets the number of physics iterations per loop (0.02s).
    *
    * @param subticks physics iteration per loop (default: 5)
    */
   public void setSubticks(int subticks) {
-    this.subticks = subticks;
+    this.m_subticks = subticks;
   }
 
   /**
-   * Sets the frequency to publish fuel translations to NetworkTables Used to improve performance in
-   * AdvantageScope
+   * Sets the frequency to publish fuel translations to NetworkTables. Used to improve performance
+   * in AdvantageScope.
    *
    * @param loggingFreqHz update frequency in hertz
    */
   public void setLoggingFrequency(double loggingFreqHz) {
-    this.loggingFreqHz = loggingFreqHz;
+    this.m_loggingFreqHz = loggingFreqHz;
   }
 
   /**
-   * Registers a robot with the fuel simulator
+   * Registers a robot with the fuel simulator.
    *
    * @param width from left to right (y-axis)
    * @param length from front to back (x-axis)
-   * @param bumperHeight
-   * @param poseSupplier
-   * @param fieldSpeedsSupplier field-relative `ChassisSpeeds` supplier
+   * @param bumperHeight the height of the bumpers
+   * @param poseSupplier the pose supplier for the robot
+   * @param fieldSpeedsSupplier field-relative ChassisSpeeds supplier
    */
   public void registerRobot(
       double width,
@@ -477,21 +482,21 @@ public class FuelSim {
       double bumperHeight,
       Supplier<Pose2d> poseSupplier,
       Supplier<ChassisSpeeds> fieldSpeedsSupplier) {
-    this.robotPoseSupplier = poseSupplier;
-    this.robotFieldSpeedsSupplier = fieldSpeedsSupplier;
-    this.robotWidth = width;
-    this.robotLength = length;
-    this.bumperHeight = bumperHeight;
+    this.m_robotPoseSupplier = poseSupplier;
+    this.m_robotFieldSpeedsSupplier = fieldSpeedsSupplier;
+    this.m_robotWidth = width;
+    this.m_robotLength = length;
+    this.m_bumperHeight = bumperHeight;
   }
 
   /**
-   * Registers a robot with the fuel simulator
+   * Registers a robot with the fuel simulator.
    *
    * @param width from left to right (y-axis)
    * @param length from front to back (x-axis)
    * @param bumperHeight from the ground
-   * @param poseSupplier
-   * @param fieldSpeedsSupplier field-relative `ChassisSpeeds` supplier
+   * @param poseSupplier the pose supplier for the robot
+   * @param fieldSpeedsSupplier field-relative ChassisSpeeds supplier
    */
   public void registerRobot(
       Distance width,
@@ -499,53 +504,55 @@ public class FuelSim {
       Distance bumperHeight,
       Supplier<Pose2d> poseSupplier,
       Supplier<ChassisSpeeds> fieldSpeedsSupplier) {
-    this.robotPoseSupplier = poseSupplier;
-    this.robotFieldSpeedsSupplier = fieldSpeedsSupplier;
-    this.robotWidth = width.in(Meters);
-    this.robotLength = length.in(Meters);
-    this.bumperHeight = bumperHeight.in(Meters);
+    this.m_robotPoseSupplier = poseSupplier;
+    this.m_robotFieldSpeedsSupplier = fieldSpeedsSupplier;
+    this.m_robotWidth = width.in(Meters);
+    this.m_robotLength = length.in(Meters);
+    this.m_bumperHeight = bumperHeight.in(Meters);
   }
 
-  /** To be called periodically Will do nothing if sim is not running */
+  /** To be called periodically. Will do nothing if sim is not running. */
   public void updateSim() {
-    if (!running) return;
+    if (!m_running) {
+      return;
+    }
 
     stepSim();
   }
 
-  /** Run the simulation forward 1 time step (0.02s) */
+  /** Runs the simulation forward 1 time step (0.02s). */
   public void stepSim() {
-    for (int i = 0; i < subticks; i++) {
-      for (Fuel fuel : fuels) {
-        fuel.update(this.simulateAirResistance, this.subticks);
+    for (int i = 0; i < m_subticks; i++) {
+      for (Fuel fuel : m_fuels) {
+        fuel.update(this.m_simulateAirResistance, this.m_subticks);
       }
 
-      handleFuelCollisions(fuels);
+      handleFuelCollisions(m_fuels);
 
-      if (robotPoseSupplier != null) {
-        handleRobotCollisions(fuels);
-        handleIntakes(fuels);
+      if (m_robotPoseSupplier != null) {
+        handleRobotCollisions(m_fuels);
+        handleIntakes(m_fuels);
       }
     }
 
-    if (loggingTimer.advanceIfElapsed(1.0 / loggingFreqHz)) {
+    if (m_loggingTimer.advanceIfElapsed(1.0 / m_loggingFreqHz)) {
       logFuels();
     }
   }
 
   /**
-   * Adds a fuel onto the field
+   * Adds a fuel onto the field.
    *
    * @param pos Position to spawn at
    * @param vel Initial velocity vector
    */
   public void spawnFuel(Translation3d pos, Translation3d vel) {
-    fuels.add(new Fuel(pos, vel));
+    m_fuels.add(new Fuel(pos, vel));
   }
 
   /**
    * Spawns a fuel onto the field with a specified launch velocity and angles, accounting for robot
-   * movement
+   * movement.
    *
    * @param launchVelocity Initial launch velocity
    * @param hoodAngle Hood angle where 0 is launching horizontally and 90 degrees is launching
@@ -557,17 +564,17 @@ public class FuelSim {
    */
   public void launchFuel(
       LinearVelocity launchVelocity, Angle hoodAngle, Angle turretYaw, Distance launchHeight) {
-    if (robotPoseSupplier == null || robotFieldSpeedsSupplier == null) {
+    if (m_robotPoseSupplier == null || m_robotFieldSpeedsSupplier == null) {
       throw new IllegalStateException("Robot must be registered before launching fuel.");
     }
 
     Pose3d launchPose =
-        new Pose3d(this.robotPoseSupplier.get())
+        new Pose3d(this.m_robotPoseSupplier.get())
             .plus(
                 new Transform3d(
                     new Translation3d(Meters.zero(), Meters.zero(), launchHeight),
                     Rotation3d.kZero));
-    ChassisSpeeds fieldSpeeds = this.robotFieldSpeedsSupplier.get();
+    ChassisSpeeds fieldSpeeds = this.m_robotFieldSpeedsSupplier.get();
 
     double horizontalVel = Math.cos(hoodAngle.in(Radians)) * launchVelocity.in(MetersPerSecond);
     double verticalVel = Math.sin(hoodAngle.in(Radians)) * launchVelocity.in(MetersPerSecond);
@@ -586,50 +593,57 @@ public class FuelSim {
 
   protected void handleRobotCollision(Fuel fuel, Pose2d robot, Translation2d robotVel) {
     Translation2d relativePos =
-        new Pose2d(fuel.pos.toTranslation2d(), Rotation2d.kZero).relativeTo(robot).getTranslation();
+        new Pose2d(fuel.m_pos.toTranslation2d(), Rotation2d.kZero)
+            .relativeTo(robot)
+            .getTranslation();
 
-    if (fuel.pos.getZ() > bumperHeight) return; // above bumpers
-    double distanceToBottom = -FUEL_RADIUS - robotLength / 2 - relativePos.getX();
-    double distanceToTop = -FUEL_RADIUS - robotLength / 2 + relativePos.getX();
-    double distanceToRight = -FUEL_RADIUS - robotWidth / 2 - relativePos.getY();
-    double distanceToLeft = -FUEL_RADIUS - robotWidth / 2 + relativePos.getY();
+    if (fuel.m_pos.getZ() > m_bumperHeight) {
+      return; // above bumpers
+    }
+    double distanceToBottom = -FUEL_RADIUS - m_robotLength / 2 - relativePos.getX();
+    double distanceToTop = -FUEL_RADIUS - m_robotLength / 2 + relativePos.getX();
+    double distanceToRight = -FUEL_RADIUS - m_robotWidth / 2 - relativePos.getY();
+    double distanceToLeft = -FUEL_RADIUS - m_robotWidth / 2 + relativePos.getY();
 
     // not inside robot
-    if (distanceToBottom > 0 || distanceToTop > 0 || distanceToRight > 0 || distanceToLeft > 0)
+    if (distanceToBottom > 0 || distanceToTop > 0 || distanceToRight > 0 || distanceToLeft > 0) {
       return;
+    }
 
     Translation2d posOffset;
     // find minimum distance to side and send corresponding collision response
-    if ((distanceToBottom >= distanceToTop
+    if (distanceToBottom >= distanceToTop
         && distanceToBottom >= distanceToRight
-        && distanceToBottom >= distanceToLeft)) {
+        && distanceToBottom >= distanceToLeft) {
       posOffset = new Translation2d(distanceToBottom, 0);
-    } else if ((distanceToTop >= distanceToBottom
+    } else if (distanceToTop >= distanceToBottom
         && distanceToTop >= distanceToRight
-        && distanceToTop >= distanceToLeft)) {
+        && distanceToTop >= distanceToLeft) {
       posOffset = new Translation2d(-distanceToTop, 0);
-    } else if ((distanceToRight >= distanceToBottom
+    } else if (distanceToRight >= distanceToBottom
         && distanceToRight >= distanceToTop
-        && distanceToRight >= distanceToLeft)) {
+        && distanceToRight >= distanceToLeft) {
       posOffset = new Translation2d(0, distanceToRight);
     } else {
       posOffset = new Translation2d(0, -distanceToLeft);
     }
 
     posOffset = posOffset.rotateBy(robot.getRotation());
-    fuel.pos = fuel.pos.plus(new Translation3d(posOffset));
+    fuel.m_pos = fuel.m_pos.plus(new Translation3d(posOffset));
     Translation2d normal = posOffset.div(posOffset.getNorm());
-    if (fuel.vel.toTranslation2d().dot(normal) < 0)
+    if (fuel.m_vel.toTranslation2d().dot(normal) < 0) {
       fuel.addImpulse(
           new Translation3d(
-              normal.times(-fuel.vel.toTranslation2d().dot(normal) * (1 + ROBOT_COR))));
-    if (robotVel.dot(normal) > 0)
+              normal.times(-fuel.m_vel.toTranslation2d().dot(normal) * (1 + ROBOT_COR))));
+    }
+    if (robotVel.dot(normal) > 0) {
       fuel.addImpulse(new Translation3d(normal.times(robotVel.dot(normal))));
+    }
   }
 
   protected void handleRobotCollisions(ArrayList<Fuel> fuels) {
-    Pose2d robot = robotPoseSupplier.get();
-    ChassisSpeeds speeds = robotFieldSpeedsSupplier.get();
+    Pose2d robot = m_robotPoseSupplier.get();
+    ChassisSpeeds speeds = m_robotFieldSpeedsSupplier.get();
     Translation2d robotVel = new Translation2d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
 
     for (Fuel fuel : fuels) {
@@ -638,56 +652,58 @@ public class FuelSim {
   }
 
   protected void handleIntakes(ArrayList<Fuel> fuels) {
-    Pose2d robot = robotPoseSupplier.get();
-    for (SimIntake intake : intakes) {
-      for (int i = 0; i < fuels.size(); i++) {
+    Pose2d robot = m_robotPoseSupplier.get();
+    for (SimIntake intake : m_intakes) {
+      for (int i = fuels.size() - 1; i >= 0; i--) {
         if (intake.shouldIntake(fuels.get(i), robot)) {
           fuels.remove(i);
-          i--;
         }
       }
     }
   }
 
   protected static void fuelCollideRectangle(Fuel fuel, Translation3d start, Translation3d end) {
-    if (fuel.pos.getZ() > end.getZ() + FUEL_RADIUS || fuel.pos.getZ() < start.getZ() - FUEL_RADIUS)
+    if (fuel.m_pos.getZ() > end.getZ() + FUEL_RADIUS
+        || fuel.m_pos.getZ() < start.getZ() - FUEL_RADIUS) {
       return; // above rectangle
-    double distanceToLeft = start.getX() - FUEL_RADIUS - fuel.pos.getX();
-    double distanceToRight = fuel.pos.getX() - end.getX() - FUEL_RADIUS;
-    double distanceToTop = fuel.pos.getY() - end.getY() - FUEL_RADIUS;
-    double distanceToBottom = start.getY() - FUEL_RADIUS - fuel.pos.getY();
+    }
+    double distanceToLeft = start.getX() - FUEL_RADIUS - fuel.m_pos.getX();
+    double distanceToRight = fuel.m_pos.getX() - end.getX() - FUEL_RADIUS;
+    double distanceToTop = fuel.m_pos.getY() - end.getY() - FUEL_RADIUS;
+    double distanceToBottom = start.getY() - FUEL_RADIUS - fuel.m_pos.getY();
 
     // not inside hub
-    if (distanceToLeft > 0 || distanceToRight > 0 || distanceToTop > 0 || distanceToBottom > 0)
+    if (distanceToLeft > 0 || distanceToRight > 0 || distanceToTop > 0 || distanceToBottom > 0) {
       return;
+    }
 
     Translation2d collision;
     // find minimum distance to side and send corresponding collision response
-    if (fuel.pos.getX() < start.getX()
-        || (distanceToLeft >= distanceToRight
+    if (fuel.m_pos.getX() < start.getX()
+        || distanceToLeft >= distanceToRight
             && distanceToLeft >= distanceToTop
-            && distanceToLeft >= distanceToBottom)) {
+            && distanceToLeft >= distanceToBottom) {
       collision = new Translation2d(distanceToLeft, 0);
-    } else if (fuel.pos.getX() >= end.getX()
-        || (distanceToRight >= distanceToLeft
+    } else if (fuel.m_pos.getX() >= end.getX()
+        || distanceToRight >= distanceToLeft
             && distanceToRight >= distanceToTop
-            && distanceToRight >= distanceToBottom)) {
+            && distanceToRight >= distanceToBottom) {
       collision = new Translation2d(-distanceToRight, 0);
-    } else if (fuel.pos.getY() > end.getY()
-        || (distanceToTop >= distanceToLeft
+    } else if (fuel.m_pos.getY() > end.getY()
+        || distanceToTop >= distanceToLeft
             && distanceToTop >= distanceToRight
-            && distanceToTop >= distanceToBottom)) {
+            && distanceToTop >= distanceToBottom) {
       collision = new Translation2d(0, -distanceToTop);
     } else {
       collision = new Translation2d(0, distanceToBottom);
     }
 
     if (collision.getX() != 0) {
-      fuel.pos = fuel.pos.plus(new Translation3d(collision));
-      fuel.vel = fuel.vel.plus(new Translation3d(-(1 + FIELD_COR) * fuel.vel.getX(), 0, 0));
+      fuel.m_pos = fuel.m_pos.plus(new Translation3d(collision));
+      fuel.m_vel = fuel.m_vel.plus(new Translation3d(-(1 + FIELD_COR) * fuel.m_vel.getX(), 0, 0));
     } else if (collision.getY() != 0) {
-      fuel.pos = fuel.pos.plus(new Translation3d(collision));
-      fuel.vel = fuel.vel.plus(new Translation3d(0, -(1 + FIELD_COR) * fuel.vel.getY(), 0));
+      fuel.m_pos = fuel.m_pos.plus(new Translation3d(collision));
+      fuel.m_vel = fuel.m_vel.plus(new Translation3d(0, -(1 + FIELD_COR) * fuel.m_vel.getY(), 0));
     }
   }
 
@@ -709,7 +725,7 @@ public class FuelSim {
       double yMax,
       BooleanSupplier ableToIntake,
       Runnable intakeCallback) {
-    intakes.add(new SimIntake(xMin, xMax, yMin, yMax, ableToIntake, intakeCallback));
+    m_intakes.add(new SimIntake(xMin, xMax, yMin, yMax, ableToIntake, intakeCallback));
   }
 
   /**
@@ -849,77 +865,84 @@ public class FuelSim {
     protected static final double NET_OFFSET = SIDE / 2 + 0.261;
     protected static final double NET_WIDTH = 1.484;
 
-    protected final Translation2d center;
-    protected final Translation3d exit;
-    protected final int exitVelXMult;
+    protected final Translation2d m_center;
+    protected final Translation3d m_exit;
+    protected final int m_exitVelXMult;
 
-    protected int score = 0;
+    protected int m_score;
 
     protected Hub(Translation2d center, Translation3d exit, int exitVelXMult) {
-      this.center = center;
-      this.exit = exit;
-      this.exitVelXMult = exitVelXMult;
+      this.m_center = center;
+      this.m_exit = exit;
+      this.m_exitVelXMult = exitVelXMult;
     }
 
     protected void handleHubInteraction(Fuel fuel, int subticks) {
       if (didFuelScore(fuel, subticks)) {
-        fuel.pos = exit;
-        fuel.vel = getDispersalVelocity();
-        score++;
+        fuel.m_pos = m_exit;
+        fuel.m_vel = getDispersalVelocity();
+        m_score++;
       }
     }
 
     protected boolean didFuelScore(Fuel fuel, int subticks) {
-      return fuel.pos.toTranslation2d().getDistance(center) <= ENTRY_RADIUS
-          && fuel.pos.getZ() <= ENTRY_HEIGHT
-          && fuel.pos.minus(fuel.vel.times(PERIOD / subticks)).getZ() > ENTRY_HEIGHT;
+      return fuel.m_pos.toTranslation2d().getDistance(m_center) <= ENTRY_RADIUS
+          && fuel.m_pos.getZ() <= ENTRY_HEIGHT
+          && fuel.m_pos.minus(fuel.m_vel.times(PERIOD / subticks)).getZ() > ENTRY_HEIGHT;
     }
 
     protected Translation3d getDispersalVelocity() {
       return new Translation3d(
-          exitVelXMult * (Math.random() + 0.1) * 1.5, Math.random() * 2 - 1, 0);
+          m_exitVelXMult * (Math.random() + 0.1) * 1.5, Math.random() * 2 - 1, 0);
     }
 
-    /** Reset this hub's score to 0 */
+    /** Resets this hub's score to 0. */
     public void resetScore() {
-      score = 0;
+      m_score = 0;
     }
 
     /**
-     * Get the current count of fuel scored in this hub
+     * Gets the current count of fuel scored in this hub.
      *
-     * @return
+     * @return the score count
      */
     public int getScore() {
-      return score;
+      return m_score;
     }
 
     protected void fuelCollideSide(Fuel fuel) {
       fuelCollideRectangle(
           fuel,
-          new Translation3d(center.getX() - SIDE / 2, center.getY() - SIDE / 2, 0),
+          new Translation3d(m_center.getX() - SIDE / 2, m_center.getY() - SIDE / 2, 0),
           new Translation3d(
-              center.getX() + SIDE / 2, center.getY() + SIDE / 2, ENTRY_HEIGHT - 0.1));
+              m_center.getX() + SIDE / 2, m_center.getY() + SIDE / 2, ENTRY_HEIGHT - 0.1));
     }
 
     protected double fuelHitNet(Fuel fuel) {
-      if (fuel.pos.getZ() > NET_HEIGHT_MAX || fuel.pos.getZ() < NET_HEIGHT_MIN) return 0;
-      if (fuel.pos.getY() > center.getY() + NET_WIDTH / 2
-          || fuel.pos.getY() < center.getY() - NET_WIDTH / 2) return 0;
-      if (fuel.pos.getX() > center.getX() + NET_OFFSET * exitVelXMult) {
+      if (fuel.m_pos.getZ() > NET_HEIGHT_MAX || fuel.m_pos.getZ() < NET_HEIGHT_MIN) {
+        return 0;
+      }
+      if (fuel.m_pos.getY() > m_center.getY() + NET_WIDTH / 2
+          || fuel.m_pos.getY() < m_center.getY() - NET_WIDTH / 2) {
+        return 0;
+      }
+      if (fuel.m_pos.getX() > m_center.getX() + NET_OFFSET * m_exitVelXMult) {
         return Math.max(
-            0, center.getX() + NET_OFFSET * exitVelXMult - (fuel.pos.getX() - FUEL_RADIUS));
+            0, m_center.getX() + NET_OFFSET * m_exitVelXMult - (fuel.m_pos.getX() - FUEL_RADIUS));
       } else {
         return Math.min(
-            0, center.getX() + NET_OFFSET * exitVelXMult - (fuel.pos.getX() + FUEL_RADIUS));
+            0, m_center.getX() + NET_OFFSET * m_exitVelXMult - (fuel.m_pos.getX() + FUEL_RADIUS));
       }
     }
   }
 
   protected class SimIntake {
-    double xMin, xMax, yMin, yMax;
-    BooleanSupplier ableToIntake;
-    Runnable callback;
+    double m_xMin;
+    double m_xMax;
+    double m_yMin;
+    double m_yMax;
+    BooleanSupplier m_ableToIntake;
+    Runnable m_callback;
 
     protected SimIntake(
         double xMin,
@@ -928,29 +951,31 @@ public class FuelSim {
         double yMax,
         BooleanSupplier ableToIntake,
         Runnable intakeCallback) {
-      this.xMin = xMin;
-      this.xMax = xMax;
-      this.yMin = yMin;
-      this.yMax = yMax;
-      this.ableToIntake = ableToIntake;
-      this.callback = intakeCallback;
+      this.m_xMin = xMin;
+      this.m_xMax = xMax;
+      this.m_yMin = yMin;
+      this.m_yMax = yMax;
+      this.m_ableToIntake = ableToIntake;
+      this.m_callback = intakeCallback;
     }
 
     protected boolean shouldIntake(Fuel fuel, Pose2d robotPose) {
-      if (!ableToIntake.getAsBoolean() || fuel.pos.getZ() > bumperHeight) return false;
+      if (!m_ableToIntake.getAsBoolean() || fuel.m_pos.getZ() > m_bumperHeight) {
+        return false;
+      }
 
       Translation2d fuelRelativePos =
-          new Pose2d(fuel.pos.toTranslation2d(), Rotation2d.kZero)
+          new Pose2d(fuel.m_pos.toTranslation2d(), Rotation2d.kZero)
               .relativeTo(robotPose)
               .getTranslation();
 
       boolean result =
-          fuelRelativePos.getX() >= xMin
-              && fuelRelativePos.getX() <= xMax
-              && fuelRelativePos.getY() >= yMin
-              && fuelRelativePos.getY() <= yMax;
+          fuelRelativePos.getX() >= m_xMin
+              && fuelRelativePos.getX() <= m_xMax
+              && fuelRelativePos.getY() >= m_yMin
+              && fuelRelativePos.getY() <= m_yMax;
       if (result) {
-        callback.run();
+        m_callback.run();
       }
       return result;
     }
