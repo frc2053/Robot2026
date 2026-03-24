@@ -22,7 +22,7 @@ import frc.robot.Constants.FuelConstants;
  * explicit ballistic modeling at runtime.
  */
 public final class ShootingOnTheFly {
-  public static record ShootingParams(Translation2d noIdea, double bottomRpm, double topRpm) {}
+  public record ShootingParams(Translation2d noIdea, double bottomRpm, double topRpm) {}
 
   /** Maximum number of TOF recursion iterations before giving up. */
   private static final int kMaxIterations = 20;
@@ -128,7 +128,7 @@ public final class ShootingOnTheFly {
       double virtualDistance = toVirtualTarget.getNorm();
 
       // Track distance convergence
-      double distStep = Math.abs(virtualDistance - prevVirtualDistance);
+      final double distStep = Math.abs(virtualDistance - prevVirtualDistance);
       prevVirtualDistance = virtualDistance;
 
       // Look up the TOF for this virtual distance (with table offset correction)

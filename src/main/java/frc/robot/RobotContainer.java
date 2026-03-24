@@ -72,7 +72,7 @@ public class RobotContainer {
   /* Path follower */
   private final SendableChooser<Command> m_autoChooser;
 
-  private final PowerDistribution powerDistribution = new PowerDistribution();
+  private final PowerDistribution m_powerDistribution = new PowerDistribution();
 
   // Dashboard toggle for shooting on the fly mode
   private final BooleanSubscriber m_sotfEnabledSub;
@@ -104,7 +104,7 @@ public class RobotContainer {
             .subscribe(true);
     m_sotfEnabledTrigger = new Trigger(m_sotfEnabledSub::get);
 
-    SmartDashboard.putData("Power Distribution", powerDistribution);
+    SmartDashboard.putData("Power Distribution", m_powerDistribution);
     SmartDashboard.putData("Command Scheduler", CommandScheduler.getInstance());
 
     configureBindings();
