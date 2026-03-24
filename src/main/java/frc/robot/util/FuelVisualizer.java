@@ -41,7 +41,7 @@ public final class FuelVisualizer {
   private static double m_lastSpawnTime;
 
   /** Number of fuel currently stored in the robot. */
-  private static int m_storedFuelCount = 0;
+  private static int m_storedFuelCount;
 
   /** Publisher for stored fuel count. */
   private static final IntegerPublisher m_fuelCountPub =
