@@ -55,115 +55,115 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.util.MechanismVisualizer;
 
-/** Intake subsystem with a pivot arm and roller motor. */
+/** Intake subsystem with a rack and roller motor. */
 public class Intake extends SubsystemBase {
 
-  private final TalonFX m_pivotMotor;
+  private final TalonFX m_rackMotor;
   private final TalonFX m_rollerMotor;
 
-  // Pivot status signals
-  private final StatusSignal<Angle> m_pivotPosition;
-  private final StatusSignal<AngularVelocity> m_pivotVelocity;
-  private final StatusSignal<Voltage> m_pivotVoltage;
+  // Rack status signals
+  private final StatusSignal<Angle> m_rackPosition;
+  private final StatusSignal<AngularVelocity> m_rackVelocity;
+  private final StatusSignal<Voltage> m_rackVoltage;
 
   // Roller status signals
   private final StatusSignal<AngularVelocity> m_rollerVelocity;
   private final StatusSignal<Voltage> m_rollerVoltage;
 
   // Current status signals
-  private final StatusSignal<Current> m_pivotStatorCurrent;
-  private final StatusSignal<Current> m_pivotSupplyCurrent;
+  private final StatusSignal<Current> m_rackStatorCurrent;
+  private final StatusSignal<Current> m_rackSupplyCurrent;
   private final StatusSignal<Current> m_rollerStatorCurrent;
   private final StatusSignal<Current> m_rollerSupplyCurrent;
 
   // Simulation objects
-  private final TalonFXSimState m_pivotSimState;
+  private final TalonFXSimState m_rackSimState;
   private final TalonFXSimState m_rollerSimState;
-  private final SingleJointedArmSim m_pivotSim;
+  private final SingleJointedArmSim m_rackSim;
   private final DCMotorSim m_rollerSim;
 
   // NetworkTables publishers for logging
-  private final DoublePublisher m_pivotPositionPub;
-  private final DoublePublisher m_pivotVelocityPub;
-  private final DoublePublisher m_pivotVoltagePub;
-  private final DoublePublisher m_pivotSetpointPub;
+  private final DoublePublisher m_rackPositionPub;
+  private final DoublePublisher m_rackVelocityPub;
+  private final DoublePublisher m_rackVoltagePub;
+  private final DoublePublisher m_rackSetpointPub;
   private final DoublePublisher m_rollerVelocityPub;
   private final DoublePublisher m_rollerVoltagePub;
   private final DoublePublisher m_rollerVoltageSetpointPub;
-  private final DoublePublisher m_pivotStatorCurrentPub;
-  private final DoublePublisher m_pivotSupplyCurrentPub;
+  private final DoublePublisher m_rackStatorCurrentPub;
+  private final DoublePublisher m_rackSupplyCurrentPub;
   private final DoublePublisher m_rollerStatorCurrentPub;
   private final DoublePublisher m_rollerSupplyCurrentPub;
   private final BooleanPublisher m_atPositionPub;
   private final StringPublisher m_currentCommandPub;
 
   // Control requests
-  private final MotionMagicVoltage m_pivotPositionRequest =
+  private final MotionMagicVoltage m_rackPositionRequest =
       new MotionMagicVoltage(0).withEnableFOC(true);
   private final VoltageOut m_rollerVoltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
   // Track setpoints for logging
-  private double m_pivotPositionSetpoint;
+  private double m_rackPositionSetpoint;
   private double m_rollerVoltageSetpoint;
 
-  // State variable for feedingWigglePivotCommand oscillation direction
-  private boolean m_wiggleGoingToTop;
+  // State variable for feedingWiggleRackCommand oscillation direction
+  private boolean m_wiggleGoingIn;
 
-  // Tunable gains for pivot
-  private final DoubleSubscriber m_pivotKSSub;
-  private final DoubleSubscriber m_pivotKGSub;
-  private final DoubleSubscriber m_pivotKVSub;
-  private final DoubleSubscriber m_pivotKASub;
-  private final DoubleSubscriber m_pivotKPSub;
-  private final DoubleSubscriber m_pivotKISub;
-  private final DoubleSubscriber m_pivotKDSub;
-  private final DoublePublisher m_pivotKSPub;
-  private final DoublePublisher m_pivotKGPub;
-  private final DoublePublisher m_pivotKVPub;
-  private final DoublePublisher m_pivotKAPub;
-  private final DoublePublisher m_pivotKPPub;
-  private final DoublePublisher m_pivotKIPub;
-  private final DoublePublisher m_pivotKDPub;
+  // Tunable gains for rack
+  private final DoubleSubscriber m_rackKSSub;
+  private final DoubleSubscriber m_rackKGSub;
+  private final DoubleSubscriber m_rackKVSub;
+  private final DoubleSubscriber m_rackKASub;
+  private final DoubleSubscriber m_rackKPSub;
+  private final DoubleSubscriber m_rackKISub;
+  private final DoubleSubscriber m_rackKDSub;
+  private final DoublePublisher m_rackKSPub;
+  private final DoublePublisher m_rackKGPub;
+  private final DoublePublisher m_rackKVPub;
+  private final DoublePublisher m_rackKAPub;
+  private final DoublePublisher m_rackKPPub;
+  private final DoublePublisher m_rackKIPub;
+  private final DoublePublisher m_rackKDPub;
 
   private final Timer m_wiggleTimer;
 
   // Track last known gain values to detect changes
-  private double m_lastPivotKS;
-  private double m_lastPivotKG;
-  private double m_lastPivotKV;
-  private double m_lastPivotKA;
-  private double m_lastPivotKP;
-  private double m_lastPivotKI;
-  private double m_lastPivotKD;
+  private double m_lastRackKS;
+  private double m_lastRackKG;
+  private double m_lastRackKV;
+  private double m_lastRackKA;
+  private double m_lastRackKP;
+  private double m_lastRackKI;
+  private double m_lastRackKD;
 
   // Tuning mode NetworkTables controls
   private final BooleanSubscriber m_tuningEnabledSub;
   private final BooleanPublisher m_tuningEnabledPub;
   private final Trigger m_tuningEnabledTrigger;
-  private final DoubleSubscriber m_tuningPivotPositionSub;
-  private final DoublePublisher m_tuningPivotPositionPub;
+  private final DoubleSubscriber m_tuningRackPositionSub;
+  private final DoublePublisher m_tuningRackPositionPub;
 
   /** Creates a new Intake subsystem. */
   public Intake() {
-    m_pivotMotor = new TalonFX(IntakeConstants.PIVOT_MOTOR_ID);
+    m_rackMotor = new TalonFX(IntakeConstants.RACK_MOTOR_ID);
     m_rollerMotor = new TalonFX(IntakeConstants.ROLLER_MOTOR_ID);
 
-    configurePivotMotor();
+    configureRackMotor();
     configureRollerMotor();
 
-    // Get pivot status signals
-    m_pivotPosition = m_pivotMotor.getPosition();
-    m_pivotVelocity = m_pivotMotor.getVelocity();
-    m_pivotVoltage = m_pivotMotor.getMotorVoltage();
+    // Get rack status signals
+    m_rackPosition = m_rackMotor.getPosition();
+    m_rackVelocity = m_rackMotor.getVelocity();
+    m_rackVoltage = m_rackMotor.getMotorVoltage();
 
     // Get roller status signals
     m_rollerVelocity = m_rollerMotor.getVelocity();
     m_rollerVoltage = m_rollerMotor.getMotorVoltage();
 
     // Get current status signals
-    m_pivotStatorCurrent = m_pivotMotor.getStatorCurrent();
-    m_pivotSupplyCurrent = m_pivotMotor.getSupplyCurrent();
+    m_rackStatorCurrent = m_rackMotor.getStatorCurrent();
+    m_rackSupplyCurrent = m_rackMotor.getSupplyCurrent();
     m_rollerStatorCurrent = m_rollerMotor.getStatorCurrent();
     m_rollerSupplyCurrent = m_rollerMotor.getSupplyCurrent();
 
@@ -173,76 +173,76 @@ public class Intake extends SubsystemBase {
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
             100,
-            m_pivotPosition,
-            m_pivotVelocity,
-            m_pivotVoltage,
+            m_rackPosition,
+            m_rackVelocity,
+            m_rackVoltage,
             m_rollerVelocity,
             m_rollerVoltage,
-            m_pivotStatorCurrent,
-            m_pivotSupplyCurrent,
+            m_rackStatorCurrent,
+            m_rackSupplyCurrent,
             m_rollerStatorCurrent,
             m_rollerSupplyCurrent);
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for intake subsystem!");
     }
-    StatusCode optiResult = ParentDevice.optimizeBusUtilizationForAll(m_pivotMotor, m_rollerMotor);
+    StatusCode optiResult = ParentDevice.optimizeBusUtilizationForAll(m_rackMotor, m_rollerMotor);
     if (!optiResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply optimization for intake subsystem!");
     }
 
     // Initialize NetworkTables publishers for logging
     NetworkTable intakeTable = NetworkTableInstance.getDefault().getTable("Intake");
-    m_pivotPositionPub = intakeTable.getDoubleTopic("PivotPositionRotations").publish();
-    m_pivotVelocityPub = intakeTable.getDoubleTopic("PivotVelocityRPM").publish();
-    m_pivotVoltagePub = intakeTable.getDoubleTopic("PivotVoltage").publish();
-    m_pivotSetpointPub = intakeTable.getDoubleTopic("PivotSetpoint").publish();
+    m_rackPositionPub = intakeTable.getDoubleTopic("RackPositionRotations").publish();
+    m_rackVelocityPub = intakeTable.getDoubleTopic("RackVelocityRPM").publish();
+    m_rackVoltagePub = intakeTable.getDoubleTopic("RackVoltage").publish();
+    m_rackSetpointPub = intakeTable.getDoubleTopic("RackSetpoint").publish();
     m_rollerVelocityPub = intakeTable.getDoubleTopic("RollerVelocityRPM").publish();
     m_rollerVoltagePub = intakeTable.getDoubleTopic("RollerVoltage").publish();
     m_rollerVoltageSetpointPub = intakeTable.getDoubleTopic("RollerVoltageSetpoint").publish();
-    m_pivotStatorCurrentPub = intakeTable.getDoubleTopic("PivotStatorCurrent").publish();
-    m_pivotSupplyCurrentPub = intakeTable.getDoubleTopic("PivotSupplyCurrent").publish();
+    m_rackStatorCurrentPub = intakeTable.getDoubleTopic("RackStatorCurrent").publish();
+    m_rackSupplyCurrentPub = intakeTable.getDoubleTopic("RackSupplyCurrent").publish();
     m_rollerStatorCurrentPub = intakeTable.getDoubleTopic("RollerStatorCurrent").publish();
     m_rollerSupplyCurrentPub = intakeTable.getDoubleTopic("RollerSupplyCurrent").publish();
     m_atPositionPub = intakeTable.getBooleanTopic("AtPosition").publish();
     m_currentCommandPub = intakeTable.getStringTopic("CurrentCommand").publish();
 
-    // Initialize tunable gains for pivot
-    NetworkTable tuningTable = intakeTable.getSubTable("Tuning").getSubTable("PivotGains");
+    // Initialize tunable gains for rack
+    NetworkTable tuningTable = intakeTable.getSubTable("Tuning").getSubTable("RackGains");
 
-    m_pivotKSPub = tuningTable.getDoubleTopic("kS").publish();
-    m_pivotKSSub = tuningTable.getDoubleTopic("kS").subscribe(IntakeConstants.kPivotKS);
-    m_pivotKSPub.set(IntakeConstants.kPivotKS);
-    m_lastPivotKS = IntakeConstants.kPivotKS;
+    m_rackKSPub = tuningTable.getDoubleTopic("kS").publish();
+    m_rackKSSub = tuningTable.getDoubleTopic("kS").subscribe(IntakeConstants.kRackKS);
+    m_rackKSPub.set(IntakeConstants.kRackKS);
+    m_lastRackKS = IntakeConstants.kRackKS;
 
-    m_pivotKGPub = tuningTable.getDoubleTopic("kG").publish();
-    m_pivotKGSub = tuningTable.getDoubleTopic("kG").subscribe(IntakeConstants.kPivotKG);
-    m_pivotKGPub.set(IntakeConstants.kPivotKG);
-    m_lastPivotKG = IntakeConstants.kPivotKG;
+    m_rackKGPub = tuningTable.getDoubleTopic("kG").publish();
+    m_rackKGSub = tuningTable.getDoubleTopic("kG").subscribe(IntakeConstants.kRackKG);
+    m_rackKGPub.set(IntakeConstants.kRackKG);
+    m_lastRackKG = IntakeConstants.kRackKG;
 
-    m_pivotKVPub = tuningTable.getDoubleTopic("kV").publish();
-    m_pivotKVSub = tuningTable.getDoubleTopic("kV").subscribe(IntakeConstants.kPivotKV);
-    m_pivotKVPub.set(IntakeConstants.kPivotKV);
-    m_lastPivotKV = IntakeConstants.kPivotKV;
+    m_rackKVPub = tuningTable.getDoubleTopic("kV").publish();
+    m_rackKVSub = tuningTable.getDoubleTopic("kV").subscribe(IntakeConstants.kRackKV);
+    m_rackKVPub.set(IntakeConstants.kRackKV);
+    m_lastRackKV = IntakeConstants.kRackKV;
 
-    m_pivotKAPub = tuningTable.getDoubleTopic("kA").publish();
-    m_pivotKASub = tuningTable.getDoubleTopic("kA").subscribe(IntakeConstants.kPivotKA);
-    m_pivotKAPub.set(IntakeConstants.kPivotKA);
-    m_lastPivotKA = IntakeConstants.kPivotKA;
+    m_rackKAPub = tuningTable.getDoubleTopic("kA").publish();
+    m_rackKASub = tuningTable.getDoubleTopic("kA").subscribe(IntakeConstants.kRackKA);
+    m_rackKAPub.set(IntakeConstants.kRackKA);
+    m_lastRackKA = IntakeConstants.kRackKA;
 
-    m_pivotKPPub = tuningTable.getDoubleTopic("kP").publish();
-    m_pivotKPSub = tuningTable.getDoubleTopic("kP").subscribe(IntakeConstants.kPivotKP);
-    m_pivotKPPub.set(IntakeConstants.kPivotKP);
-    m_lastPivotKP = IntakeConstants.kPivotKP;
+    m_rackKPPub = tuningTable.getDoubleTopic("kP").publish();
+    m_rackKPSub = tuningTable.getDoubleTopic("kP").subscribe(IntakeConstants.kRackKP);
+    m_rackKPPub.set(IntakeConstants.kRackKP);
+    m_lastRackKP = IntakeConstants.kRackKP;
 
-    m_pivotKIPub = tuningTable.getDoubleTopic("kI").publish();
-    m_pivotKISub = tuningTable.getDoubleTopic("kI").subscribe(IntakeConstants.kPivotKI);
-    m_pivotKIPub.set(IntakeConstants.kPivotKI);
-    m_lastPivotKI = IntakeConstants.kPivotKI;
+    m_rackKIPub = tuningTable.getDoubleTopic("kI").publish();
+    m_rackKISub = tuningTable.getDoubleTopic("kI").subscribe(IntakeConstants.kRackKI);
+    m_rackKIPub.set(IntakeConstants.kRackKI);
+    m_lastRackKI = IntakeConstants.kRackKI;
 
-    m_pivotKDPub = tuningTable.getDoubleTopic("kD").publish();
-    m_pivotKDSub = tuningTable.getDoubleTopic("kD").subscribe(IntakeConstants.kPivotKD);
-    m_pivotKDPub.set(IntakeConstants.kPivotKD);
-    m_lastPivotKD = IntakeConstants.kPivotKD;
+    m_rackKDPub = tuningTable.getDoubleTopic("kD").publish();
+    m_rackKDSub = tuningTable.getDoubleTopic("kD").subscribe(IntakeConstants.kRackKD);
+    m_rackKDPub.set(IntakeConstants.kRackKD);
+    m_lastRackKD = IntakeConstants.kRackKD;
 
     // Initialize tuning mode controls (in parent Tuning table)
     NetworkTable tuningParent = intakeTable.getSubTable("Tuning");
@@ -250,27 +250,27 @@ public class Intake extends SubsystemBase {
     m_tuningEnabledSub = tuningParent.getBooleanTopic("Enabled").subscribe(false);
     m_tuningEnabledPub.set(false);
     m_tuningEnabledTrigger = new Trigger(m_tuningEnabledSub::get);
-    m_tuningPivotPositionPub = tuningParent.getDoubleTopic("PivotPositionRotations").publish();
-    m_tuningPivotPositionSub =
+    m_tuningRackPositionPub = tuningParent.getDoubleTopic("RackPositionRotations").publish();
+    m_tuningRackPositionSub =
         tuningParent
-            .getDoubleTopic("PivotPositionRotations")
-            .subscribe(IntakeConstants.kPivotStowedPosition);
-    m_tuningPivotPositionPub.set(IntakeConstants.kPivotStowedPosition);
+            .getDoubleTopic("RackPositionRotations")
+            .subscribe(IntakeConstants.kRackStowedPosition);
+    m_tuningRackPositionPub.set(IntakeConstants.kRackStowedPosition);
 
     // Initialize simulation
-    m_pivotSimState = m_pivotMotor.getSimState();
+    m_rackSimState = m_rackMotor.getSimState();
     m_rollerSimState = m_rollerMotor.getSimState();
 
-    // Set pivot sim orientation to match motor invert (Clockwise_Positive)
-    m_pivotSimState.Orientation = ChassisReference.Clockwise_Positive;
+    // Set rack sim orientation to match motor invert (Clockwise_Positive)
+    m_rackSimState.Orientation = ChassisReference.Clockwise_Positive;
 
-    // Pivot arm simulation (single jointed arm)
-    m_pivotSim =
+    // Rack arm simulation (single jointed arm)
+    m_rackSim =
         new SingleJointedArmSim(
             DCMotor.getFalcon500Foc(1),
-            IntakeConstants.PIVOT_GEAR_RATIO,
-            IntakeConstants.PIVOT_MOI,
-            IntakeConstants.PIVOT_ARM_LENGTH_METERS,
+            IntakeConstants.RACK_GEAR_RATIO,
+            IntakeConstants.RACK_MOI,
+            IntakeConstants.RACK_ARM_LENGTH_METERS,
             Units.degreesToRadians(-10), // Min angle (slightly past stowed)
             Units.degreesToRadians(100), // Max angle (past deployed)
             true, // Simulate gravity
@@ -286,7 +286,7 @@ public class Intake extends SubsystemBase {
             DCMotor.getFalcon500Foc(1));
   }
 
-  private void configurePivotMotor() {
+  private void configureRackMotor() {
     TalonFXConfiguration config = new TalonFXConfiguration();
 
     // Motor output configuration
@@ -297,39 +297,39 @@ public class Intake extends SubsystemBase {
     config.CurrentLimits =
         new CurrentLimitsConfigs()
             .withStatorCurrentLimitEnable(true)
-            .withStatorCurrentLimit(IntakeConstants.PIVOT_STATOR_LIMIT)
+            .withStatorCurrentLimit(IntakeConstants.RACK_STATOR_LIMIT)
             .withSupplyCurrentLimitEnable(true)
-            .withSupplyCurrentLimit(IntakeConstants.PIVOT_SUPPLY_LIMIT);
+            .withSupplyCurrentLimit(IntakeConstants.RACK_SUPPLY_LIMIT);
 
     // Feedback configuration - use gear ratio for mechanism position
     config.Feedback =
-        new FeedbackConfigs().withSensorToMechanismRatio(IntakeConstants.PIVOT_GEAR_RATIO);
+        new FeedbackConfigs().withSensorToMechanismRatio(IntakeConstants.RACK_GEAR_RATIO);
 
     // Slot 0 - Position control with gravity compensation
     config.Slot0 =
         new Slot0Configs()
-            .withKS(IntakeConstants.kPivotKS)
-            .withKG(IntakeConstants.kPivotKG)
-            .withKV(IntakeConstants.kPivotKV)
-            .withKA(IntakeConstants.kPivotKA)
-            .withKP(IntakeConstants.kPivotKP)
-            .withKI(IntakeConstants.kPivotKI)
-            .withKD(IntakeConstants.kPivotKD)
+            .withKS(IntakeConstants.kRackKS)
+            .withKG(IntakeConstants.kRackKG)
+            .withKV(IntakeConstants.kRackKV)
+            .withKA(IntakeConstants.kRackKA)
+            .withKP(IntakeConstants.kRackKP)
+            .withKI(IntakeConstants.kRackKI)
+            .withKD(IntakeConstants.kRackKD)
             .withGravityType(GravityTypeValue.Arm_Cosine);
 
     // Motion Magic configuration
     config.MotionMagic =
         new MotionMagicConfigs()
-            .withMotionMagicCruiseVelocity(IntakeConstants.kPivotMotionMagicCruiseVelocity)
-            .withMotionMagicAcceleration(IntakeConstants.kPivotMotionMagicAcceleration);
+            .withMotionMagicCruiseVelocity(IntakeConstants.kRackMotionMagicCruiseVelocity)
+            .withMotionMagicAcceleration(IntakeConstants.kRackMotionMagicAcceleration);
 
-    StatusCode configResult = m_pivotMotor.getConfigurator().apply(config);
+    StatusCode configResult = m_rackMotor.getConfigurator().apply(config);
     if (!configResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply config to intake pivot motor!");
+      DataLogManager.log("ERROR! Not able to apply config to intake rack motor!");
     }
 
     // Set initial position to stowed
-    // m_pivotMotor.setPosition(IntakeConstants.kPivotStowedPosition);
+    // m_rackMotor.setPosition(IntakeConstants.kRackStowedPosition);
   }
 
   private void configureRollerMotor() {
@@ -355,26 +355,26 @@ public class Intake extends SubsystemBase {
   @Override
   public void periodic() {
     BaseStatusSignal.refreshAll(
-        m_pivotPosition,
-        m_pivotVelocity,
-        m_pivotVoltage,
+        m_rackPosition,
+        m_rackVelocity,
+        m_rackVoltage,
         m_rollerVelocity,
         m_rollerVoltage,
-        m_pivotStatorCurrent,
-        m_pivotSupplyCurrent,
+        m_rackStatorCurrent,
+        m_rackSupplyCurrent,
         m_rollerStatorCurrent,
         m_rollerSupplyCurrent);
 
     // Publish signals to NetworkTables
-    m_pivotPositionPub.set(m_pivotPosition.getValue().in(Rotations));
-    m_pivotVelocityPub.set(m_pivotVelocity.getValue().in(RotationsPerSecond) * 60.0);
-    m_pivotVoltagePub.set(m_pivotVoltage.getValue().in(Volts));
-    m_pivotSetpointPub.set(m_pivotPositionSetpoint);
+    m_rackPositionPub.set(m_rackPosition.getValue().in(Rotations));
+    m_rackVelocityPub.set(m_rackVelocity.getValue().in(RotationsPerSecond) * 60.0);
+    m_rackVoltagePub.set(m_rackVoltage.getValue().in(Volts));
+    m_rackSetpointPub.set(m_rackPositionSetpoint);
     m_rollerVelocityPub.set(m_rollerVelocity.getValue().in(RotationsPerSecond) * 60.0);
     m_rollerVoltagePub.set(m_rollerVoltage.getValue().in(Volts));
     m_rollerVoltageSetpointPub.set(m_rollerVoltageSetpoint);
-    m_pivotStatorCurrentPub.set(m_pivotStatorCurrent.getValue().in(Amps));
-    m_pivotSupplyCurrentPub.set(m_pivotSupplyCurrent.getValue().in(Amps));
+    m_rackStatorCurrentPub.set(m_rackStatorCurrent.getValue().in(Amps));
+    m_rackSupplyCurrentPub.set(m_rackSupplyCurrent.getValue().in(Amps));
     m_rollerStatorCurrentPub.set(m_rollerStatorCurrent.getValue().in(Amps));
     m_rollerSupplyCurrentPub.set(m_rollerSupplyCurrent.getValue().in(Amps));
     m_atPositionPub.set(atPosition());
@@ -384,22 +384,22 @@ public class Intake extends SubsystemBase {
     m_currentCommandPub.set(currentCommand != null ? currentCommand.getName() : "None");
 
     // Update mechanism pose for AdvantageScope 3D visualization
-    double pivotAngleRad = Units.rotationsToRadians(m_pivotPosition.getValue().in(Rotations));
+    double rackAngleRad = Units.rotationsToRadians(m_rackPosition.getValue().in(Rotations));
     MechanismVisualizer.setPose(
         MechanismVisualizer.INTAKE_INDEX,
         new Pose3d(
             Units.inchesToMeters(7.8296),
             0,
             Units.inchesToMeters(11.25),
-            new Rotation3d(0, -pivotAngleRad + Units.degreesToRadians(102.2053), 0)));
+            new Rotation3d(0, -rackAngleRad + Units.degreesToRadians(102.2053), 0)));
 
     // Update hopper pose based on intake contact point position
     double contactDistanceMeters = Units.inchesToMeters(9.755401);
-    double pivotXMeters = Units.inchesToMeters(7.8296);
-    double actualAngle = -pivotAngleRad + Units.degreesToRadians(102.2053);
-    double contactX = pivotXMeters + contactDistanceMeters * Math.cos(actualAngle);
+    double rackXMeters = Units.inchesToMeters(7.8296);
+    double actualAngle = -rackAngleRad + Units.degreesToRadians(102.2053);
+    double contactX = rackXMeters + contactDistanceMeters * Math.cos(actualAngle);
     // Invert so hopper extends when intake deploys
-    double hopperX = (pivotXMeters + contactDistanceMeters) - contactX;
+    double hopperX = (rackXMeters + contactDistanceMeters) - contactX;
     MechanismVisualizer.setPose(
         MechanismVisualizer.HOPPER_INDEX, new Pose3d(hopperX, 0, 0, new Rotation3d()));
 
@@ -407,26 +407,26 @@ public class Intake extends SubsystemBase {
     updateTunableGains();
   }
 
-  /** Checks for tunable gain updates from NetworkTables and applies them to the pivot motor. */
+  /** Checks for tunable gain updates from NetworkTables and applies them to the rack motor. */
   private void updateTunableGains() {
     // Read current values from NetworkTables
-    double kS = m_pivotKSSub.get();
-    double kG = m_pivotKGSub.get();
-    double kV = m_pivotKVSub.get();
-    double kA = m_pivotKASub.get();
-    double kP = m_pivotKPSub.get();
-    double kI = m_pivotKISub.get();
-    double kD = m_pivotKDSub.get();
+    double kS = m_rackKSSub.get();
+    double kG = m_rackKGSub.get();
+    double kV = m_rackKVSub.get();
+    double kA = m_rackKASub.get();
+    double kP = m_rackKPSub.get();
+    double kI = m_rackKISub.get();
+    double kD = m_rackKDSub.get();
 
     // Check if gains have changed
     boolean gainsChanged =
-        kS != m_lastPivotKS
-            || kG != m_lastPivotKG
-            || kV != m_lastPivotKV
-            || kA != m_lastPivotKA
-            || kP != m_lastPivotKP
-            || kI != m_lastPivotKI
-            || kD != m_lastPivotKD;
+        kS != m_lastRackKS
+            || kG != m_lastRackKG
+            || kV != m_lastRackKV
+            || kA != m_lastRackKA
+            || kP != m_lastRackKP
+            || kI != m_lastRackKI
+            || kD != m_lastRackKD;
 
     if (gainsChanged) {
       Slot0Configs slot0 =
@@ -440,36 +440,36 @@ public class Intake extends SubsystemBase {
               .withKD(kD)
               .withGravityType(GravityTypeValue.Arm_Cosine);
 
-      m_pivotMotor.getConfigurator().apply(slot0);
+      m_rackMotor.getConfigurator().apply(slot0);
 
       // Update last known values
-      m_lastPivotKS = kS;
-      m_lastPivotKG = kG;
-      m_lastPivotKV = kV;
-      m_lastPivotKA = kA;
-      m_lastPivotKP = kP;
-      m_lastPivotKI = kI;
-      m_lastPivotKD = kD;
+      m_lastRackKS = kS;
+      m_lastRackKG = kG;
+      m_lastRackKV = kV;
+      m_lastRackKA = kA;
+      m_lastRackKP = kP;
+      m_lastRackKI = kI;
+      m_lastRackKD = kD;
     }
   }
 
   @Override
   public void simulationPeriodic() {
     // Update supply voltage from battery
-    m_pivotSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
+    m_rackSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
     m_rollerSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 
-    // Update pivot arm simulation
-    m_pivotSim.setInputVoltage(m_pivotSimState.getMotorVoltageMeasure().in(Volts));
-    m_pivotSim.update(0.020);
+    // Update rack arm simulation
+    m_rackSim.setInputVoltage(m_rackSimState.getMotorVoltageMeasure().in(Volts));
+    m_rackSim.update(0.020);
 
-    // Feed pivot simulation results back to motor simulation
+    // Feed rack simulation results back to motor simulation
     // Convert radians to rotations for the mechanism position
-    double pivotMechanismRotations = Units.radiansToRotations(m_pivotSim.getAngleRads());
-    m_pivotSimState.setRawRotorPosition(pivotMechanismRotations * IntakeConstants.PIVOT_GEAR_RATIO);
-    m_pivotSimState.setRotorVelocity(
-        Units.radiansToRotations(m_pivotSim.getVelocityRadPerSec())
-            * IntakeConstants.PIVOT_GEAR_RATIO);
+    double rackMechanismRotations = Units.radiansToRotations(m_rackSim.getAngleRads());
+    m_rackSimState.setRawRotorPosition(rackMechanismRotations * IntakeConstants.RACK_GEAR_RATIO);
+    m_rackSimState.setRotorVelocity(
+        Units.radiansToRotations(m_rackSim.getVelocityRadPerSec())
+            * IntakeConstants.RACK_GEAR_RATIO);
 
     // Update roller simulation
     m_rollerSim.setInputVoltage(m_rollerSimState.getMotorVoltageMeasure().in(Volts));
@@ -483,26 +483,26 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Checks if the pivot is at the target position.
+   * Checks if the rack is at the target position.
    *
    * @return true if at position within tolerance.
    */
   public boolean atPosition() {
-    return Math.abs(m_pivotPosition.getValue().in(Rotations) - m_pivotPositionSetpoint)
-        < IntakeConstants.kPivotPositionToleranceRotations;
+    return Math.abs(m_rackPosition.getValue().in(Rotations) - m_rackPositionSetpoint)
+        < IntakeConstants.kRackPositionToleranceRotations;
   }
 
   /**
-   * Creates a command to deploy the intake (pivot down and run rollers).
+   * Creates a command to deploy the intake (rack down and run rollers).
    *
    * @return A command that deploys the intake.
    */
   public Command deployCommand() {
     return this.run(
             () -> {
-              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
-              m_pivotMotor.setControl(
-                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rackPositionSetpoint = IntakeConstants.kRackDeployedPosition;
+              m_rackMotor.setControl(
+                  m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
@@ -516,16 +516,16 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Creates a command to deploy the intake (pivot down and run rollers).
+   * Creates a command to deploy the intake (rack down and run rollers).
    *
    * @return A command that deploys the intake.
    */
   public Command autoDeployCommand() {
     return this.run(
             () -> {
-              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
-              m_pivotMotor.setControl(
-                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rackPositionSetpoint = IntakeConstants.kRackDeployedPosition;
+              m_rackMotor.setControl(
+                  m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
@@ -545,24 +545,24 @@ public class Intake extends SubsystemBase {
   public Command deployOnly() {
     return this.runOnce(
             () -> {
-              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
-              m_pivotMotor.setControl(
-                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rackPositionSetpoint = IntakeConstants.kRackDeployedPosition;
+              m_rackMotor.setControl(
+                  m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
             })
         .withName("DeployOnly");
   }
 
   /**
-   * Creates a command to stow the intake (pivot up and stop rollers).
+   * Creates a command to stow the intake (rack up and stop rollers).
    *
    * @return A command that stows the intake.
    */
   public Command stowCommand() {
     return this.run(
             () -> {
-              m_pivotPositionSetpoint = IntakeConstants.kPivotStowedPosition;
-              m_pivotMotor.setControl(
-                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotStowedPosition));
+              m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
+              m_rackMotor.setControl(
+                  m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
             })
@@ -630,18 +630,18 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Creates a command to set the pivot to a specific position.
+   * Creates a command to set the rack to a specific position.
    *
    * @param positionRotations The target position in rotations.
-   * @return A command that moves the pivot.
+   * @return A command that moves the rack.
    */
-  public Command setPivotPositionCommand(double positionRotations) {
+  public Command setRackPositionCommand(double positionRotations) {
     return this.run(
             () -> {
-              m_pivotPositionSetpoint = positionRotations;
-              m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(positionRotations));
+              m_rackPositionSetpoint = positionRotations;
+              m_rackMotor.setControl(m_rackPositionRequest.withPosition(positionRotations));
             })
-        .withName("SetPivotPosition");
+        .withName("SetRackPosition");
   }
 
   /**
@@ -672,8 +672,8 @@ public class Intake extends SubsystemBase {
   public Command stopCommand() {
     return this.runOnce(
             () -> {
-              m_pivotPositionSetpoint = m_pivotPosition.getValue().in(Rotations);
-              m_pivotMotor.setControl(m_neutralRequest);
+              m_rackPositionSetpoint = m_rackPosition.getValue().in(Rotations);
+              m_rackMotor.setControl(m_neutralRequest);
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
             })
@@ -690,51 +690,51 @@ public class Intake extends SubsystemBase {
   }
 
   /**
-   * Creates a command that continuously wiggles the pivot between the deployed position and 20
-   * degrees above it while feeding. Returns the pivot to the deployed position when the command
+   * Creates a command that continuously wiggles the rack between the deployed position and 20
+   * degrees above it while feeding. Returns the rack to the deployed position when the command
    * ends.
    *
-   * @return A command that wiggles the pivot during feeding.
+   * @return A command that wiggles the rack during feeding.
    */
-  public Command feedingWigglePivotCommand() {
+  public Command feedingWiggleRackCommand() {
     return this.run(
             () -> {
               double targetPos =
-                  m_wiggleGoingToTop
-                      ? IntakeConstants.kPivotDeployedPosition
-                          + IntakeConstants.kPivotFeedingWiggleOffset
-                      : IntakeConstants.kPivotDeployedPosition;
-              m_pivotPositionSetpoint = targetPos;
-              m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPos));
+                  m_wiggleGoingIn
+                      ? IntakeConstants.kRackDeployedPosition
+                          + IntakeConstants.kRackFeedingWiggleOffset
+                      : IntakeConstants.kRackDeployedPosition;
+              m_rackPositionSetpoint = targetPos;
+              m_rackMotor.setControl(m_rackPositionRequest.withPosition(targetPos));
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
               if (m_wiggleTimer.hasElapsed(0.60)) {
-                m_wiggleGoingToTop = !m_wiggleGoingToTop;
+                m_wiggleGoingIn = !m_wiggleGoingIn;
                 m_wiggleTimer.reset();
                 m_wiggleTimer.start();
               }
             })
         .beforeStarting(
             () -> {
-              m_wiggleGoingToTop = false;
+              m_wiggleGoingIn = false;
               m_wiggleTimer.reset();
               m_wiggleTimer.start();
             })
         .finallyDo(
             () -> {
-              m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
-              m_pivotMotor.setControl(
-                  m_pivotPositionRequest.withPosition(IntakeConstants.kPivotDeployedPosition));
+              m_rackPositionSetpoint = IntakeConstants.kRackDeployedPosition;
+              m_rackMotor.setControl(
+                  m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
             })
-        .withName("FeedingWigglePivot");
+        .withName("FeedingWiggleRack");
   }
 
   /**
-   * Creates a command for tuning mode. Moves the pivot to the position from
-   * Intake/Tuning/PivotPositionRotations. Use with tuningEnabledTrigger() to schedule based on the
+   * Creates a command for tuning mode. Moves the rack to the position from
+   * Intake/Tuning/RackPositionRotations. Use with tuningEnabledTrigger() to schedule based on the
    * Enabled entry.
    *
    * @return A command that runs the intake in tuning mode.
@@ -742,11 +742,11 @@ public class Intake extends SubsystemBase {
   public Command tuningCommand() {
     return this.run(
             () -> {
-              double targetPosition = m_tuningPivotPositionSub.get();
-              m_pivotPositionSetpoint = targetPosition;
-              m_pivotMotor.setControl(m_pivotPositionRequest.withPosition(targetPosition));
+              double targetPosition = m_tuningRackPositionSub.get();
+              m_rackPositionSetpoint = targetPosition;
+              m_rackMotor.setControl(m_rackPositionRequest.withPosition(targetPosition));
             })
-        .finallyDo(() -> m_pivotMotor.setControl(m_neutralRequest))
+        .finallyDo(() -> m_rackMotor.setControl(m_neutralRequest))
         .withName("IntakeTuning");
   }
 }
