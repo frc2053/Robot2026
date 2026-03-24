@@ -21,6 +21,7 @@ import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,14 +31,15 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.SwerveConstants;
+import frc.robot.commands.ShootOnTheMove;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Kicker;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Swerve;
+import frc.robot.util.FuelSim;
 import frc.robot.util.FuelVisualizer;
-import frc.robot.util.ShootingOnTheFly;
 
 public class RobotContainer {
   private final double m_maxAngularRate =
@@ -68,6 +70,13 @@ public class RobotContainer {
   public final Intake m_intake = new Intake();
   // public final Climber m_climber = new Climber();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
+
+  private static FuelSim m_fuelSim;
+
+  /** Gets the fuel simulation instance. */
+  public static FuelSim getFuelSim() {
+    return m_fuelSim;
+  }
 
   /* Path follower */
   private final SendableChooser<Command> m_autoChooser;
@@ -109,6 +118,10 @@ public class RobotContainer {
 
     configureBindings();
     CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
+
+    if (RobotBase.isSimulation()) {
+      configureFuelSim();
+    }
   }
 
   private void configureBindings() {
@@ -174,29 +187,12 @@ public class RobotContainer {
         .rightBumper()
         .and(m_sotfEnabledTrigger)
         .whileTrue(
-            m_shooter
-                .spinUpForSOTFCommand(
-                    () -> m_drivetrain.getState().Pose,
-                    this::fieldRelativeSpeeds,
-                    this::fieldRelativeAccel,
-                    Constants.FieldSpots::getHubPosition)
-                .alongWith(
-                    m_drivetrain.lookAtPoint(
-                        () ->
-                            ShootingOnTheFly.calculateAimingPoint(
-                                m_drivetrain.getState().Pose,
-                                fieldRelativeSpeeds(),
-                                fieldRelativeAccel(),
-                                Constants.FieldSpots.getHubPosition(),
-                                Constants.ShooterConstants.kSOTFLatencyCompensation,
-                                Constants.ShooterConstants.TIME_OF_FLIGHT_MAP),
-                        () ->
-                            -m_joystick.getLeftY()
-                                * SwerveConstants.sotmMaxSpeed.in(MetersPerSecond),
-                        () ->
-                            -m_joystick.getLeftX()
-                                * SwerveConstants.sotmMaxSpeed.in(MetersPerSecond),
-                        SwerveConstants.sotmMaxSpeed.times(0.1).in(MetersPerSecond))));
+            new ShootOnTheMove(
+                () -> -m_joystick.getLeftY() * SwerveConstants.sotmMaxSpeed.in(MetersPerSecond),
+                () -> -m_joystick.getLeftX() * SwerveConstants.sotmMaxSpeed.in(MetersPerSecond),
+                SwerveConstants.sotmMaxSpeed.times(0.1).in(MetersPerSecond),
+                m_drivetrain,
+                m_shooter));
 
     // Idle shooter when not shooting and not aligning (bumper held keeps spin-up active)
     m_joystick
@@ -230,16 +226,29 @@ public class RobotContainer {
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
-    // Climber: D-pad up toggles between extend and retract
-    // m_joystick
-    //     .povUp()
-    //     .onTrue(
-    //         Commands.either(
-    //             m_climber.retractCommand().until(m_climber::atPosition),
-    //             m_climber.extendCommand().until(m_climber::atPosition),
-    //             m_climber::isExtended));
-
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
+  }
+
+  private void configureFuelSim() {
+    m_fuelSim = new FuelSim();
+
+    m_fuelSim.spawnStartingFuel();
+    m_fuelSim.registerRobot(
+        SwerveConstants.kRobotWidth,
+        SwerveConstants.kRobotLength,
+        Units.inchesToMeters(5),
+        () -> m_drivetrain.getState().Pose,
+        () -> m_drivetrain.getState().Speeds);
+
+    m_fuelSim.start();
+
+    m_fuelSim.registerIntake(
+        SwerveConstants.kRobotLength / 2,
+        SwerveConstants.kRobotLength / 2 + Units.inchesToMeters(12),
+        -SwerveConstants.kRobotWidth / 2,
+        SwerveConstants.kRobotWidth / 2,
+        m_joystick.leftTrigger(),
+        FuelVisualizer::addFuel);
   }
 
   public Command alignToHub() {
@@ -258,7 +267,6 @@ public class RobotContainer {
               double deg = robotHeading.minus(angleToTarget).getDegrees();
               return Math.abs(deg) <= 2.0;
             });
-    // .finallyDo(() -> m_drivetrain.stopModules());
   }
 
   public Command shootCommand() {
