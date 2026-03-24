@@ -19,9 +19,8 @@ public final class MechanismVisualizer {
   public static final int INTAKE_INDEX = 0;
 
   public static final int HOPPER_INDEX = 1;
-  public static final int CLIMBER_INDEX = 2;
 
-  private static final int NUM_MECHANISMS = 3;
+  private static final int NUM_MECHANISMS = 2;
 
   private static final Pose3d[] m_poses = new Pose3d[NUM_MECHANISMS];
   private static final StructArrayPublisher<Pose3d> m_publisher;

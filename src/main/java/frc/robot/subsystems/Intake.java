@@ -23,7 +23,6 @@ import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.ChassisReference;
@@ -48,7 +47,7 @@ import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -79,7 +78,7 @@ public class Intake extends SubsystemBase {
   // Simulation objects
   private final TalonFXSimState m_rackSimState;
   private final TalonFXSimState m_rollerSimState;
-  private final SingleJointedArmSim m_rackSim;
+  private final ElevatorSim m_rackSim;
   private final DCMotorSim m_rollerSim;
 
   // NetworkTables publishers for logging
@@ -264,17 +263,17 @@ public class Intake extends SubsystemBase {
     // Set rack sim orientation to match motor invert (Clockwise_Positive)
     m_rackSimState.Orientation = ChassisReference.Clockwise_Positive;
 
-    // Rack arm simulation (single jointed arm)
+    // Rack and pinion simulation (linear motion)
     m_rackSim =
-        new SingleJointedArmSim(
+        new ElevatorSim(
             DCMotor.getFalcon500Foc(1),
             IntakeConstants.RACK_GEAR_RATIO,
-            IntakeConstants.RACK_MOI,
-            IntakeConstants.RACK_ARM_LENGTH_METERS,
-            Units.degreesToRadians(-10), // Min angle (slightly past stowed)
-            Units.degreesToRadians(100), // Max angle (past deployed)
-            true, // Simulate gravity
-            Units.rotationsToRadians(0)); // Starting angle (stowed)
+            IntakeConstants.RACK_CARRIAGE_MASS_KG,
+            IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS,
+            IntakeConstants.RACK_MIN_EXTENSION_METERS,
+            IntakeConstants.RACK_MAX_EXTENSION_METERS,
+            false, // No gravity (horizontal rack)
+            0.0); // Starting position (retracted)
 
     // Roller flywheel simulation
     m_rollerSim =
@@ -305,7 +304,7 @@ public class Intake extends SubsystemBase {
     config.Feedback =
         new FeedbackConfigs().withSensorToMechanismRatio(IntakeConstants.RACK_GEAR_RATIO);
 
-    // Slot 0 - Position control with gravity compensation
+    // Slot 0 - Position control (no gravity compensation for horizontal rack)
     config.Slot0 =
         new Slot0Configs()
             .withKS(IntakeConstants.kRackKS)
@@ -314,8 +313,7 @@ public class Intake extends SubsystemBase {
             .withKA(IntakeConstants.kRackKA)
             .withKP(IntakeConstants.kRackKP)
             .withKI(IntakeConstants.kRackKI)
-            .withKD(IntakeConstants.kRackKD)
-            .withGravityType(GravityTypeValue.Arm_Cosine);
+            .withKD(IntakeConstants.kRackKD);
 
     // Motion Magic configuration
     config.MotionMagic =
@@ -384,24 +382,29 @@ public class Intake extends SubsystemBase {
     m_currentCommandPub.set(currentCommand != null ? currentCommand.getName() : "None");
 
     // Update mechanism pose for AdvantageScope 3D visualization
-    double rackAngleRad = Units.rotationsToRadians(m_rackPosition.getValue().in(Rotations));
+    // Convert pinion rotations to linear distance along the rack
+    double pinionRotations = m_rackPosition.getValue().in(Rotations);
+    double linearDistanceMeters =
+        pinionRotations * 2.0 * Math.PI * IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS;
+
+    // Rack is angled down from horizontal
+    double rackAngleRad = Math.toRadians(IntakeConstants.RACK_ANGLE_DEGREES);
+    double baseX = Units.inchesToMeters(7.8296);
+    double baseZ = Units.inchesToMeters(11.25);
+
+    // Calculate position along the angled rack direction
+    double rackX = baseX + linearDistanceMeters * Math.cos(rackAngleRad);
+    double rackZ = baseZ - linearDistanceMeters * Math.sin(rackAngleRad);
+
     MechanismVisualizer.setPose(
         MechanismVisualizer.INTAKE_INDEX,
-        new Pose3d(
-            Units.inchesToMeters(7.8296),
-            0,
-            Units.inchesToMeters(11.25),
-            new Rotation3d(0, -rackAngleRad + Units.degreesToRadians(102.2053), 0)));
+        new Pose3d(rackX, 0, rackZ, new Rotation3d(0, -rackAngleRad, 0)));
 
-    // Update hopper pose based on intake contact point position
-    double contactDistanceMeters = Units.inchesToMeters(9.755401);
-    double rackXMeters = Units.inchesToMeters(7.8296);
-    double actualAngle = -rackAngleRad + Units.degreesToRadians(102.2053);
-    double contactX = rackXMeters + contactDistanceMeters * Math.cos(actualAngle);
-    // Invert so hopper extends when intake deploys
-    double hopperX = (rackXMeters + contactDistanceMeters) - contactX;
+    // Update hopper pose based on intake position
+    // Hopper extends forward as intake deploys
     MechanismVisualizer.setPose(
-        MechanismVisualizer.HOPPER_INDEX, new Pose3d(hopperX, 0, 0, new Rotation3d()));
+        MechanismVisualizer.HOPPER_INDEX,
+        new Pose3d(linearDistanceMeters, 0, 0, new Rotation3d()));
 
     // Check for tuning updates and apply if changed
     updateTunableGains();
@@ -437,8 +440,7 @@ public class Intake extends SubsystemBase {
               .withKA(kA)
               .withKP(kP)
               .withKI(kI)
-              .withKD(kD)
-              .withGravityType(GravityTypeValue.Arm_Cosine);
+              .withKD(kD);
 
       m_rackMotor.getConfigurator().apply(slot0);
 
@@ -459,17 +461,24 @@ public class Intake extends SubsystemBase {
     m_rackSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
     m_rollerSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 
-    // Update rack arm simulation
+    // Update rack and pinion simulation
     m_rackSim.setInputVoltage(m_rackSimState.getMotorVoltageMeasure().in(Volts));
     m_rackSim.update(0.020);
 
     // Feed rack simulation results back to motor simulation
-    // Convert radians to rotations for the mechanism position
-    double rackMechanismRotations = Units.radiansToRotations(m_rackSim.getAngleRads());
-    m_rackSimState.setRawRotorPosition(rackMechanismRotations * IntakeConstants.RACK_GEAR_RATIO);
-    m_rackSimState.setRotorVelocity(
-        Units.radiansToRotations(m_rackSim.getVelocityRadPerSec())
-            * IntakeConstants.RACK_GEAR_RATIO);
+    // Convert linear position (meters) to pinion rotations
+    // Linear distance = pinion rotations × 2π × pitch_radius
+    // So pinion rotations = linear distance / (2π × pitch_radius)
+    double pinionRotations =
+        m_rackSim.getPositionMeters()
+            / (2.0 * Math.PI * IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS);
+    double pinionVelocityRps =
+        m_rackSim.getVelocityMetersPerSecond()
+            / (2.0 * Math.PI * IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS);
+
+    // Convert mechanism (pinion) rotations to motor rotations
+    m_rackSimState.setRawRotorPosition(pinionRotations * IntakeConstants.RACK_GEAR_RATIO);
+    m_rackSimState.setRotorVelocity(pinionVelocityRps * IntakeConstants.RACK_GEAR_RATIO);
 
     // Update roller simulation
     m_rollerSim.setInputVoltage(m_rollerSimState.getMotorVoltageMeasure().in(Volts));
