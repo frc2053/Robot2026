@@ -30,7 +30,7 @@ public class Robot extends TimedRobot {
   private final RobotContainer m_robotContainer;
   private final GameState m_gameState;
 
-  private final GcStatsCollector gcStatsCollector = new GcStatsCollector();
+  private final GcStatsCollector m_gcStatsCollector = new GcStatsCollector();
 
   /* log and replay timestamp and joystick data */
   private final HootAutoReplay m_timeAndJoystickReplay =
@@ -71,7 +71,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
-    double startTime = Timer.getFPGATimestamp();
+    final double startTime = Timer.getFPGATimestamp();
     m_timeAndJoystickReplay.update();
     CommandScheduler.getInstance().run();
     m_robotContainer.m_vision.periodic(new Pose3d(m_robotContainer.m_drivetrain.getState().Pose));
@@ -79,7 +79,7 @@ public class Robot extends TimedRobot {
     FuelVisualizer.update();
     MechanismVisualizer.publish();
 
-    gcStatsCollector.update();
+    m_gcStatsCollector.update();
 
     SmartDashboard.putNumber("RoboRIO/CPU Temperature", RobotController.getCPUTemp());
     SmartDashboard.putBoolean("RoboRIO/RSL", RobotController.getRSLState());
@@ -151,21 +151,22 @@ public class Robot extends TimedRobot {
   }
 
   private static final class GcStatsCollector {
-    private List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
-    private final long[] lastTimes = new long[gcBeans.size()];
-    private final long[] lastCounts = new long[gcBeans.size()];
+    private final List<GarbageCollectorMXBean> m_gcBeans =
+        ManagementFactory.getGarbageCollectorMXBeans();
+    private final long[] m_lastTimes = new long[m_gcBeans.size()];
+    private final long[] m_lastCounts = new long[m_gcBeans.size()];
 
     public void update() {
       long accumTime = 0;
       long accumCounts = 0;
-      for (int i = 0; i < gcBeans.size(); i++) {
-        long gcTime = gcBeans.get(i).getCollectionTime();
-        long gcCount = gcBeans.get(i).getCollectionCount();
-        accumTime += gcTime - lastTimes[i];
-        accumCounts += gcCount - lastCounts[i];
+      for (int i = 0; i < m_gcBeans.size(); i++) {
+        long gcTime = m_gcBeans.get(i).getCollectionTime();
+        long gcCount = m_gcBeans.get(i).getCollectionCount();
+        accumTime += gcTime - m_lastTimes[i];
+        accumCounts += gcCount - m_lastCounts[i];
 
-        lastTimes[i] = gcTime;
-        lastCounts[i] = gcCount;
+        m_lastTimes[i] = gcTime;
+        m_lastCounts[i] = gcCount;
       }
 
       SmartDashboard.putNumber("GC Stats/GC Time MS", (double) accumTime);

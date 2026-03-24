@@ -389,7 +389,6 @@ public class Shooter extends SubsystemBase {
     sotfTable.getBooleanTopic("UseDistanceFix").publish().setDefault(true);
     m_sotfFixSub = sotfTable.getBooleanTopic("UseDistanceFix").subscribe(true);
 
-
     // Initialize tuning mode NetworkTables controls
     NetworkTable tuningTable = shooterTable.getSubTable("Tuning");
     m_tuningEnabledPub = tuningTable.getBooleanTopic("Enabled").publish();

@@ -110,10 +110,6 @@ public class Intake extends SubsystemBase {
   // State variable for feedingWigglePivotCommand oscillation direction
   private boolean m_wiggleGoingToTop;
 
-  // Disabled coast mode tracking
-  private final Timer m_disabledTimer = new Timer();
-  private boolean m_isCoasting;
-
   // Tunable gains for pivot
   private final DoubleSubscriber m_pivotKSSub;
   private final DoubleSubscriber m_pivotKGSub;
@@ -130,7 +126,7 @@ public class Intake extends SubsystemBase {
   private final DoublePublisher m_pivotKIPub;
   private final DoublePublisher m_pivotKDPub;
 
-  private Timer m_wiggleTimer;
+  private final Timer m_wiggleTimer;
 
   // Track last known gain values to detect changes
   private double m_lastPivotKS;
@@ -713,17 +709,18 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
-              if (m_wiggleTimer.hasElapsed(.60)) {
+              if (m_wiggleTimer.hasElapsed(0.60)) {
                 m_wiggleGoingToTop = !m_wiggleGoingToTop;
                 m_wiggleTimer.reset();
                 m_wiggleTimer.start();
               }
             })
-        .beforeStarting(() -> {
-          m_wiggleGoingToTop = false;
-          m_wiggleTimer.reset();
-          m_wiggleTimer.start();
-        })
+        .beforeStarting(
+            () -> {
+              m_wiggleGoingToTop = false;
+              m_wiggleTimer.reset();
+              m_wiggleTimer.start();
+            })
         .finallyDo(
             () -> {
               m_pivotPositionSetpoint = IntakeConstants.kPivotDeployedPosition;
