@@ -403,8 +403,7 @@ public class Intake extends SubsystemBase {
     // Update hopper pose based on intake position
     // Hopper extends forward as intake deploys
     MechanismVisualizer.setPose(
-        MechanismVisualizer.HOPPER_INDEX,
-        new Pose3d(linearDistanceMeters, 0, 0, new Rotation3d()));
+        MechanismVisualizer.HOPPER_INDEX, new Pose3d(linearDistanceMeters, 0, 0, new Rotation3d()));
 
     // Check for tuning updates and apply if changed
     updateTunableGains();

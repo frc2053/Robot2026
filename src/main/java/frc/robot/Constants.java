@@ -62,6 +62,20 @@ public final class Constants {
     public static final double kRobotWidth = Units.inchesToMeters(33.876000);
     public static final double kRobotLength = Units.inchesToMeters(33.876000);
 
+    // Robot mass and moment of inertia (for GoToPose feedforward calculations)
+    public static final double kRobotMassKg = 54.4; // ~120 lbs with bumpers and battery
+    public static final double kRobotMOIKgM2 = 6.0; // kg*m^2 (estimate, tune via SysId)
+
+    // GoToPose motion constraints
+    public static final double kGoToPoseMaxVelocity = 3.5; // m/s
+    public static final double kGoToPoseMaxAcceleration = 2.5; // m/s^2
+    public static final double kGoToPoseMaxAngularVelocity = Math.PI * 1.5; // rad/s
+    public static final double kGoToPoseMaxAngularAcceleration = Math.PI; // rad/s^2
+
+    // GoToPose tolerances
+    public static final double kGoToPoseLinearTolerance = 0.02; // meters
+    public static final double kGoToPoseAngularTolerance = Math.toRadians(1.0); // radians
+
     // Path following translation PID constants
     public static final double kPathTranslationP = 10.0;
     public static final double kPathTranslationI = 0.0;
