@@ -39,6 +39,8 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.SwerveConstants;
+import frc.robot.commands.GoToPoseCommand;
+import frc.robot.commands.GoToPoseFactory;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.util.ShootingOnTheFly;
 import java.io.IOException;
@@ -597,5 +599,64 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
     ChassisSpeeds currentSpeeds = getState().Speeds;
 
     return currentSpeeds.minus(m_prevFieldSpeeds).div(0.02);
+  }
+
+  // ── GoToPose command factories ──────────────────────────────────────
+
+  /**
+   * Creates a command to drive to a pose with default config and alliance flipping.
+   *
+   * @param goal Blue-origin target pose.
+   * @return Command that drives to the pose.
+   */
+  public Command goToPose(Pose2d goal) {
+    return GoToPoseFactory.goTo(this, goal, GoToPoseCommand::isRedAlliance).withName("GoToPose");
+  }
+
+  /**
+   * Creates a command to drive to a pose with optional mirroring.
+   *
+   * @param goal Blue-origin target pose.
+   * @param mirror If true, mirror across centerline before alliance flip.
+   * @return Command that drives to the pose.
+   */
+  public Command goToPose(Pose2d goal, boolean mirror) {
+    return GoToPoseFactory.goTo(this, goal, GoToPoseCommand::isRedAlliance, mirror)
+        .withName("GoToPose");
+  }
+
+  /**
+   * Creates a GoToPose command with a custom config.
+   *
+   * @param config Custom motion config.
+   * @param goal Blue-origin target pose.
+   * @param mirror If true, mirror across centerline before alliance flip.
+   * @return Command that drives to the pose.
+   */
+  public Command goToPose(GoToPoseCommand.Config config, Pose2d goal, boolean mirror) {
+    return GoToPoseFactory.custom(this, config, () -> goal, GoToPoseCommand::isRedAlliance, mirror)
+        .withName("GoToPose");
+  }
+
+  /**
+   * Creates a fast transit command to a pose with alliance flipping.
+   *
+   * @param goal Blue-origin target pose.
+   * @return Command that drives quickly to the pose with loose tolerances.
+   */
+  public Command fastTransitTo(Pose2d goal) {
+    return GoToPoseFactory.fastTransit(this, goal, GoToPoseCommand::isRedAlliance)
+        .withName("FastTransit");
+  }
+
+  /**
+   * Creates a precise placement command to a pose with alliance flipping.
+   *
+   * @param goal Blue-origin target pose.
+   * @return Command that drives slowly to the pose with tight tolerances.
+   */
+  public Command precisePlacementTo(Pose2d goal) {
+    return GoToPoseFactory.precisePlacement(this, goal, GoToPoseCommand::isRedAlliance)
+        .withName("PrecisePlacement");
   }
 }
