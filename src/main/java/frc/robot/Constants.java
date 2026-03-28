@@ -116,10 +116,10 @@ public final class Constants {
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 1.502;
-    public static final double kRollerKV = 0.000248;
+    public static final double kRollerKS = 1.34;
+    public static final double kRollerKV = 0.000185;
     public static final double kRollerKA = 0.0;
-    public static final double kRollerKP = 1.3;
+    public static final double kRollerKP = 1.05;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
 
