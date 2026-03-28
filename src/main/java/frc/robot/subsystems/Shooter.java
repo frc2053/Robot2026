@@ -618,24 +618,26 @@ public class Shooter extends SubsystemBase {
     m_rightMotorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
     m_rollerSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 
-    // Main shooter flywheel: average voltage from left and right motors
+    // Main shooter flywheel: subtract voltages because right motor has opposite inversion
+    // Left outputs +V, right outputs -V (inverted), so (left - right) / 2 gives true average
     double mainShooterVoltage =
         (m_leftMotorSimState.getMotorVoltageMeasure().in(Volts)
-                + m_rightMotorSimState.getMotorVoltageMeasure().in(Volts))
+                - m_rightMotorSimState.getMotorVoltageMeasure().in(Volts))
             / 2.0;
     m_mainShooterSim.setInputVoltage(mainShooterVoltage);
     m_mainShooterSim.update(0.020);
 
     // Update left and right motor sim states with rotor position and velocity
     // Note: DCMotorSim returns mechanism values, multiply by gear ratio for rotor values
+    // Right motor has opposite inversion so its raw position is negated
     m_leftMotorSimState.setRawRotorPosition(
         m_mainShooterSim.getAngularPosition().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_leftMotorSimState.setRotorVelocity(
         m_mainShooterSim.getAngularVelocity().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_rightMotorSimState.setRawRotorPosition(
-        m_mainShooterSim.getAngularPosition().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
+        m_mainShooterSim.getAngularPosition().times(-ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_rightMotorSimState.setRotorVelocity(
-        m_mainShooterSim.getAngularVelocity().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
+        m_mainShooterSim.getAngularVelocity().times(-ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
 
     // Roller flywheel
     m_rollerSim.setInputVoltage(m_rollerSimState.getMotorVoltageMeasure().in(Volts));
