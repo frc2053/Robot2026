@@ -21,6 +21,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import java.util.ArrayList;
 import java.util.List;
@@ -153,7 +154,14 @@ public class Camera {
     List<PhotonPipelineResult> allUnread = m_camera.getAllUnreadResults();
 
     for (PhotonPipelineResult result : allUnread) {
-      List<Integer> allowedTargets = ifOnBlue() ? blueAllowedTargets : redAllowedTargets;
+      // During auto, allow both alliances' tags for better pose estimation
+      List<Integer> allowedTargets;
+      if (DriverStation.isAutonomous()) {
+        allowedTargets = new ArrayList<>(blueAllowedTargets);
+        allowedTargets.addAll(redAllowedTargets);
+      } else {
+        allowedTargets = ifOnBlue() ? blueAllowedTargets : redAllowedTargets;
+      }
 
       // Filter targets to only allowed tags
       List<PhotonTrackedTarget> filteredTargets = new ArrayList<>();
