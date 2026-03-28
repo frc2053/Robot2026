@@ -659,4 +659,33 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
     return GoToPoseFactory.precisePlacement(this, goal, GoToPoseCommand::isRedAlliance)
         .withName("PrecisePlacement");
   }
+
+  /**
+   * Creates a fast transit command to a pose relative to the current robot pose. The offset is
+   * applied in robot-relative coordinates (forward/left), then converted to field coordinates.
+   *
+   * @param forwardMeters Distance forward (positive = front of robot).
+   * @param leftMeters Distance left (positive = left of robot, negative = right).
+   * @return Command that drives to the relative pose.
+   */
+  public Command fastTransitRelative(double forwardMeters, double leftMeters) {
+    return Commands.defer(
+            () -> {
+              Pose2d currentPose = getState().Pose;
+              // Robot-relative offset: forward = +X, left = +Y in robot frame
+              Translation2d robotRelativeOffset = new Translation2d(forwardMeters, leftMeters);
+              // Rotate offset by robot heading to get field-relative offset
+              Translation2d fieldRelativeOffset =
+                  robotRelativeOffset.rotateBy(currentPose.getRotation());
+              // Calculate goal pose (keep same heading)
+              Pose2d goalPose =
+                  new Pose2d(
+                      currentPose.getTranslation().plus(fieldRelativeOffset),
+                      currentPose.getRotation());
+              // Use fastTransit without alliance flipping since this is relative movement
+              return GoToPoseFactory.fastTransit(this, goalPose);
+            },
+            java.util.Set.of(this))
+        .withName("FastTransitRelative");
+  }
 }

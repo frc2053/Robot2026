@@ -225,6 +225,14 @@ public class RobotContainer {
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
+    // GoToPose test: 10 ft forward, 4 ft right from current pose
+    m_joystick
+        .start()
+        .onTrue(
+            m_drivetrain.fastTransitRelative(
+                Units.feetToMeters(10), // 10 ft forward
+                Units.feetToMeters(-4))); // 4 ft right (negative = right)
+
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
 
@@ -241,9 +249,10 @@ public class RobotContainer {
 
     m_fuelSim.start();
 
+    // Intake is at the back after 180° front/back swap
     m_fuelSim.registerIntake(
-        SwerveConstants.kRobotLength / 2,
-        SwerveConstants.kRobotLength / 2 + Units.inchesToMeters(12),
+        -SwerveConstants.kRobotLength / 2 - Units.inchesToMeters(12),
+        -SwerveConstants.kRobotLength / 2,
         -SwerveConstants.kRobotWidth / 2,
         SwerveConstants.kRobotWidth / 2,
         m_joystick.leftTrigger(),

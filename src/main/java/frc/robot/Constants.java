@@ -228,7 +228,7 @@ public final class Constants {
     public static final double RACK_PINION_PITCH_RADIUS_METERS = Units.inchesToMeters(0.5);
     // Max rack travel = rack teeth × circular pitch = 53 × (π/10) ≈ 16.65 inches
     public static final double RACK_MAX_TRAVEL_METERS = Units.inchesToMeters(53.0 * Math.PI / 10.0);
-    // Rack angle (degrees down from horizontal)
+    // Rack angle
     public static final double RACK_ANGLE_DEGREES = 22.022506;
 
     // Rack position constants (in rotations at mechanism/pinion)
@@ -295,10 +295,11 @@ public final class Constants {
 
     // Shooter position offset from robot center (robot-relative)
     // X = forward, Y = left, Z = up
+    // Negated X and Y for 180° front/back swap
     public static final Translation3d kShooterOffset =
         new Translation3d(
-            Units.inchesToMeters(-7.72),
-            Units.inchesToMeters(6.720000),
+            Units.inchesToMeters(7.72),
+            Units.inchesToMeters(-6.720000),
             Units.inchesToMeters(22.99));
 
     // Target height (hub opening height in meters)
