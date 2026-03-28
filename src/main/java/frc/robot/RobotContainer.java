@@ -255,7 +255,7 @@ public class RobotContainer {
         -SwerveConstants.kRobotLength / 2,
         -SwerveConstants.kRobotWidth / 2,
         SwerveConstants.kRobotWidth / 2,
-        m_joystick.leftTrigger(),
+        m_intake.intakingTrigger(),
         FuelVisualizer::addFuel);
   }
 

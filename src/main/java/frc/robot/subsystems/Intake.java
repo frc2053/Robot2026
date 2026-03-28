@@ -691,6 +691,34 @@ public class Intake extends SubsystemBase {
   }
 
   /**
+   * Returns true if the rollers are currently running (voltage setpoint is non-zero).
+   *
+   * @return true if rollers are running.
+   */
+  public boolean isRollersRunning() {
+    return m_rollerVoltageSetpoint != 0.0;
+  }
+
+  /**
+   * Returns true if the intake is deployed (rack is at or targeting the deployed position).
+   *
+   * @return true if deployed.
+   */
+  public boolean isDeployed() {
+    return m_rackPositionSetpoint == IntakeConstants.kRackDeployedPosition;
+  }
+
+  /**
+   * Returns a trigger that is true when the intake is actively intaking (rollers running and
+   * deployed).
+   *
+   * @return the intaking trigger.
+   */
+  public Trigger intakingTrigger() {
+    return new Trigger(() -> isRollersRunning() && isDeployed());
+  }
+
+  /**
    * Creates a command that continuously wiggles the rack between the deployed position and 20
    * degrees above it while feeding. Returns the rack to the deployed position when the command
    * ends.

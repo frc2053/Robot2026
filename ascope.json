@@ -16,11 +16,11 @@
             "/Drivetrain/LookAtPoint",
             "/Drivetrain/ControlRequest",
             "/Fuel Simulation",
-            "/Intake"
+            "/Vision"
           ]
         },
         "tabs": {
-          "selected": 6,
+          "selected": 2,
           "tabs": [
             {
               "type": 0,
@@ -177,26 +177,6 @@
                     }
                   },
                   {
-                    "type": "ghost",
-                    "logKey": "NT:/Vision/UpperPortCameraPoseEstimation",
-                    "logType": "Pose2d",
-                    "visible": true,
-                    "options": {
-                      "model": "Robot_2053",
-                      "color": "#00ff00"
-                    }
-                  },
-                  {
-                    "type": "ghost",
-                    "logKey": "NT:/Vision/BottomPortCameraPoseEstimation",
-                    "logType": "Pose2d",
-                    "visible": true,
-                    "options": {
-                      "model": "Robot_2053",
-                      "color": "#ff0000"
-                    }
-                  },
-                  {
                     "type": "axes",
                     "logKey": "NT:/Vision/UpperPortCameraCameraPose",
                     "logType": "Pose3d",
@@ -218,23 +198,43 @@
                     "options": {
                       "variant": "Fuel"
                     }
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/Vision/UpperPortCameraPoseEstimation",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Robot_2053",
+                      "color": "#00ff00"
+                    }
+                  },
+                  {
+                    "type": "ghost",
+                    "logKey": "NT:/Vision/BottomPortCameraPoseEstimation",
+                    "logType": "Pose2d",
+                    "visible": true,
+                    "options": {
+                      "model": "Robot_2053",
+                      "color": "#ff0000"
+                    }
                   }
                 ],
                 "game": "FRC:2026 Field"
               },
               "controllerUUID": "3dx6zqgy4emytq4a31bxbsb4sxbxxpkj",
               "renderer": {
-                "cameraIndex": -2,
+                "cameraIndex": -1,
                 "orbitFov": 50,
                 "cameraPosition": [
-                  -0.9747320206155144,
-                  2.430048927642508,
-                  3.633747393347813
+                  -6.805689023795775,
+                  2.898905154889614,
+                  4.706678228517063
                 ],
                 "cameraTarget": [
-                  -0.24763673561209246,
-                  0.5258544794971307,
-                  -0.002329809631054048
+                  -1.681299504815713,
+                  -0.9451221406630768,
+                  0.14242911862993063
                 ]
               },
               "controlsHeight": 200
@@ -755,7 +755,7 @@
                 "sources": [
                   {
                     "type": "plus",
-                    "logKey": "NT:/Vision/FrontCameratargetCorners",
+                    "logKey": "NT:/Vision/UpperPortCameratargetCorners",
                     "logType": "Translation2d[]",
                     "visible": true,
                     "options": {
@@ -778,6 +778,18 @@
       }
     }
   ],
-  "satellites": [],
+  "satellites": [
+    {
+      "x": 100,
+      "y": 258,
+      "width": 866,
+      "height": 706,
+      "state": {
+        "type": 11,
+        "visualizer": null
+      },
+      "uuid": "4bsy2t6bqz5lp1g9zwlpijuxyrntsw4u"
+    }
+  ],
   "version": "26.0.1"
 }
