@@ -31,7 +31,6 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -395,8 +394,7 @@ public class Intake extends SubsystemBase {
     double deltaZ = -linearDistanceMeters * Math.sin(rackAngleRad);
 
     MechanismVisualizer.setPose(
-        MechanismVisualizer.INTAKE_INDEX,
-        new Pose3d(deltaX, 0, deltaZ, new Rotation3d()));
+        MechanismVisualizer.INTAKE_INDEX, new Pose3d(deltaX, 0, deltaZ, new Rotation3d()));
 
     // Check for tuning updates and apply if changed
     updateTunableGains();
