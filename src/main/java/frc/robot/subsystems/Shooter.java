@@ -319,8 +319,8 @@ public class Shooter extends SubsystemBase {
 
     // Set left motor to follow right motor (they are mechanically coupled)
     // MotorAlignmentValue.Aligned because they spin in the same direction
-    m_shooterMotorLeft.setControl(
-        new Follower(ShooterConstants.SHOOTER_MOTOR_RIGHT_ID, MotorAlignmentValue.Aligned));
+    m_shooterMotorRight.setControl(
+        new Follower(ShooterConstants.SHOOTER_MOTOR_LEFT_ID, MotorAlignmentValue.Aligned));
 
     // Initialize NetworkTables publishers for logging
     NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("Shooter");
@@ -685,7 +685,7 @@ public class Shooter extends SubsystemBase {
     m_targetRollerRps = topSpeed;
 
     // Command the bottom shooter (right motor is leader, left follows)
-    m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
+    m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
 
     // Command the top roller
     m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
@@ -714,7 +714,7 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = topRollerSpeedRps;
 
               // Command the bottom shooter (right motor is leader, left follows)
-              m_shooterMotorRight.setControl(
+              m_shooterMotorLeft.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
@@ -741,7 +741,7 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = topRollerSpeedRps;
 
               // Command the bottom shooter (right motor is leader, left follows)
-              m_shooterMotorRight.setControl(
+              m_shooterMotorLeft.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
@@ -758,7 +758,7 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = 0.0;
 
               // Set bottom shooter motor (leader)
-              m_shooterMotorRight.setControl(m_voltageRequest.withOutput(idleVoltage));
+              m_shooterMotorLeft.setControl(m_voltageRequest.withOutput(idleVoltage));
 
               // Set top roller motor
               m_shooterMotorTopRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
@@ -836,7 +836,7 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = topRollerSpeedRps;
 
               // Command the bottom shooter (right motor is leader, left follows)
-              m_shooterMotorRight.setControl(
+              m_shooterMotorLeft.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
@@ -856,7 +856,7 @@ public class Shooter extends SubsystemBase {
             () -> {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
-              m_shooterMotorRight.setControl(m_neutralRequest);
+              m_shooterMotorLeft.setControl(m_neutralRequest);
               m_shooterMotorTopRoller.setControl(m_neutralRequest);
             })
         .withName("StopShooter");
@@ -885,14 +885,14 @@ public class Shooter extends SubsystemBase {
               double rollerRps = m_tuningRollerRpsSub.get() / 60.0;
               m_targetMainShooterRps = mainRps;
               m_targetRollerRps = rollerRps;
-              m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
+              m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
               m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
             })
         .finallyDo(
             () -> {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
-              m_shooterMotorRight.setControl(m_neutralRequest);
+              m_shooterMotorLeft.setControl(m_neutralRequest);
               m_shooterMotorTopRoller.setControl(m_neutralRequest);
             })
         .withName("ShooterTuning");
