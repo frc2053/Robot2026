@@ -31,6 +31,7 @@ import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
+import org.photonvision.targeting.MultiTargetPNPResult;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
@@ -152,30 +153,63 @@ public class Camera {
     List<PhotonPipelineResult> allUnread = m_camera.getAllUnreadResults();
 
     for (PhotonPipelineResult result : allUnread) {
-      // Try multi-tag estimation first (most accurate)
+      List<Integer> allowedTargets = ifOnBlue() ? blueAllowedTargets : redAllowedTargets;
 
-      boolean shouldSkip = false;
-      for (PhotonTrackedTarget tag : result.targets) {
-        if (ifOnBlue()) {
-          if (!blueAllowedTargets.contains(tag.fiducialId)) {
-            shouldSkip = true;
-          }
-        } else {
-          if (!redAllowedTargets.contains(tag.fiducialId)) {
-            shouldSkip = true;
-          }
+      // Filter targets to only allowed tags
+      List<PhotonTrackedTarget> filteredTargets = new ArrayList<>();
+      for (PhotonTrackedTarget target : result.targets) {
+        if (allowedTargets.contains(target.fiducialId)) {
+          filteredTargets.add(target);
         }
       }
 
-      if (shouldSkip) {
+      // Skip if no valid targets after filtering
+      if (filteredTargets.isEmpty()) {
         continue;
       }
 
-      Optional<EstimatedRobotPose> visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
+      Optional<EstimatedRobotPose> visionEst = Optional.empty();
 
-      // Fallback to lowest ambiguity single-tag if multi-tag unavailable
+      // Try multi-tag if all tags in the multi-tag result are allowed
+      Optional<MultiTargetPNPResult> multiTagResult = result.multitagResult;
+      if (multiTagResult.isPresent()) {
+        boolean allAllowed = true;
+        for (int id : multiTagResult.get().fiducialIDsUsed) {
+          if (!allowedTargets.contains(id)) {
+            allAllowed = false;
+            break;
+          }
+        }
+        if (allAllowed) {
+          visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
+        }
+      }
+
+      // Fallback to lowest ambiguity single-tag using only allowed targets
       if (visionEst.isEmpty()) {
-        visionEst = m_photonEstimator.estimateLowestAmbiguityPose(result);
+        PhotonTrackedTarget bestTarget = null;
+        double lowestAmbiguity = Double.MAX_VALUE;
+        for (PhotonTrackedTarget target : filteredTargets) {
+          if (target.poseAmbiguity >= 0 && target.poseAmbiguity < lowestAmbiguity) {
+            lowestAmbiguity = target.poseAmbiguity;
+            bestTarget = target;
+          }
+        }
+
+        if (bestTarget != null) {
+          Optional<Pose3d> tagPose =
+              m_photonEstimator.getFieldTags().getTagPose(bestTarget.fiducialId);
+          if (tagPose.isPresent()) {
+            Pose3d cameraPose =
+                tagPose.get().transformBy(bestTarget.getBestCameraToTarget().inverse());
+            Pose3d robotPoseEst =
+                cameraPose.transformBy(m_photonEstimator.getRobotToCameraTransform().inverse());
+            visionEst =
+                Optional.of(
+                    new EstimatedRobotPose(
+                        robotPoseEst, result.getTimestampSeconds(), List.of(bestTarget)));
+          }
+        }
       }
 
       // Publish pose
@@ -185,8 +219,8 @@ public class Camera {
         m_posePub.set(new Pose2d());
       }
 
-      // Cache targets for standard deviation calculation
-      m_targetsCopy = new ArrayList<>(result.getTargets());
+      // Cache filtered targets for standard deviation calculation
+      m_targetsCopy = new ArrayList<>(filteredTargets);
 
       // Publish target poses and corners
       List<Pose3d> targetPoses = new ArrayList<>();
