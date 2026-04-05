@@ -16,14 +16,12 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
-import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -251,19 +249,23 @@ public class Shooter extends SubsystemBase {
                     .withKI(ShooterConstants.kRollerKI)
                     .withKD(ShooterConstants.kRollerKD));
 
+    StatusCode rollerConfigResult = m_shooterMotorTopRoller.getConfigurator().apply(rollerConfig);
+    if (!rollerConfigResult.isOK()) {
+      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
+    }
+
     StatusCode shooterLeftConfigResult =
         m_shooterMotorLeft.getConfigurator().apply(mainShooterConfig);
     if (!shooterLeftConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to left shooter motor!");
     }
+
+    // New shooter has the motors mounted opposite faces
+    mainShooterConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     StatusCode shooterRightConfigResult =
         m_shooterMotorRight.getConfigurator().apply(mainShooterConfig);
     if (!shooterRightConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to right shooter motor!");
-    }
-    StatusCode rollerConfigResult = m_shooterMotorTopRoller.getConfigurator().apply(rollerConfig);
-    if (!rollerConfigResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
     }
 
     m_leftMotorVel = m_shooterMotorLeft.getVelocity();
@@ -317,11 +319,6 @@ public class Shooter extends SubsystemBase {
     if (!optiResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply optimization for shooter subsystem!");
     }
-
-    // Set left motor to follow right motor (they are mechanically coupled)
-    // MotorAlignmentValue.Aligned because they spin in the same direction
-    m_shooterMotorRight.setControl(
-        new Follower(ShooterConstants.SHOOTER_MOTOR_LEFT_ID, MotorAlignmentValue.Aligned));
 
     // Initialize NetworkTables publishers for logging
     NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("Shooter");
@@ -624,24 +621,26 @@ public class Shooter extends SubsystemBase {
     m_rightMotorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
     m_rollerSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 
-    // Main shooter flywheel: average voltage from left and right motors
+    // Main shooter flywheel: subtract voltages because right motor has opposite inversion
+    // Left outputs +V, right outputs -V (inverted), so (left - right) / 2 gives true average
     double mainShooterVoltage =
         (m_leftMotorSimState.getMotorVoltageMeasure().in(Volts)
-                + m_rightMotorSimState.getMotorVoltageMeasure().in(Volts))
+                - m_rightMotorSimState.getMotorVoltageMeasure().in(Volts))
             / 2.0;
     m_mainShooterSim.setInputVoltage(mainShooterVoltage);
     m_mainShooterSim.update(0.020);
 
     // Update left and right motor sim states with rotor position and velocity
     // Note: DCMotorSim returns mechanism values, multiply by gear ratio for rotor values
+    // Right motor has opposite inversion so its raw position is negated
     m_leftMotorSimState.setRawRotorPosition(
         m_mainShooterSim.getAngularPosition().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_leftMotorSimState.setRotorVelocity(
         m_mainShooterSim.getAngularVelocity().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_rightMotorSimState.setRawRotorPosition(
-        m_mainShooterSim.getAngularPosition().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
+        m_mainShooterSim.getAngularPosition().times(-ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_rightMotorSimState.setRotorVelocity(
-        m_mainShooterSim.getAngularVelocity().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
+        m_mainShooterSim.getAngularVelocity().times(-ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
 
     // Roller flywheel
     m_rollerSim.setInputVoltage(m_rollerSimState.getMotorVoltageMeasure().in(Volts));
@@ -689,6 +688,7 @@ public class Shooter extends SubsystemBase {
 
     // Command the bottom shooter (right motor is leader, left follows)
     m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
+    m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
 
     // Command the top roller
     m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
@@ -716,8 +716,9 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = bottomSpeedRps;
               m_targetRollerRps = topRollerSpeedRps;
 
-              // Command the bottom shooter (right motor is leader, left follows)
               m_shooterMotorLeft.setControl(
+                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
+              m_shooterMotorRight.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
@@ -746,6 +747,8 @@ public class Shooter extends SubsystemBase {
               // Command the bottom shooter (right motor is leader, left follows)
               m_shooterMotorLeft.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
+              m_shooterMotorRight.setControl(
+                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
               m_shooterMotorTopRoller.setControl(
@@ -762,6 +765,7 @@ public class Shooter extends SubsystemBase {
 
               // Set bottom shooter motor (leader)
               m_shooterMotorLeft.setControl(m_voltageRequest.withOutput(idleVoltage));
+              m_shooterMotorRight.setControl(m_voltageRequest.withOutput(idleVoltage));
 
               // Set top roller motor
               m_shooterMotorTopRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
@@ -844,6 +848,8 @@ public class Shooter extends SubsystemBase {
               // Command the bottom shooter (right motor is leader, left follows)
               m_shooterMotorLeft.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
+              m_shooterMotorRight.setControl(
+                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
               m_shooterMotorTopRoller.setControl(
@@ -863,6 +869,7 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
               m_shooterMotorLeft.setControl(m_neutralRequest);
+              m_shooterMotorRight.setControl(m_neutralRequest);
               m_shooterMotorTopRoller.setControl(m_neutralRequest);
             })
         .withName("StopShooter");
@@ -892,6 +899,7 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = mainRps;
               m_targetRollerRps = rollerRps;
               m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
+              m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
               m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
             })
         .finallyDo(
@@ -899,6 +907,7 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
               m_shooterMotorLeft.setControl(m_neutralRequest);
+              m_shooterMotorRight.setControl(m_neutralRequest);
               m_shooterMotorTopRoller.setControl(m_neutralRequest);
             })
         .withName("ShooterTuning");
