@@ -13,7 +13,7 @@
         },
         {
             "axis": "z",
-            "degrees": 90
+            "degrees": -90
         }
     ],
     "position": [
@@ -39,13 +39,13 @@
                 }
             ],
             "position": [
-                -0.0887618,
-                0.037973,
-                0.6394273
+                0.131101,
+                -0.0381,
+                0.718031
             ],
             "resolution": [
-                1600,
-                1304
+                640,
+                480
             ],
             "fov": 55
         },
@@ -62,17 +62,17 @@
                 },
                 {
                     "axis": "z",
-                    "degrees": -90
+                    "degrees": 180
                 }
             ],
             "position": [
-                -0.342138,
-                0.342138,
-                0.7112
+                0.100942,
+                -0.292100,
+                0.7180
             ],
             "resolution": [
-                1600,
-                1304
+                640,
+                480
             ],
             "fov": 55
         }
@@ -90,55 +90,13 @@
                 },
                 {
                     "axis": "z",
-                    "degrees": 90
-                }
-            ],
-            "zeroedPosition": [
-                -0.19887,
-                0,
-                -0.28575
-            ]
-        },
-        {
-            "zeroedRotations": [
-                {
-                    "axis": "x",
-                    "degrees": 90
-                },
-                {
-                    "axis": "y",
-                    "degrees": 0
-                },
-                {
-                    "axis": "z",
-                    "degrees": 90
+                    "degrees": -90
                 }
             ],
             "zeroedPosition": [
                 0,
                 0,
                 0
-            ]
-        },
-        {
-            "zeroedRotations": [
-                {
-                    "axis": "x",
-                    "degrees": 90
-                },
-                {
-                    "axis": "y",
-                    "degrees": 0
-                },
-                {
-                    "axis": "z",
-                    "degrees": 90
-                }
-            ],
-            "zeroedPosition": [
-                0,
-                0,
-                -0.06
             ]
         }
     ]

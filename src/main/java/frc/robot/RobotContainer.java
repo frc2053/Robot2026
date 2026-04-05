@@ -68,7 +68,6 @@ public class RobotContainer {
   public final Spindexer m_spindexer = new Spindexer();
   public final Kicker m_kicker = new Kicker();
   public final Intake m_intake = new Intake();
-  // public final Climber m_climber = new Climber();
   public final Vision m_vision = new Vision(m_drivetrain::addVisionMeasurement);
 
   private static FuelSim m_fuelSim;
@@ -153,7 +152,7 @@ public class RobotContainer {
 
     // Tuning commands - controlled via NetworkTables Enabled entry:
     //   Shooter/Tuning/Enabled, MainShooterRPM, RollerRPM, MainShooterGains/*, RollerGains/*
-    //   Intake/Tuning/Enabled, PivotPositionRotations, PivotGains/*
+    //   Intake/Tuning/Enabled, RackPositionRotations, RackGains/*
     m_shooter.tuningEnabledTrigger().whileTrue(m_shooter.tuningCommand());
     m_intake.tuningEnabledTrigger().whileTrue(m_intake.tuningCommand());
 
@@ -226,6 +225,14 @@ public class RobotContainer {
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
+    // GoToPose test: 10 ft forward, 4 ft right from current pose
+    m_joystick
+        .start()
+        .onTrue(
+            m_drivetrain.fastTransitRelative(
+                Units.feetToMeters(10), // 10 ft forward
+                Units.feetToMeters(-4))); // 4 ft right (negative = right)
+
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
 
@@ -242,12 +249,13 @@ public class RobotContainer {
 
     m_fuelSim.start();
 
+    // Intake is at the back after 180° front/back swap
     m_fuelSim.registerIntake(
-        SwerveConstants.kRobotLength / 2,
-        SwerveConstants.kRobotLength / 2 + Units.inchesToMeters(12),
+        -SwerveConstants.kRobotLength / 2 - Units.inchesToMeters(12),
+        -SwerveConstants.kRobotLength / 2,
         -SwerveConstants.kRobotWidth / 2,
         SwerveConstants.kRobotWidth / 2,
-        m_joystick.leftTrigger(),
+        m_intake.intakingTrigger(),
         FuelVisualizer::addFuel);
   }
 
@@ -273,7 +281,7 @@ public class RobotContainer {
     return Commands.parallel(
         m_spindexer.spin(),
         m_kicker.spin(),
-        m_intake.feedingWigglePivotCommand(),
+        m_intake.feedingWiggleRackCommand(),
         Commands.run(
             () -> {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
