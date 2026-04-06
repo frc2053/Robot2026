@@ -62,6 +62,20 @@ public final class Constants {
     public static final double kRobotWidth = Units.inchesToMeters(33.876000);
     public static final double kRobotLength = Units.inchesToMeters(33.876000);
 
+    // Robot mass and moment of inertia (for GoToPose feedforward calculations)
+    public static final double kRobotMassKg = 54.4; // ~120 lbs with bumpers and battery
+    public static final double kRobotMOIKgM2 = 6.0; // kg*m^2 (estimate, tune via SysId)
+
+    // GoToPose motion constraints
+    public static final double kGoToPoseMaxVelocity = 3.5; // m/s
+    public static final double kGoToPoseMaxAcceleration = 2.5; // m/s^2
+    public static final double kGoToPoseMaxAngularVelocity = Math.PI * 1.5; // rad/s
+    public static final double kGoToPoseMaxAngularAcceleration = Math.PI; // rad/s^2
+
+    // GoToPose tolerances
+    public static final double kGoToPoseLinearTolerance = 0.02; // meters
+    public static final double kGoToPoseAngularTolerance = Math.toRadians(1.0); // radians
+
     // Path following translation PID constants
     public static final double kPathTranslationP = 10.0;
     public static final double kPathTranslationI = 0.0;
@@ -189,40 +203,53 @@ public final class Constants {
     public static final double kSpinVoltage = 12.0;
 
     // Simulation constants
-    public static final double KICKER_GEAR_RATIO = 5.0;
+    public static final double KICKER_GEAR_RATIO = 1.0;
     public static final double KICKER_MOI = 0.002; // kg*m^2
   }
 
   public static class IntakeConstants {
-    public static final int PIVOT_MOTOR_ID = 20;
+    public static final int RACK_MOTOR_ID = 20;
     public static final int ROLLER_MOTOR_ID = 21;
 
-    public static final int PIVOT_SUPPLY_LIMIT = 40;
-    public static final int PIVOT_STATOR_LIMIT = 60;
+    public static final int RACK_SUPPLY_LIMIT = 40;
+    public static final int RACK_STATOR_LIMIT = 60;
     public static final int ROLLER_SUPPLY_LIMIT = 40;
     public static final int ROLLER_STATOR_LIMIT = 80;
 
     // Gear ratios
-    public static final double PIVOT_GEAR_RATIO = 56.0;
+    public static final double RACK_GEAR_RATIO = 5.0; // Motor to pinion gearbox ratio
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
-    // Pivot position constants (in rotations at mechanism)
-    public static final double kPivotDeployedPosition = 12.570312;
-    public static final double kPivotStowedPosition = -0.201660;
+    // Rack and pinion parameters (10 DP, 10 tooth pinion, 53 tooth rack)
+    public static final int RACK_PINION_TEETH = 10;
+    public static final int RACK_TEETH = 53;
+    public static final int RACK_DIAMETRAL_PITCH = 10;
+    // Pinion pitch diameter = teeth / DP = 10/10 = 1 inch
+    public static final double RACK_PINION_PITCH_RADIUS_METERS = Units.inchesToMeters(0.5);
+    // Max rack travel = rack teeth × circular pitch = 53 × (π/10) ≈ 16.65 inches
+    public static final double RACK_MAX_TRAVEL_METERS = Units.inchesToMeters(53.0 * Math.PI / 10.0);
+    // Rack angle
+    public static final double RACK_ANGLE_DEGREES = 22.022506;
 
-    // Offset (in rotations) above deployed position used when wiggling during feeding
-    public static final double kPivotFeedingWiggleOffset = 20.53 / 360.0;
+    // Rack position constants (in rotations at mechanism/pinion)
+    // Max travel = rack teeth / pinion teeth = 53 / 10 = 5.3 rotations
+    public static final double kRackDeployedPosition = 3;
+    public static final double kRackStowedPosition = 0.0;
 
-    // Pivot PID constants (Slot 0)
-    public static final double kPivotKS = 0.0;
-    public static final double kPivotKG = 0.0;
-    public static final double kPivotKV = 0.0;
-    public static final double kPivotKA = 0.0;
-    public static final double kPivotKP = 0.0;
-    public static final double kPivotKI = 0.0;
-    public static final double kPivotKD = 0.0;
-    public static final double kPivotMotionMagicCruiseVelocity = 40.0; // rotations per second
-    public static final double kPivotMotionMagicAcceleration = 80.0; // rotations per second^2
+    // Offset (in rotations) from deployed position when wiggling during feeding
+    // Negative to retract 75% of the way back toward stowed
+    public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
+
+    // Rack PID constants (Slot 0)
+    public static final double kRackKS = 0.1;
+    public static final double kRackKG = 0.0;
+    public static final double kRackKV = 0.0;
+    public static final double kRackKA = 0.0;
+    public static final double kRackKP = 32.0;
+    public static final double kRackKI = 0.0;
+    public static final double kRackKD = 0.0;
+    public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
+    public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
     // Roller voltage for intaking
     public static final double kIntakeVoltage = 12.0;
@@ -230,75 +257,29 @@ public final class Constants {
     public static final double kEjectVoltage = -6.0;
 
     // Simulation constants (from CAD)
-    // COM distance from pivot
-    public static final double PIVOT_ARM_LENGTH_METERS = Units.inchesToMeters(11.549);
-    public static final double PIVOT_ARM_MASS_KG = Units.lbsToKilograms(10.224711);
-    // MOI conversion: in^2*lb to kg*m^2
-    public static final double PIVOT_MOI =
-        1585.915769 * Math.pow(Units.inchesToMeters(1), 2) * Units.lbsToKilograms(1);
+    // Mass of the moving rack carriage
+    public static final double RACK_CARRIAGE_MASS_KG = Units.lbsToKilograms(10.224711);
+    // Min/max positions for simulation (in meters)
+    public static final double RACK_MIN_EXTENSION_METERS = 0.0;
+    public static final double RACK_MAX_EXTENSION_METERS = RACK_MAX_TRAVEL_METERS;
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Position tolerance for "at position" detection (rotations)
-    public static final double kPivotPositionToleranceRotations = 0.02;
-  }
-
-  public static class ClimberConstants {
-    public static final int CLIMBER_MOTOR_ID = 22;
-
-    public static final int CLIMBER_SUPPLY_LIMIT = 60;
-    public static final int CLIMBER_STATOR_LIMIT = 120;
-
-    // Gear ratio (81:1)
-    public static final double CLIMBER_GEAR_RATIO = 81.0;
-
-    // Total travel distance
-    public static final double kMaxHeightMeters = Units.inchesToMeters(5.0);
-    public static final double kMinHeightMeters = 0.0;
-
-    // Drum radius for converting rotations to linear distance (0.75 inch diameter)
-    public static final double kDrumRadiusMeters = Units.inchesToMeters(0.375);
-
-    // Position constants (in meters)
-    public static final double kRetractedPosition = 0.0;
-    public static final double kExtendedPosition = Units.inchesToMeters(5);
-
-    // Climber PID constants (Slot 0)
-    public static final double kClimberKS = 0.0;
-    public static final double kClimberKG = 0.0;
-    public static final double kClimberKV = 0.0;
-    public static final double kClimberKA = 0.0;
-    public static final double kClimberKP = 0.0;
-    public static final double kClimberKI = 0.0;
-    public static final double kClimberKD = 0.0;
-    public static final double kClimberMotionMagicCruiseVelocity = 10.0; // rotations per second
-    public static final double kClimberMotionMagicAcceleration = 20.0; // rotations per second^2
-
-    // Simulation constants
-    // Light load when extending up (just the climber hook/carriage)
-    public static final double CLIMBER_CARRIAGE_MASS_KG = Units.lbsToKilograms(2.0);
-    // Heavy load when climbing (lifting the robot)
-    public static final double CLIMBER_ROBOT_MASS_KG = Units.lbsToKilograms(200.0);
-
-    // Position tolerance for "at position" detection (meters)
-    public static final double kPositionToleranceMeters = 0.005;
-
-    // Climb voltage for manual control
-    public static final double kClimbVoltage = 12.0;
-    public static final double kRetractVoltage = -12.0;
+    public static final double kRackPositionToleranceRotations = 0.02;
   }
 
   public static class VisionConstants {
     public static final String kFrontCameraName = "UpperPortCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
-            new Translation3d(-0.17435, 0.037973, 0.70871588),
+            new Translation3d(0.131101, -0.0381, 0.718031),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
 
     public static final String kBackCameraName = "BottomPortCamera";
     public static final Transform3d kBackRobotToCam =
         new Transform3d(
-            new Translation3d(-0.22780244, -0.28003246, 0.2122297),
-            new Rotation3d(0, Units.degreesToRadians(-20), Units.degreesToRadians(160)));
+            new Translation3d(0.100942, -0.292100, 0.7180),
+            new Rotation3d(0, Units.degreesToRadians(-15), Units.degreesToRadians(180)));
     // The layout of the AprilTags on the field
     public static final AprilTagFieldLayout kTagLayout =
         AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
@@ -314,10 +295,11 @@ public final class Constants {
 
     // Shooter position offset from robot center (robot-relative)
     // X = forward, Y = left, Z = up
+    // Negated X and Y for 180° front/back swap
     public static final Translation3d kShooterOffset =
         new Translation3d(
-            Units.inchesToMeters(-7.72),
-            Units.inchesToMeters(6.720000),
+            Units.inchesToMeters(7.72),
+            Units.inchesToMeters(-6.720000),
             Units.inchesToMeters(22.99));
 
     // Target height (hub opening height in meters)
