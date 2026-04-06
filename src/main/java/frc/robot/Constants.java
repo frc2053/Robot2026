@@ -233,7 +233,7 @@ public final class Constants {
 
     // Rack position constants (in rotations at mechanism/pinion)
     // Max travel = rack teeth / pinion teeth = 53 / 10 = 5.3 rotations
-    public static final double kRackDeployedPosition = 3;
+    public static final double kRackDeployedPosition = 2.5;
     public static final double kRackStowedPosition = 0.0;
 
     // Offset (in rotations) from deployed position when wiggling during feeding
@@ -241,20 +241,20 @@ public final class Constants {
     public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
 
     // Rack PID constants (Slot 0)
-    public static final double kRackKS = 0.1;
+    public static final double kRackKS = 0.395;
     public static final double kRackKG = 0.0;
     public static final double kRackKV = 0.0;
     public static final double kRackKA = 0.0;
-    public static final double kRackKP = 32.0;
+    public static final double kRackKP = 64.0;
     public static final double kRackKI = 0.0;
     public static final double kRackKD = 0.0;
     public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
     // Roller voltage for intaking
-    public static final double kIntakeVoltage = 12.0;
+    public static final double kIntakeVoltage = -12.0;
     public static final double nonheldVoltage = 0.0;
-    public static final double kEjectVoltage = -6.0;
+    public static final double kEjectVoltage = 6.0;
 
     // Simulation constants (from CAD)
     // Mass of the moving rack carriage
