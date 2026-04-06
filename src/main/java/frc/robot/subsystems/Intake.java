@@ -556,16 +556,35 @@ public class Intake extends SubsystemBase {
    *
    * @return A command that stows the intake.
    */
-  public Command stowCommand() {
+  // public Command stowCommand() {
+  //   return this.run(
+  //           () -> {
+  //             m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
+  //             m_rackMotor.setControl(
+  //                 m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
+  //             m_rollerVoltageSetpoint = 0.0;
+  //             m_rollerMotor.setControl(m_neutralRequest);
+  //           })
+  //       .withName("StowIntake");
+  // }
+
+
+    public Command stowCommand() {
     return this.run(
             () -> {
               m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
               m_rackMotor.setControl(
                   m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
+              m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+              m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+            })
+        .finallyDo(
+            () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
             })
-        .withName("StowIntake");
+        .withName("Stow Command");
   }
 
   public Command runRollers() {
