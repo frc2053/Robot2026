@@ -284,7 +284,7 @@ public class RobotContainer {
     return Commands.parallel(
         m_spindexer.spin(),
         m_kicker.spin(),
-        m_intake.feedingWiggleRackCommand(),
+        // m_intake.feedingWiggleRackCommand(),
         Commands.run(
             () -> {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();

@@ -202,7 +202,7 @@ public class Shooter extends SubsystemBase {
             .withMotorOutput(
                 new MotorOutputConfigs()
                     .withNeutralMode(NeutralModeValue.Coast)
-                    .withInverted(InvertedValue.CounterClockwise_Positive))
+                    .withInverted(InvertedValue.Clockwise_Positive))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
@@ -261,7 +261,7 @@ public class Shooter extends SubsystemBase {
     }
 
     // New shooter has the motors mounted opposite faces
-    mainShooterConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+    mainShooterConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     StatusCode shooterRightConfigResult =
         m_shooterMotorRight.getConfigurator().apply(mainShooterConfig);
     if (!shooterRightConfigResult.isOK()) {

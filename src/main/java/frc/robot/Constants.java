@@ -108,10 +108,10 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Main shooter PID constants (Slot 0)
-    public static final double kMainShooterKS = 2.71;
-    public static final double kMainShooterKV = 0.00055;
+    public static final double kMainShooterKS = 5.73487;
+    public static final double kMainShooterKV = 0.00042955;
     public static final double kMainShooterKA = 0.0;
-    public static final double kMainShooterKP = 5.1;
+    public static final double kMainShooterKP = 4.3;
     public static final double kMainShooterKI = 0.0;
     public static final double kMainShooterKD = 0.0;
 
@@ -273,12 +273,16 @@ public final class Constants {
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
             new Translation3d(0.131101, -0.0381, 0.718031),
+            // new Translation3d(0, 0, 0),
+            // new Rotation3d(0, 0, 0));
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
 
     public static final String kBackCameraName = "BottomPortCamera";
     public static final Transform3d kBackRobotToCam =
         new Transform3d(
             new Translation3d(0.100942, -0.292100, 0.7180),
+            // new Translation3d(0, 0, 0),
+            // new Rotation3d(0, 0, Units.degreesToRadians(180)));
             new Rotation3d(0, Units.degreesToRadians(-15), Units.degreesToRadians(180)));
     // The layout of the AprilTags on the field
     public static final AprilTagFieldLayout kTagLayout =
