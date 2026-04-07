@@ -58,53 +58,67 @@ public class Shooter extends SubsystemBase {
 
   private final TalonFX m_shooterMotorLeft;
   private final TalonFX m_shooterMotorRight;
-  private final TalonFX m_shooterMotorTopRoller;
+  private final TalonFX m_shooterMotorLeftRoller;
+  private final TalonFX m_shooterMotorRightRoller;
+
+
 
   private final StatusSignal<AngularVelocity> m_leftMotorVel;
   private final StatusSignal<AngularVelocity> m_rightMotorVel;
-  private final StatusSignal<AngularVelocity> m_rollerVel;
+  private final StatusSignal<AngularVelocity> m_rollerLeftVel;
+  private final StatusSignal<AngularVelocity> m_rollerRightVel;
 
   private final StatusSignal<Angle> m_leftMotorPos;
   private final StatusSignal<Angle> m_rightMotorPos;
-  private final StatusSignal<Angle> m_rollerPos;
+  private final StatusSignal<Angle> m_rollerLeftPos;
+  private final StatusSignal<Angle> m_rollerRightPos;
 
   private final StatusSignal<Voltage> m_leftMotorVoltage;
   private final StatusSignal<Voltage> m_rightMotorVoltage;
-  private final StatusSignal<Voltage> m_rollerVoltage;
+  private final StatusSignal<Voltage> m_rollerLeftVoltage;
+  private final StatusSignal<Voltage> m_rollerRightVoltage;
 
   private final StatusSignal<Current> m_leftMotorStatorCurrent;
   private final StatusSignal<Current> m_rightMotorStatorCurrent;
-  private final StatusSignal<Current> m_rollerStatorCurrent;
+  private final StatusSignal<Current> m_rollerLeftStatorCurrent;
+  private final StatusSignal<Current> m_rollerRightStatorCurrent;
   private final StatusSignal<Current> m_leftMotorSupplyCurrent;
   private final StatusSignal<Current> m_rightMotorSupplyCurrent;
-  private final StatusSignal<Current> m_rollerSupplyCurrent;
+  private final StatusSignal<Current> m_rollerLeftSupplyCurrent;
+  private final StatusSignal<Current> m_rollerRightSupplyCurrent;
   private final StatusSignal<Current> m_torqueCurrentMain;
   private final StatusSignal<Current> m_torqueCurrentRoller;
 
   // Simulation objects
   private final TalonFXSimState m_leftMotorSimState;
   private final TalonFXSimState m_rightMotorSimState;
-  private final TalonFXSimState m_rollerSimState;
+  private final TalonFXSimState m_rollerLeftSimState;
+  private final TalonFXSimState m_rollerRightSimState;
+
   private final DCMotorSim m_mainShooterSim;
   private final DCMotorSim m_rollerSim;
 
   // NetworkTables publishers for logging
-  private final DoublePublisher m_leftMotorVelPub;
-  private final DoublePublisher m_rightMotorVelPub;
-  private final DoublePublisher m_rollerVelPub;
-  private final DoublePublisher m_leftMotorVoltagePub;
-  private final DoublePublisher m_rightMotorVoltagePub;
-  private final DoublePublisher m_rollerVoltagePub;
-  private final DoublePublisher m_leftMotorStatorCurrentPub;
-  private final DoublePublisher m_rightMotorStatorCurrentPub;
-  private final DoublePublisher m_rollerStatorCurrentPub;
-  private final DoublePublisher m_leftMotorSupplyCurrentPub;
-  private final DoublePublisher m_rightMotorSupplyCurrentPub;
-  private final DoublePublisher m_rollerSupplyCurrentPub;
-  private final StringPublisher m_currentCommandPub;
-  private final BooleanPublisher m_atSpeedPub;
-  private final DoublePublisher m_mainShooterSetpointPub;
-  private final DoublePublisher m_rollerSetpointPub;
+private final DoublePublisher m_leftMotorVelPub;
+private final DoublePublisher m_rightMotorVelPub;
+private final DoublePublisher m_rollerLeftVelPub;
+private final DoublePublisher m_rollerRightVelPub; // new for right roller
+private final DoublePublisher m_leftMotorVoltagePub;
+private final DoublePublisher m_rightMotorVoltagePub;
+private final DoublePublisher m_rollerLeftVoltagePub;
+private final DoublePublisher m_rollerRightVoltagePub; // new for right roller
+private final DoublePublisher m_leftMotorStatorCurrentPub;
+private final DoublePublisher m_rightMotorStatorCurrentPub;
+private final DoublePublisher m_rollerLeftStatorCurrentPub;
+private final DoublePublisher m_rollerRightStatorCurrentPub; // new for right roller
+private final DoublePublisher m_leftMotorSupplyCurrentPub;
+private final DoublePublisher m_rightMotorSupplyCurrentPub;
+private final DoublePublisher m_rollerLeftSupplyCurrentPub;
+private final DoublePublisher m_rollerRightSupplyCurrentPub; // new for right roller
+private final StringPublisher m_currentCommandPub;
+private final BooleanPublisher m_atSpeedPub;
+private final DoublePublisher m_mainShooterSetpointPub;
+private final DoublePublisher m_rollerSetpointPub;
 
   // SOTF debug publishers
   private final StructPublisher<Pose2d> m_sotfVirtualTargetPub;
@@ -195,7 +209,8 @@ public class Shooter extends SubsystemBase {
   public Shooter() {
     m_shooterMotorLeft = new TalonFX(ShooterConstants.SHOOTER_MOTOR_LEFT_ID);
     m_shooterMotorRight = new TalonFX(ShooterConstants.SHOOTER_MOTOR_RIGHT_ID);
-    m_shooterMotorTopRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_TOP_ROLLER_ID);
+    m_shooterMotorLeftRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_LEFT_ROLLER_ID);
+    m_shooterMotorRightRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_RIGHT_ROLLER_ID);
 
     TalonFXConfiguration mainShooterConfig =
         new TalonFXConfiguration()
@@ -249,8 +264,13 @@ public class Shooter extends SubsystemBase {
                     .withKI(ShooterConstants.kRollerKI)
                     .withKD(ShooterConstants.kRollerKD));
 
-    StatusCode rollerConfigResult = m_shooterMotorTopRoller.getConfigurator().apply(rollerConfig);
-    if (!rollerConfigResult.isOK()) {
+    StatusCode rollerLeftConfigResult = m_shooterMotorLeftRoller.getConfigurator().apply(rollerConfig);
+    if (!rollerLeftConfigResult.isOK()) {
+      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
+    }
+
+    StatusCode rollerRightConfigResult = m_shooterMotorRightRoller.getConfigurator().apply(rollerConfig);
+    if (!rollerRightConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
     }
 
@@ -267,47 +287,57 @@ public class Shooter extends SubsystemBase {
     if (!shooterRightConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to right shooter motor!");
     }
-
     m_leftMotorVel = m_shooterMotorLeft.getVelocity();
     m_rightMotorVel = m_shooterMotorRight.getVelocity();
-    m_rollerVel = m_shooterMotorTopRoller.getVelocity();
+    m_rollerLeftVel = m_shooterMotorLeftRoller.getVelocity();
+    m_rollerRightVel = m_shooterMotorRightRoller.getVelocity();
 
     m_leftMotorPos = m_shooterMotorLeft.getPosition();
     m_rightMotorPos = m_shooterMotorRight.getPosition();
-    m_rollerPos = m_shooterMotorTopRoller.getPosition();
+    m_rollerLeftPos = m_shooterMotorLeftRoller.getPosition();
+    m_rollerRightPos = m_shooterMotorRightRoller.getPosition();
 
     m_leftMotorVoltage = m_shooterMotorLeft.getMotorVoltage();
     m_rightMotorVoltage = m_shooterMotorRight.getMotorVoltage();
-    m_rollerVoltage = m_shooterMotorTopRoller.getMotorVoltage();
+    m_rollerLeftVoltage = m_shooterMotorLeftRoller.getMotorVoltage();
+    m_rollerRightVoltage = m_shooterMotorRightRoller.getMotorVoltage();
 
     m_leftMotorStatorCurrent = m_shooterMotorLeft.getStatorCurrent();
     m_rightMotorStatorCurrent = m_shooterMotorRight.getStatorCurrent();
-    m_rollerStatorCurrent = m_shooterMotorTopRoller.getStatorCurrent();
+    m_rollerLeftStatorCurrent = m_shooterMotorLeftRoller.getStatorCurrent();
+    m_rollerRightStatorCurrent = m_shooterMotorRightRoller.getStatorCurrent();
+
     m_leftMotorSupplyCurrent = m_shooterMotorLeft.getSupplyCurrent();
     m_rightMotorSupplyCurrent = m_shooterMotorRight.getSupplyCurrent();
-    m_rollerSupplyCurrent = m_shooterMotorTopRoller.getSupplyCurrent();
+    m_rollerLeftSupplyCurrent = m_shooterMotorLeftRoller.getSupplyCurrent();
+    m_rollerRightSupplyCurrent = m_shooterMotorRightRoller.getSupplyCurrent();
 
     m_torqueCurrentMain = m_shooterMotorLeft.getTorqueCurrent();
-    m_torqueCurrentRoller = m_shooterMotorTopRoller.getTorqueCurrent();
+    m_torqueCurrentRoller = m_shooterMotorLeftRoller.getTorqueCurrent();
 
     StatusCode setUpdateFreqResult =
         BaseStatusSignal.setUpdateFrequencyForAll(
             100,
             m_leftMotorVel,
             m_rightMotorVel,
-            m_rollerVel,
+            m_rollerLeftVel,
+            m_rollerRightVel,
             m_leftMotorPos,
             m_rightMotorPos,
-            m_rollerPos,
+            m_rollerLeftPos,
+            m_rollerRightPos,
             m_leftMotorVoltage,
             m_rightMotorVoltage,
-            m_rollerVoltage,
+            m_rollerLeftVoltage,
+            m_rollerRightVoltage,
             m_leftMotorStatorCurrent,
             m_rightMotorStatorCurrent,
-            m_rollerStatorCurrent,
+            m_rollerLeftStatorCurrent,
+            m_rollerRightStatorCurrent,
             m_leftMotorSupplyCurrent,
             m_rightMotorSupplyCurrent,
-            m_rollerSupplyCurrent,
+            m_rollerLeftSupplyCurrent,
+            m_rollerRightSupplyCurrent,
             m_torqueCurrentMain,
             m_torqueCurrentRoller);
     if (!setUpdateFreqResult.isOK()) {
@@ -315,7 +345,7 @@ public class Shooter extends SubsystemBase {
     }
     StatusCode optiResult =
         ParentDevice.optimizeBusUtilizationForAll(
-            m_shooterMotorLeft, m_shooterMotorRight, m_shooterMotorTopRoller);
+            m_shooterMotorLeft, m_shooterMotorRight, m_shooterMotorLeftRoller, m_shooterMotorRightRoller);
     if (!optiResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply optimization for shooter subsystem!");
     }
@@ -324,16 +354,23 @@ public class Shooter extends SubsystemBase {
     NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("Shooter");
     m_leftMotorVelPub = shooterTable.getDoubleTopic("LeftMotorVelocityRPM").publish();
     m_rightMotorVelPub = shooterTable.getDoubleTopic("RightMotorVelocityRPM").publish();
-    m_rollerVelPub = shooterTable.getDoubleTopic("RollerVelocityRPM").publish();
+    m_rollerLeftVelPub = shooterTable.getDoubleTopic("RollerLeftVelocityRPM").publish();
+    m_rollerRightVelPub = shooterTable.getDoubleTopic("RollerRightVelocityRPM").publish();
+
     m_leftMotorVoltagePub = shooterTable.getDoubleTopic("LeftMotorVoltage").publish();
     m_rightMotorVoltagePub = shooterTable.getDoubleTopic("RightMotorVoltage").publish();
-    m_rollerVoltagePub = shooterTable.getDoubleTopic("RollerVoltage").publish();
+    m_rollerLeftVoltagePub = shooterTable.getDoubleTopic("RollerLeftVoltage").publish();
+    m_rollerRightVoltagePub = shooterTable.getDoubleTopic("RollerRightVoltage").publish();
+
     m_leftMotorStatorCurrentPub = shooterTable.getDoubleTopic("LeftMotorStatorCurrent").publish();
     m_rightMotorStatorCurrentPub = shooterTable.getDoubleTopic("RightMotorStatorCurrent").publish();
-    m_rollerStatorCurrentPub = shooterTable.getDoubleTopic("RollerStatorCurrent").publish();
+    m_rollerLeftStatorCurrentPub = shooterTable.getDoubleTopic("RollerLeftStatorCurrent").publish();
+    m_rollerRightStatorCurrentPub = shooterTable.getDoubleTopic("RollerRightStatorCurrent").publish();
+
     m_leftMotorSupplyCurrentPub = shooterTable.getDoubleTopic("LeftMotorSupplyCurrent").publish();
     m_rightMotorSupplyCurrentPub = shooterTable.getDoubleTopic("RightMotorSupplyCurrent").publish();
-    m_rollerSupplyCurrentPub = shooterTable.getDoubleTopic("RollerSupplyCurrent").publish();
+    m_rollerLeftSupplyCurrentPub = shooterTable.getDoubleTopic("RollerLeftSupplyCurrent").publish();
+    m_rollerRightSupplyCurrentPub = shooterTable.getDoubleTopic("RollerRightSupplyCurrent").publish();
     m_currentCommandPub = shooterTable.getStringTopic("CurrentCommand").publish();
     m_atSpeedPub = shooterTable.getBooleanTopic("AtSpeed").publish();
     m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPM").publish();
@@ -347,12 +384,14 @@ public class Shooter extends SubsystemBase {
     // Initialize simulation
     m_leftMotorSimState = m_shooterMotorLeft.getSimState();
     m_rightMotorSimState = m_shooterMotorRight.getSimState();
-    m_rollerSimState = m_shooterMotorTopRoller.getSimState();
-
+    m_rollerLeftSimState = m_shooterMotorLeftRoller.getSimState();
+    m_rollerRightSimState = m_shooterMotorRightRoller.getSimState();
     // Set motor types for accurate simulation
     m_leftMotorSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
     m_rightMotorSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
-    m_rollerSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+    m_rollerLeftSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+    m_rollerRightSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+
 
     // Main shooter flywheel sim (powered by left and right motors)
     // Using 2 Kraken X60 motors
@@ -368,10 +407,10 @@ public class Shooter extends SubsystemBase {
     m_rollerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getFalcon500Foc(1),
+                DCMotor.getFalcon500Foc(2),
                 ShooterConstants.ROLLER_MOI,
                 ShooterConstants.ROLLER_GEAR_RATIO),
-            DCMotor.getFalcon500Foc(1));
+            DCMotor.getFalcon500Foc(2));
 
     // Initialize SOTF debug publishers
     NetworkTable sotfTable = shooterTable.getSubTable("SOTF");
@@ -486,36 +525,45 @@ public class Shooter extends SubsystemBase {
     BaseStatusSignal.refreshAll(
         m_leftMotorVel,
         m_rightMotorVel,
-        m_rollerVel,
+        m_rollerLeftVel,
+        m_rollerRightVel,
         m_leftMotorVoltage,
         m_rightMotorVoltage,
-        m_rollerVoltage,
+        m_rollerLeftVoltage,
+        m_rollerRightVoltage,
         m_leftMotorStatorCurrent,
         m_rightMotorStatorCurrent,
-        m_rollerStatorCurrent,
+        m_rollerLeftStatorCurrent,
+        m_rollerRightStatorCurrent,
         m_leftMotorSupplyCurrent,
         m_rightMotorSupplyCurrent,
-        m_rollerSupplyCurrent,
+        m_rollerLeftSupplyCurrent,
+        m_rollerRightSupplyCurrent,
         m_torqueCurrentMain,
         m_torqueCurrentRoller);
 
-    // Publish velocity signals to NetworkTables in RPM
     m_leftMotorVelPub.set(m_leftMotorVel.getValue().in(RotationsPerSecond) * 60.0);
     m_rightMotorVelPub.set(m_rightMotorVel.getValue().in(RotationsPerSecond) * 60.0);
-    m_rollerVelPub.set(m_rollerVel.getValue().in(RotationsPerSecond) * 60.0);
+    m_rollerLeftVelPub.set(m_rollerLeftVel.getValue().in(RotationsPerSecond) * 60.0);
+    m_rollerRightVelPub.set(m_rollerRightVel.getValue().in(RotationsPerSecond) * 60.0);
 
     // Publish voltage signals to NetworkTables
     m_leftMotorVoltagePub.set(m_leftMotorVoltage.getValue().in(Volts));
     m_rightMotorVoltagePub.set(m_rightMotorVoltage.getValue().in(Volts));
-    m_rollerVoltagePub.set(m_rollerVoltage.getValue().in(Volts));
+    m_rollerLeftVoltagePub.set(m_rollerLeftVoltage.getValue().in(Volts));
+    m_rollerRightVoltagePub.set(m_rollerRightVoltage.getValue().in(Volts));
 
     // Publish current signals to NetworkTables
     m_leftMotorStatorCurrentPub.set(m_leftMotorStatorCurrent.getValue().in(Amps));
     m_rightMotorStatorCurrentPub.set(m_rightMotorStatorCurrent.getValue().in(Amps));
-    m_rollerStatorCurrentPub.set(m_rollerStatorCurrent.getValue().in(Amps));
+    m_rollerLeftStatorCurrentPub.set(m_rollerLeftStatorCurrent.getValue().in(Amps));
+    m_rollerRightStatorCurrentPub.set(m_rollerRightStatorCurrent.getValue().in(Amps));
+
     m_leftMotorSupplyCurrentPub.set(m_leftMotorSupplyCurrent.getValue().in(Amps));
     m_rightMotorSupplyCurrentPub.set(m_rightMotorSupplyCurrent.getValue().in(Amps));
-    m_rollerSupplyCurrentPub.set(m_rollerSupplyCurrent.getValue().in(Amps));
+    m_rollerLeftSupplyCurrentPub.set(m_rollerLeftSupplyCurrent.getValue().in(Amps));
+    m_rollerRightSupplyCurrentPub.set(m_rollerRightSupplyCurrent.getValue().in(Amps));
+
     m_torqueCurrentMainPub.set(m_torqueCurrentMain.getValue().in(Amps));
     m_torqueCurrentRollerPub.set(m_torqueCurrentRoller.getValue().in(Amps));
 
@@ -602,7 +650,8 @@ public class Shooter extends SubsystemBase {
               .withKI(rollerKI)
               .withKD(rollerKD);
 
-      m_shooterMotorTopRoller.getConfigurator().apply(rollerSlot0);
+      m_shooterMotorLeftRoller.getConfigurator().apply(rollerSlot0);
+      m_shooterMotorRightRoller.getConfigurator().apply(rollerSlot0);
 
       // Update last known values
       m_lastRollerKS = rollerKS;
@@ -619,7 +668,8 @@ public class Shooter extends SubsystemBase {
     // Update supply voltage from battery
     m_leftMotorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
     m_rightMotorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
-    m_rollerSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
+    m_rollerLeftSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
+    m_rollerRightSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 
     // Main shooter flywheel: subtract voltages because right motor has opposite inversion
     // Left outputs +V, right outputs -V (inverted), so (left - right) / 2 gives true average
@@ -643,13 +693,22 @@ public class Shooter extends SubsystemBase {
         m_mainShooterSim.getAngularVelocity().times(-ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
 
     // Roller flywheel
-    m_rollerSim.setInputVoltage(m_rollerSimState.getMotorVoltageMeasure().in(Volts));
+    double mainRollerVoltage =
+        (m_rollerLeftSimState.getMotorVoltageMeasure().in(Volts)
+                + m_rollerRightSimState.getMotorVoltageMeasure().in(Volts))
+            / 2.0;
+    m_rollerSim.setInputVoltage(mainRollerVoltage);
     m_rollerSim.update(0.020);
 
     // Update roller motor sim state with rotor position and velocity
-    m_rollerSimState.setRawRotorPosition(
+    m_rollerLeftSimState.setRawRotorPosition(
         m_rollerSim.getAngularPosition().times(ShooterConstants.ROLLER_GEAR_RATIO));
-    m_rollerSimState.setRotorVelocity(
+    m_rollerLeftSimState.setRotorVelocity(
+        m_rollerSim.getAngularVelocity().times(ShooterConstants.ROLLER_GEAR_RATIO));
+    
+    m_rollerRightSimState.setRawRotorPosition(
+        m_rollerSim.getAngularPosition().times(ShooterConstants.ROLLER_GEAR_RATIO));
+    m_rollerRightSimState.setRotorVelocity(
         m_rollerSim.getAngularVelocity().times(ShooterConstants.ROLLER_GEAR_RATIO));
   }
 
@@ -660,10 +719,11 @@ public class Shooter extends SubsystemBase {
    */
   public boolean isAtSpeed() {
     double mainShooterVel = m_rightMotorVel.getValue().in(RotationsPerSecond);
-    double rollerVel = m_rollerVel.getValue().in(RotationsPerSecond);
+    double rollerVel = m_rollerLeftVel.getValue().in(RotationsPerSecond);
+    double rollerRightVel = m_rollerRightVel.getValue().in(RotationsPerSecond);
     double tolerance = m_velocityToleranceRpsSub.get();
     boolean mainAtSpeed = Math.abs(mainShooterVel - m_targetMainShooterRps) < tolerance;
-    boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance;
+    boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance && Math.abs(rollerRightVel - m_targetRollerRps) < tolerance;
     return mainAtSpeed && rollerAtSpeed;
   }
 
@@ -691,7 +751,8 @@ public class Shooter extends SubsystemBase {
     m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
 
     // Command the top roller
-    m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
+    m_shooterMotorLeftRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
+    m_shooterMotorRightRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
   }
 
   /**
@@ -722,8 +783,12 @@ public class Shooter extends SubsystemBase {
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
-              m_shooterMotorTopRoller.setControl(
-                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
+              m_shooterMotorLeftRoller.setControl(
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));              
+              m_shooterMotorRightRoller.setControl(
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));       
+            
+
             })
         .withName("SpinUpForDistance");
   }
@@ -751,7 +816,9 @@ public class Shooter extends SubsystemBase {
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
-              m_shooterMotorTopRoller.setControl(
+              m_shooterMotorLeftRoller.setControl(
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
+              m_shooterMotorRightRoller.setControl(
                   m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
             })
         .withName("SpinUpForPassing");
@@ -768,7 +835,8 @@ public class Shooter extends SubsystemBase {
               m_shooterMotorRight.setControl(m_voltageRequest.withOutput(idleVoltage));
 
               // Set top roller motor
-              m_shooterMotorTopRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
+              m_shooterMotorLeftRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
+              m_shooterMotorRightRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
             })
         .withName("IdleShooterLowerVoltage");
   }
@@ -857,8 +925,11 @@ public class Shooter extends SubsystemBase {
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
-              m_shooterMotorTopRoller.setControl(
+              m_shooterMotorLeftRoller.setControl(
                   m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
+              m_shooterMotorRightRoller.setControl(
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
+
             })
         .withName("SpinUpForSOTF");
   }
@@ -875,7 +946,8 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = 0.0;
               m_shooterMotorLeft.setControl(m_neutralRequest);
               m_shooterMotorRight.setControl(m_neutralRequest);
-              m_shooterMotorTopRoller.setControl(m_neutralRequest);
+              m_shooterMotorLeftRoller.setControl(m_neutralRequest);
+              m_shooterMotorRightRoller.setControl(m_neutralRequest);
             })
         .withName("StopShooter");
   }
@@ -905,7 +977,8 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = rollerRps;
               m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
               m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
-              m_shooterMotorTopRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
+              m_shooterMotorLeftRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
+              m_shooterMotorRightRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
             })
         .finallyDo(
             () -> {
@@ -913,7 +986,8 @@ public class Shooter extends SubsystemBase {
               m_targetRollerRps = 0.0;
               m_shooterMotorLeft.setControl(m_neutralRequest);
               m_shooterMotorRight.setControl(m_neutralRequest);
-              m_shooterMotorTopRoller.setControl(m_neutralRequest);
+              m_shooterMotorLeftRoller.setControl(m_neutralRequest);
+              m_shooterMotorRightRoller.setControl(m_neutralRequest);
             })
         .withName("ShooterTuning");
   }
