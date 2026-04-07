@@ -579,6 +579,10 @@ public class Intake extends SubsystemBase {
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
+        .until(
+            () -> {
+              return atPosition();
+            })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
