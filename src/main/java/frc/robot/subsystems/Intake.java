@@ -51,6 +51,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.IntakeConstants;
@@ -580,19 +581,24 @@ public class Intake extends SubsystemBase {
    * @return A command that stows the intake.
    */
   public Command stowCommand() {
-    return this.run(
+    return this.runOnce(
             () -> {
-              m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
-              m_rackMotor.setControl(
-                  m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
-        .until(
-            () -> {
-              return atPosition();
-            })
+        .andThen(Commands.waitSeconds(0.25))
+        .andThen(
+            this.run(
+                () -> {
+                  m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
+                  m_rackMotor.setControl(
+                      m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
+                  m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
+                  m_rollerMotor.setControl(
+                      m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+                }))
+        .until(() -> atPosition())
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
