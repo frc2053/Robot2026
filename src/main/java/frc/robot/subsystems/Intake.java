@@ -534,6 +534,9 @@ public class Intake extends SubsystemBase {
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rackPositionSetpoint = IntakeConstants.kRackDeployedPosition;
+              m_rackMotor.setControl(
+                m_rackHoldRequest.withPosition(IntakeConstants.kRackDeployedPosition));
             })
         .withName("DeployIntake");
   }
@@ -586,12 +589,13 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
+
             })
         .andThen(Commands.waitSeconds(0.25))
         .andThen(
             this.run(
                 () -> {
-                  m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
                   m_rackMotor.setControl(
                       m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
                   m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
