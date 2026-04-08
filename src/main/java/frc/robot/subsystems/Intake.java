@@ -17,7 +17,10 @@ import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -98,6 +101,8 @@ public class Intake extends SubsystemBase {
   // Control requests
   private final MotionMagicVoltage m_rackPositionRequest =
       new MotionMagicVoltage(0).withEnableFOC(true);
+  private final MotionMagicTorqueCurrentFOC m_rackHoldRequest =
+      new MotionMagicTorqueCurrentFOC(0).withSlot(1);
   private final VoltageOut m_rollerVoltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
@@ -314,11 +319,24 @@ public class Intake extends SubsystemBase {
             .withKI(IntakeConstants.kRackKI)
             .withKD(IntakeConstants.kRackKD);
 
+    // Slot 1 - Torque current hold mode (soft hold at deployed position)
+    config.Slot1 =
+        new Slot1Configs()
+            .withKP(IntakeConstants.kRackHoldKP)
+            .withKI(IntakeConstants.kRackHoldKI)
+            .withKD(IntakeConstants.kRackHoldKD);
+
     // Motion Magic configuration
     config.MotionMagic =
         new MotionMagicConfigs()
             .withMotionMagicCruiseVelocity(IntakeConstants.kRackMotionMagicCruiseVelocity)
             .withMotionMagicAcceleration(IntakeConstants.kRackMotionMagicAcceleration);
+
+    // Torque current limits for deployed hold mode
+    config.TorqueCurrent =
+        new TorqueCurrentConfigs()
+            .withPeakForwardTorqueCurrent(IntakeConstants.kRackDeployedHoldCurrentAmps)
+            .withPeakReverseTorqueCurrent(-IntakeConstants.kRackDeployedHoldCurrentAmps);
 
     StatusCode configResult = m_rackMotor.getConfigurator().apply(config);
     if (!configResult.isOK()) {
@@ -500,8 +518,13 @@ public class Intake extends SubsystemBase {
     return this.run(
             () -> {
               m_rackPositionSetpoint = IntakeConstants.kRackDeployedPosition;
-              m_rackMotor.setControl(
-                  m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
+              if (atPosition()) {
+                m_rackMotor.setControl(
+                    m_rackHoldRequest.withPosition(IntakeConstants.kRackDeployedPosition));
+              } else {
+                m_rackMotor.setControl(
+                    m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
+              }
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
@@ -556,20 +579,7 @@ public class Intake extends SubsystemBase {
    *
    * @return A command that stows the intake.
    */
-  // public Command stowCommand() {
-  //   return this.run(
-  //           () -> {
-  //             m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
-  //             m_rackMotor.setControl(
-  //                 m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
-  //             m_rollerVoltageSetpoint = 0.0;
-  //             m_rollerMotor.setControl(m_neutralRequest);
-  //           })
-  //       .withName("StowIntake");
-  // }
-
-
-    public Command stowCommand() {
+  public Command stowCommand() {
     return this.run(
             () -> {
               m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
