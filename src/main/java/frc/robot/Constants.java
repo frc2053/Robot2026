@@ -251,6 +251,11 @@ public final class Constants {
     public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
+    // Rack torque current hold gains (Slot 1) - for deployed hold mode
+    public static final double kRackHoldKP = 5.0;
+    public static final double kRackHoldKI = 0.0;
+    public static final double kRackHoldKD = 0.0;
+
     // Roller voltage for intaking
     public static final double kIntakeVoltage = -12.0;
     public static final double nonheldVoltage = 0.0;
@@ -266,6 +271,9 @@ public final class Constants {
 
     // Position tolerance for "at position" detection (rotations)
     public static final double kRackPositionToleranceRotations = 0.02;
+
+    // Torque current limit (amps) when holding rack at deployed position
+    public static final double kRackDeployedHoldCurrentAmps = 20.0;
   }
 
   public static class VisionConstants {
