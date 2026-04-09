@@ -11,7 +11,6 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -41,6 +40,7 @@ import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.commands.GoToPoseCommand;
 import frc.robot.commands.GoToPoseFactory;
+import frc.robot.commands.ResilientFollowPathCommand;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.util.ShootingOnTheFly;
 import java.io.IOException;
@@ -297,7 +297,7 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
                   () -> {
                     PathPlannerPath pathToFollow =
                         m_shouldMirrorPath.getAsBoolean() ? path.mirrorPath() : path;
-                    return new FollowPathCommand(
+                    return new ResilientFollowPathCommand(
                         pathToFollow,
                         () -> getState().Pose,
                         () -> getState().Speeds,
@@ -320,6 +320,8 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
                                 SwerveConstants.kRotationD)),
                         config,
                         shouldFlip,
+                        SwerveConstants.kPathPauseThresholdMeters,
+                        SwerveConstants.kPathResumeThresholdMeters,
                         this);
                   },
                   java.util.Set.of(this)),
@@ -687,5 +689,31 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
             },
             java.util.Set.of(this))
         .withName("FastTransitRelative");
+  }
+
+  // ── Simulation testing ───────────────────────────────────────────
+
+  private final java.util.Random m_simRandom = new java.util.Random();
+
+  /**
+   * Injects a random 0.5–1.5m offset into the resilient path follower for 2 seconds, making it
+   * think the robot is far off the path. This triggers the pause/recovery behavior without fighting
+   * the sim physics. Only useful in simulation.
+   *
+   * @return Command that injects then clears a sim offset.
+   */
+  public Command simDisturbRobot() {
+    return Commands.sequence(
+            Commands.runOnce(
+                () -> {
+                  double distance = 0.5 + m_simRandom.nextDouble() * 1.0;
+                  Rotation2d direction = new Rotation2d(m_simRandom.nextDouble() * 2.0 * Math.PI);
+                  ResilientFollowPathCommand.injectSimOffset(
+                      new Translation2d(distance, direction));
+                }),
+            Commands.waitSeconds(2.0),
+            Commands.runOnce(ResilientFollowPathCommand::clearSimOffset))
+        .ignoringDisable(true)
+        .withName("SimDisturbRobot");
   }
 }
