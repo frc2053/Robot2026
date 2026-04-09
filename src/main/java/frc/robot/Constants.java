@@ -86,6 +86,10 @@ public final class Constants {
     public static final double kRotationI = 0.0;
     public static final double kRotationD = 0.0;
 
+    // Resilient path following: pause trajectory when robot drifts too far off
+    public static final double kPathPauseThresholdMeters = 0.5;
+    public static final double kPathResumeThresholdMeters = 0.25;
+
     // Deadband percentage for translation (0.1 = 10%)
     public static final double kDeadbandPercent = 0.1;
 
