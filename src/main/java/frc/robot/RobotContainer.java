@@ -244,6 +244,22 @@ public class RobotContainer {
                 Units.feetToMeters(10), // 10 ft forward
                 Units.feetToMeters(-4))); // 4 ft right (negative = right)
 
+    // Sim-only: set Sim/DisturbRobot to true in NetworkTables to teleport the robot off path.
+    // Works during auto (joystick inputs are disabled during auto).
+    // Auto-resets to false so you can trigger it repeatedly.
+    if (RobotBase.isSimulation()) {
+      var disturbTopic =
+          NetworkTableInstance.getDefault().getTable("Sim").getBooleanTopic("DisturbRobot");
+      var disturbPub = disturbTopic.publish();
+      disturbPub.setDefault(false);
+      BooleanSubscriber disturbSub = disturbTopic.subscribe(false);
+      new Trigger(disturbSub::get)
+          .onTrue(
+              m_drivetrain
+                  .simDisturbRobot()
+                  .andThen(Commands.runOnce(() -> disturbPub.set(false))));
+    }
+
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
 
