@@ -206,6 +206,10 @@ public class RobotContainer {
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
     actuallyShoot.whileTrue(shootCommand());
+    // Wiggle intake to feed balls while shooting, but only when not actively intaking
+    actuallyShoot
+        .and(m_joystick.leftTrigger().negate())
+        .whileTrue(m_intake.feedingWiggleRackCommand());
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
@@ -213,6 +217,10 @@ public class RobotContainer {
     m_joystick.leftBumper().whileTrue(m_shooter.spinUpForPassingCommand());
     Trigger actuallyPass = m_joystick.leftBumper().and(m_shooter.atSpeedTrigger());
     actuallyPass.whileTrue(shootCommand());
+    // Wiggle intake to feed balls while passing, but only when not actively intaking
+    actuallyPass
+        .and(m_joystick.leftTrigger().negate())
+        .whileTrue(m_intake.feedingWiggleRackCommand());
     m_joystick.leftBumper().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
     // Reset field-centric heading on back button press
@@ -284,7 +292,6 @@ public class RobotContainer {
     return Commands.parallel(
         m_spindexer.spin(),
         m_kicker.spin(),
-        // m_intake.feedingWiggleRackCommand(),
         Commands.run(
             () -> {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
