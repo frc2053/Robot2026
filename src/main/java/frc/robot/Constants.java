@@ -108,18 +108,18 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Main shooter PID constants (Slot 0)
-    public static final double kMainShooterKS = 5.73487;
-    public static final double kMainShooterKV = 0.00042955;
+    public static final double kMainShooterKS = 5.5;
+    public static final double kMainShooterKV = 0.015;
     public static final double kMainShooterKA = 0.0;
-    public static final double kMainShooterKP = 4.3;
+    public static final double kMainShooterKP = 5.4;
     public static final double kMainShooterKI = 0.0;
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 1.34;
-    public static final double kRollerKV = 0.000185;
+    public static final double kRollerKS = 4.3;
+    public static final double kRollerKV = 0.028;
     public static final double kRollerKA = 0.0;
-    public static final double kRollerKP = 1.05;
+    public static final double kRollerKP = 4.8;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
 
