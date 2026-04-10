@@ -151,7 +151,7 @@ public final class Constants {
     // SOTF (Shooting On The Fly) constants
     // Total latency compensation in seconds (camera + motor lag + ball flight through shooter)
     // TODO: Tune this value - start at 0.1s, increase if shots land behind target
-    public static final double kSOTFLatencyCompensation = 0.075;
+    public static final double kSOTFLatencyCompensation = 0.0;
 
     public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
@@ -247,13 +247,13 @@ public final class Constants {
     public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
 
     // Rack PID constants (Slot 0)
-    public static final double kRackKS = 0.395;
+    public static final double kRackKS = 5.0;
     public static final double kRackKG = 0.0;
     public static final double kRackKV = 0.0;
     public static final double kRackKA = 0.0;
-    public static final double kRackKP = 64.0;
+    public static final double kRackKP = 3000.0;
     public static final double kRackKI = 0.0;
-    public static final double kRackKD = 0.0;
+    public static final double kRackKD = 32.0;
     public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 

@@ -196,7 +196,7 @@ public class RobotContainer {
                 m_drivetrain,
                 m_shooter));
 
-    // Idle shooter when not shooting and not aligning (bumper held keeps spin-up active)
+    // Idle shooter when not shooting and not aligning (bumper h2.0eld keeps spin-up active)
     m_joystick
         .rightTrigger()
         .negate()
@@ -300,7 +300,7 @@ public class RobotContainer {
               Rotation2d angleToTarget = targetPoint.minus(robotPosition).getAngle();
               Rotation2d robotHeading = m_drivetrain.getState().Pose.getRotation();
               double deg = robotHeading.minus(angleToTarget).getDegrees();
-              return Math.abs(deg) <= 2.0;
+              return Math.abs(deg) <= 1.0;
             });
   }
 
