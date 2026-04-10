@@ -158,6 +158,7 @@ public final class Constants {
     static {
       // Top roller RPMs adjusted for 1.5x upduction (27T motor / 18T roller)
       // Motor RPM = old roller RPM / 1.5
+
       shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 166.7, 1.06));
       shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 166.7));
       shootingDataPoints.add(new ShootingDataPoint(1.77, 2500.0, 186.7));
@@ -253,7 +254,7 @@ public final class Constants {
     public static final double kRackKA = 0.0;
     public static final double kRackKP = 3000.0;
     public static final double kRackKI = 0.0;
-    public static final double kRackKD = 32.0;
+    public static final double kRackKD = 28.0;
     public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
