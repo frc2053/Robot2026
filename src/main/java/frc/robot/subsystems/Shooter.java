@@ -266,6 +266,7 @@ private final DoublePublisher m_rollerSetpointPub;
       DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
     }
 
+    rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     StatusCode rollerRightConfigResult = m_shooterMotorRightRoller.getConfigurator().apply(rollerConfig);
     if (!rollerRightConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
@@ -680,6 +681,7 @@ private final DoublePublisher m_rollerSetpointPub;
         m_mainShooterSim.getAngularPosition().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_leftMotorSimState.setRotorVelocity(
         m_mainShooterSim.getAngularVelocity().times(ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
+
     m_rightMotorSimState.setRawRotorPosition(
         m_mainShooterSim.getAngularPosition().times(-ShooterConstants.MAIN_SHOOTER_GEAR_RATIO));
     m_rightMotorSimState.setRotorVelocity(
@@ -688,7 +690,7 @@ private final DoublePublisher m_rollerSetpointPub;
     // Roller flywheel
     double mainRollerVoltage =
         (m_rollerLeftSimState.getMotorVoltageMeasure().in(Volts)
-                + m_rollerRightSimState.getMotorVoltageMeasure().in(Volts))
+                - m_rollerRightSimState.getMotorVoltageMeasure().in(Volts))
             / 2.0;
     m_rollerSim.setInputVoltage(mainRollerVoltage);
     m_rollerSim.update(0.020);
@@ -700,9 +702,9 @@ private final DoublePublisher m_rollerSetpointPub;
         m_rollerSim.getAngularVelocity().times(ShooterConstants.ROLLER_GEAR_RATIO));
     
     m_rollerRightSimState.setRawRotorPosition(
-        m_rollerSim.getAngularPosition().times(ShooterConstants.ROLLER_GEAR_RATIO));
+        m_rollerSim.getAngularPosition().times(-ShooterConstants.ROLLER_GEAR_RATIO));
     m_rollerRightSimState.setRotorVelocity(
-        m_rollerSim.getAngularVelocity().times(ShooterConstants.ROLLER_GEAR_RATIO));
+        m_rollerSim.getAngularVelocity().times(-ShooterConstants.ROLLER_GEAR_RATIO));
   }
 
   /**
