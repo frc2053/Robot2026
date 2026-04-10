@@ -49,6 +49,7 @@ import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.util.ShootingOnTheFly;
 import java.util.function.DoubleSupplier;
@@ -130,10 +131,6 @@ private final DoublePublisher m_rollerSetpointPub;
   private final BooleanPublisher m_sotfConvergedPub;
   private final DoublePublisher m_sotfRobotSpeedPub;
   private final DoublePublisher m_sotfAimingAngleDegPub;
-
-  // SOTF distance fix toggle (dashboard killswitch)
-  private final BooleanSubscriber m_sotfFixSub;
-  private final BooleanSubscriber m_redSideFixSub;
 
   // Target velocities for at-speed detection
   private double m_targetMainShooterRps;
@@ -244,7 +241,7 @@ private final DoublePublisher m_rollerSetpointPub;
             .withMotorOutput(
                 new MotorOutputConfigs()
                     .withNeutralMode(NeutralModeValue.Coast)
-                    .withInverted(InvertedValue.Clockwise_Positive))
+                    .withInverted(InvertedValue.CounterClockwise_Positive))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
@@ -423,10 +420,6 @@ private final DoublePublisher m_rollerSetpointPub;
     m_sotfConvergedPub = sotfTable.getBooleanTopic("Converged").publish();
     m_sotfRobotSpeedPub = sotfTable.getDoubleTopic("RobotSpeedMps").publish();
     m_sotfAimingAngleDegPub = sotfTable.getDoubleTopic("AimingAngleDeg").publish();
-    shooterTable.getBooleanTopic("RedSideOvershootFix").publish().setDefault(true);
-    sotfTable.getBooleanTopic("UseDistanceFix").publish().setDefault(true);
-    m_sotfFixSub = sotfTable.getBooleanTopic("UseDistanceFix").subscribe(true);
-    m_redSideFixSub = shooterTable.getBooleanTopic("RedSideOvershootFix").subscribe(true);
 
     // Initialize tuning mode NetworkTables controls
     NetworkTable tuningTable = shooterTable.getSubTable("Tuning");
@@ -877,7 +870,10 @@ private final DoublePublisher m_rollerSetpointPub;
               Translation2d virtualTarget = result.virtualTarget();
               m_sotfVirtualTargetPub.set(new Pose2d(virtualTarget, result.aimingAngle()));
               m_sotfGoalPub.set(new Pose2d(goalPosition, new Rotation2d()));
-              double staticDistance = goalPosition.getDistance(robotPose.getTranslation()) - 0.610;
+              double staticDistance =
+                  goalPosition.getDistance(robotPose.getTranslation())
+                      - FuelConstants.kLookupTableDistanceOffset
+                      - FuelConstants.getAllianceLookupOffset();
               m_sotfStaticDistancePub.set(staticDistance);
               m_sotfVirtualDistancePub.set(result.virtualDistance());
               m_sotfTimeOfFlightPub.set(result.timeOfFlight());
@@ -888,26 +884,14 @@ private final DoublePublisher m_rollerSetpointPub;
               m_sotfRobotSpeedPub.set(robotSpeed);
               m_sotfAimingAngleDegPub.set(result.aimingAngle().getDegrees());
 
-              // New path: robot-center-to-virtual-target minus the same 0.610 calibration
-              // offset as getLookupDistanceToGoal so SOTF matches the static path
-              // reference frame. When stationary this equals the static lookup exactly.
-              // Old path: raw virtualDistance (known to overshoot at medium range)
-              double lookupDistance;
-              if (m_sotfFixSub.get()) {
-                if (m_redSideFixSub.get()) {
-                  lookupDistance =
-                      Math.max(
-                          0,
-                          result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.7625);
-                } else {
-                  lookupDistance =
-                      Math.max(
-                          0,
-                          result.virtualTarget().getDistance(robotPose.getTranslation()) - 0.305);
-                }
-              } else {
-                lookupDistance = result.virtualDistance();
-              }
+              // Convert virtual target distance to lookup table reference frame
+              // (front-of-bumper to front-of-hub)
+              double lookupDistance =
+                  Math.max(
+                      0,
+                      result.virtualTarget().getDistance(robotPose.getTranslation())
+                          - FuelConstants.kLookupTableDistanceOffset
+                          - FuelConstants.getAllianceLookupOffset());
 
               double bottomSpeedRps =
                   ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(lookupDistance) / 60.0;

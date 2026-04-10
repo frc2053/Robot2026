@@ -18,7 +18,8 @@ import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
@@ -48,6 +49,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.IntakeConstants;
@@ -96,8 +98,8 @@ public class Intake extends SubsystemBase {
   private final StringPublisher m_currentCommandPub;
 
   // Control requests
-  private final MotionMagicVoltage m_rackPositionRequest =
-      new MotionMagicVoltage(0).withEnableFOC(true);
+  private final MotionMagicTorqueCurrentFOC m_rackPositionRequest =
+      new MotionMagicTorqueCurrentFOC(0);
   private final VoltageOut m_rollerVoltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
 
@@ -320,13 +322,16 @@ public class Intake extends SubsystemBase {
             .withMotionMagicCruiseVelocity(IntakeConstants.kRackMotionMagicCruiseVelocity)
             .withMotionMagicAcceleration(IntakeConstants.kRackMotionMagicAcceleration);
 
+    // Torque current limits for deployed hold mode
+    config.TorqueCurrent =
+        new TorqueCurrentConfigs()
+            .withPeakForwardTorqueCurrent(IntakeConstants.RACK_STATOR_LIMIT)
+            .withPeakReverseTorqueCurrent(-IntakeConstants.RACK_STATOR_LIMIT);
+
     StatusCode configResult = m_rackMotor.getConfigurator().apply(config);
     if (!configResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to intake rack motor!");
     }
-
-    // Set initial position to stowed
-    // m_rackMotor.setPosition(IntakeConstants.kRackStowedPosition);
   }
 
   private void configureRollerMotor() {
@@ -556,33 +561,22 @@ public class Intake extends SubsystemBase {
    *
    * @return A command that stows the intake.
    */
-  // public Command stowCommand() {
-  //   return this.run(
-  //           () -> {
-  //             m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
-  //             m_rackMotor.setControl(
-  //                 m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
-  //             m_rollerVoltageSetpoint = 0.0;
-  //             m_rollerMotor.setControl(m_neutralRequest);
-  //           })
-  //       .withName("StowIntake");
-  // }
-
-
-    public Command stowCommand() {
-    return this.run(
+  public Command stowCommand() {
+    return this.runOnce(
             () -> {
-              m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
-              m_rackMotor.setControl(
-                  m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
             })
-        .until(
-            () -> {
-              return atPosition();
-            })
+        .andThen(Commands.waitSeconds(0.25))
+        .andThen(
+            this.run(
+                () -> {
+                  m_rackMotor.setControl(
+                      m_rackPositionRequest.withPosition(IntakeConstants.kRackStowedPosition));
+                }))
+        .until(() -> atPosition())
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;

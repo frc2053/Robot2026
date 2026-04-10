@@ -57,9 +57,9 @@ public class RobotContainer {
   private final Telemetry m_logger =
       new Telemetry(SwerveConstants.translationMaxSpeed.in(MetersPerSecond));
 
-  /** Publisher for distance to goal (lookup table reference frame, in meters). */
-  private final DoublePublisher m_distanceToGoalPub =
-      NetworkTableInstance.getDefault().getDoubleTopic("Shooter/DistanceToGoal").publish();
+  /** Publisher for lookup distance (front-of-bumper to front-of-hub, in meters). */
+  private final DoublePublisher m_lookupDistancePub =
+      NetworkTableInstance.getDefault().getDoubleTopic("Shooter/LookupDistance").publish();
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
@@ -169,8 +169,8 @@ public class RobotContainer {
             m_shooter
                 .spinUpForDistanceCommand(
                     () -> {
-                      double lookupDistance = m_drivetrain.getLookupDistanceToGoal();
-                      m_distanceToGoalPub.set(lookupDistance);
+                      double lookupDistance = m_drivetrain.getLookupDistance();
+                      m_lookupDistancePub.set(lookupDistance);
                       return lookupDistance;
                     })
                 .alongWith(
@@ -196,7 +196,7 @@ public class RobotContainer {
                 m_drivetrain,
                 m_shooter));
 
-    // Idle shooter when not shooting and not aligning (bumper held keeps spin-up active)
+    // Idle shooter when not shooting and not aligning (bumper h2.0eld keeps spin-up active)
     m_joystick
         .rightTrigger()
         .negate()
@@ -206,6 +206,10 @@ public class RobotContainer {
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
     // Feed when shooter is at speed AND right trigger is held
     actuallyShoot.whileTrue(shootCommand());
+    // Wiggle intake to feed balls while shooting, but only when not actively intaking
+    actuallyShoot
+        .and(m_joystick.leftTrigger().negate())
+        .whileTrue(m_intake.feedingWiggleRackCommand());
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
@@ -213,6 +217,10 @@ public class RobotContainer {
     m_joystick.leftBumper().whileTrue(m_shooter.spinUpForPassingCommand());
     Trigger actuallyPass = m_joystick.leftBumper().and(m_shooter.atSpeedTrigger());
     actuallyPass.whileTrue(shootCommand());
+    // Wiggle intake to feed balls while passing, but only when not actively intaking
+    actuallyPass
+        .and(m_joystick.leftTrigger().negate())
+        .whileTrue(m_intake.feedingWiggleRackCommand());
     m_joystick.leftBumper().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
     // Reset field-centric heading on back button press
@@ -235,6 +243,22 @@ public class RobotContainer {
             m_drivetrain.fastTransitRelative(
                 Units.feetToMeters(10), // 10 ft forward
                 Units.feetToMeters(-4))); // 4 ft right (negative = right)
+
+    // Sim-only: set Sim/DisturbRobot to true in NetworkTables to teleport the robot off path.
+    // Works during auto (joystick inputs are disabled during auto).
+    // Auto-resets to false so you can trigger it repeatedly.
+    if (RobotBase.isSimulation()) {
+      var disturbTopic =
+          NetworkTableInstance.getDefault().getTable("Sim").getBooleanTopic("DisturbRobot");
+      var disturbPub = disturbTopic.publish();
+      disturbPub.setDefault(false);
+      BooleanSubscriber disturbSub = disturbTopic.subscribe(false);
+      new Trigger(disturbSub::get)
+          .onTrue(
+              m_drivetrain
+                  .simDisturbRobot()
+                  .andThen(Commands.runOnce(() -> disturbPub.set(false))));
+    }
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
@@ -276,7 +300,7 @@ public class RobotContainer {
               Rotation2d angleToTarget = targetPoint.minus(robotPosition).getAngle();
               Rotation2d robotHeading = m_drivetrain.getState().Pose.getRotation();
               double deg = robotHeading.minus(angleToTarget).getDegrees();
-              return Math.abs(deg) <= 2.0;
+              return Math.abs(deg) <= 1.0;
             });
   }
 
@@ -284,7 +308,6 @@ public class RobotContainer {
     return Commands.parallel(
         m_spindexer.spin(),
         m_kicker.spin(),
-        // m_intake.feedingWiggleRackCommand(),
         Commands.run(
             () -> {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
@@ -320,7 +343,7 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "SpinUp",
         m_shooter
-            .spinUpForDistanceCommand(m_drivetrain::getLookupDistanceToGoal)
+            .spinUpForDistanceCommand(m_drivetrain::getLookupDistance)
             .until(m_shooter.atSpeedTrigger()));
     NamedCommands.registerCommand(
         "AimAndSpinUp",

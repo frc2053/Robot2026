@@ -86,6 +86,10 @@ public final class Constants {
     public static final double kRotationI = 0.0;
     public static final double kRotationD = 0.0;
 
+    // Resilient path following: pause trajectory when robot drifts too far off
+    public static final double kPathPauseThresholdMeters = 0.5;
+    public static final double kPathResumeThresholdMeters = 0.25;
+
     // Deadband percentage for translation (0.1 = 10%)
     public static final double kDeadbandPercent = 0.1;
 
@@ -109,18 +113,18 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Main shooter PID constants (Slot 0)
-    public static final double kMainShooterKS = 5.73487;
-    public static final double kMainShooterKV = 0.00042955;
+    public static final double kMainShooterKS = 5.5;
+    public static final double kMainShooterKV = 0.015;
     public static final double kMainShooterKA = 0.0;
-    public static final double kMainShooterKP = 4.3;
+    public static final double kMainShooterKP = 5.4;
     public static final double kMainShooterKI = 0.0;
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 1.34;
-    public static final double kRollerKV = 0.000185;
+    public static final double kRollerKS = 4.3;
+    public static final double kRollerKV = 0.028;
     public static final double kRollerKA = 0.0;
-    public static final double kRollerKP = 1.05;
+    public static final double kRollerKP = 4.8;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
 
@@ -143,30 +147,33 @@ public final class Constants {
     // Passing mode speeds (RPM)
     // Used for passing game pieces to teammates from across the field
     public static final double kPassingMainShooterRPM = 1500;
-    public static final double kPassingRollerRPM = 5500;
+    public static final double kPassingRollerRPM = 3666.7;
 
     // SOTF (Shooting On The Fly) constants
     // Total latency compensation in seconds (camera + motor lag + ball flight through shooter)
     // TODO: Tune this value - start at 0.1s, increase if shots land behind target
-    public static final double kSOTFLatencyCompensation = 0.075;
+    public static final double kSOTFLatencyCompensation = 0.0;
 
     public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
     static {
-      shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 250.0, 1.06));
-      shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 250.0));
-      shootingDataPoints.add(new ShootingDataPoint(1.77, 2500.0, 280.0));
-      shootingDataPoints.add(new ShootingDataPoint(1.93, 2700.0, 250.0));
-      shootingDataPoints.add(new ShootingDataPoint(2.30, 2700.0, 550.0, 1.20));
-      shootingDataPoints.add(new ShootingDataPoint(2.40, 2700.0, 600.0));
-      shootingDataPoints.add(new ShootingDataPoint(2.41, 1600.0, 3205.3));
-      shootingDataPoints.add(new ShootingDataPoint(2.49, 1600.0, 3400.0));
-      shootingDataPoints.add(new ShootingDataPoint(2.82, 1600.0, 3700.0, 1.22));
-      shootingDataPoints.add(new ShootingDataPoint(3.24, 1600.0, 4100.0));
-      shootingDataPoints.add(new ShootingDataPoint(3.55, 1500.0, 4300.0, 1.16));
-      shootingDataPoints.add(new ShootingDataPoint(3.90, 1700.0, 4350.0));
-      shootingDataPoints.add(new ShootingDataPoint(4.95, 1500.0, 5300.0, 1.58));
-      shootingDataPoints.add(new ShootingDataPoint(5.40, 1700.0, 5500.0, 1.63));
+      // Top roller RPMs adjusted for 1.5x upduction (27T motor / 18T roller)
+      // Motor RPM = old roller RPM / 1.5
+
+      shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 166.7, 1.06));
+      shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(1.77, 2500.0, 186.7));
+      shootingDataPoints.add(new ShootingDataPoint(1.93, 2700.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(2.30, 2700.0, 366.7, 1.20));
+      shootingDataPoints.add(new ShootingDataPoint(2.40, 2700.0, 400.0));
+      shootingDataPoints.add(new ShootingDataPoint(2.41, 1600.0, 2136.9));
+      shootingDataPoints.add(new ShootingDataPoint(2.49, 1600.0, 2266.7));
+      shootingDataPoints.add(new ShootingDataPoint(2.82, 1600.0, 2466.7, 1.22));
+      shootingDataPoints.add(new ShootingDataPoint(3.24, 1600.0, 2733.3));
+      shootingDataPoints.add(new ShootingDataPoint(3.55, 1500.0, 2866.7, 1.16));
+      shootingDataPoints.add(new ShootingDataPoint(3.90, 1700.0, 2900.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.95, 1500.0, 3533.3, 1.58));
+      shootingDataPoints.add(new ShootingDataPoint(5.40, 1700.0, 3666.7, 1.63));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
@@ -213,7 +220,7 @@ public final class Constants {
     public static final int ROLLER_MOTOR_ID = 21;
 
     public static final int RACK_SUPPLY_LIMIT = 40;
-    public static final int RACK_STATOR_LIMIT = 60;
+    public static final int RACK_STATOR_LIMIT = 50;
     public static final int ROLLER_SUPPLY_LIMIT = 40;
     public static final int ROLLER_STATOR_LIMIT = 80;
 
@@ -242,13 +249,13 @@ public final class Constants {
     public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
 
     // Rack PID constants (Slot 0)
-    public static final double kRackKS = 0.395;
+    public static final double kRackKS = 5.0;
     public static final double kRackKG = 0.0;
     public static final double kRackKV = 0.0;
     public static final double kRackKA = 0.0;
-    public static final double kRackKP = 64.0;
+    public static final double kRackKP = 3000.0;
     public static final double kRackKI = 0.0;
-    public static final double kRackKD = 0.0;
+    public static final double kRackKD = 28.0;
     public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
@@ -310,15 +317,26 @@ public final class Constants {
     // Target height (hub opening height in meters)
     public static final double kTargetHeight = Units.feetToMeters(6.0);
 
-    // Robot frame dimensions
-    public static final double kHalfRobotLength = Units.inchesToMeters(13.25);
+    // Distance from robot center to front of bumper (includes 3.4375" bumper per side)
+    public static final double kCenterToBumperFront = SwerveConstants.kRobotLength / 2.0;
 
-    // Hub geometry (front face to aim point center)
+    // Hub geometry (front face to center)
     public static final double kHubFrontToCenter = Units.inchesToMeters(23.51378);
 
-    // Lookup table distance offset
-    // Our table was measured from front of robot to front of hub,
-    // so we add this to convert to shooter-to-goal-center distance
-    public static final double kLookupTableDistanceOffset = kHalfRobotLength + kHubFrontToCenter;
+    // Offset to convert robot-center-to-hub-center distance into the lookup table
+    // reference frame (front-of-bumper to front-of-hub).
+    // tableKey = robotCenterToHubCenter - kLookupTableDistanceOffset - allianceFudge
+    public static final double kLookupTableDistanceOffset =
+        kCenterToBumperFront + kHubFrontToCenter;
+
+    // Per-alliance calibration fudge factors subtracted from the lookup distance.
+    // Tune these at competition if shots are consistently long/short on one side.
+    public static final double kBlueLookupOffsetMeters = 0.0;
+    public static final double kRedLookupOffsetMeters = 0.0;
+
+    /** Returns the lookup fudge factor for the current alliance. */
+    public static double getAllianceLookupOffset() {
+      return ifOnBlue() ? kBlueLookupOffsetMeters : kRedLookupOffsetMeters;
+    }
   }
 }
