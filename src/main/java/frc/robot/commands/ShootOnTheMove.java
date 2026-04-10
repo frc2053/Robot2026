@@ -19,6 +19,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
+import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.subsystems.Shooter;
@@ -106,7 +107,10 @@ public class ShootOnTheMove extends Command {
     Translation2d virtualTarget = result.virtualTarget();
     m_sotfVirtualTargetPub.set(new Pose2d(virtualTarget, result.aimingAngle()));
     m_sotfGoalPub.set(new Pose2d(goalPosition, new Rotation2d()));
-    double staticDistance = goalPosition.getDistance(driveState.Pose.getTranslation());
+    double staticDistance =
+        goalPosition.getDistance(driveState.Pose.getTranslation())
+            - FuelConstants.kLookupTableDistanceOffset
+            - FuelConstants.getAllianceLookupOffset();
     m_sotfStaticDistancePub.set(staticDistance);
     m_sotfVirtualDistancePub.set(result.virtualDistance());
     m_sotfTimeOfFlightPub.set(result.timeOfFlight());
@@ -117,12 +121,17 @@ public class ShootOnTheMove extends Command {
     m_sotfRobotSpeedPub.set(robotSpeed);
     m_sotfAimingAngleDegPub.set(result.aimingAngle().getDegrees());
 
-    // The virtual distance is the distance to the converged virtual target —
-    // use it directly for RPM lookup from our tuned tables
-    double virtualDistance = result.virtualDistance();
+    // Convert virtual target distance to lookup table reference frame
+    // (front-of-bumper to front-of-hub)
+    double lookupDistance =
+        Math.max(
+            0,
+            result.virtualTarget().getDistance(driveState.Pose.getTranslation())
+                - FuelConstants.kLookupTableDistanceOffset
+                - FuelConstants.getAllianceLookupOffset());
 
-    double bottomSpeedRps = ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(virtualDistance) / 60.0;
-    double topRollerSpeedRps = ShooterConstants.TOP_ROLLER_SPEED_MAP.get(virtualDistance) / 60.0;
+    double bottomSpeedRps = ShooterConstants.BOTTOM_SHOOTER_SPEED_MAP.get(lookupDistance) / 60.0;
+    double topRollerSpeedRps = ShooterConstants.TOP_ROLLER_SPEED_MAP.get(lookupDistance) / 60.0;
 
     m_shooter.setTargetSpeeds(bottomSpeedRps, topRollerSpeedRps);
 

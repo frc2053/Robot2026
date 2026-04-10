@@ -185,9 +185,9 @@ public class GameState {
       m_timeUntilNotCounting = Double.MAX_VALUE;
     }
 
-    // Calculate distance to hub and time of flight for canScore
-    double distanceToHub = calculateDistanceToHub();
-    double timeOfFlight = ShooterConstants.TIME_OF_FLIGHT_MAP.get(distanceToHub);
+    // Calculate lookup distance and time of flight for canScore
+    double lookupDistance = calculateLookupDistance();
+    double timeOfFlight = ShooterConstants.TIME_OF_FLIGHT_MAP.get(lookupDistance);
 
     // Can score if the ball will arrive during a counting window
     // This handles both: shooting while counting, AND shooting early before hub activates
@@ -202,7 +202,7 @@ public class GameState {
     m_onBluePub.set(Constants.ifOnBlue());
     m_teleopTimerPub.set(m_teleopTimer.get());
     m_matchTimePub.set(DriverStation.getMatchTime());
-    m_distanceToHubPub.set(distanceToHub);
+    m_distanceToHubPub.set(lookupDistance);
     m_timeOfFlightPub.set(timeOfFlight);
     m_timeUntilCountingPub.set(m_timeUntilCounting);
     m_timeUntilNotCountingPub.set(m_timeUntilNotCounting);
@@ -281,13 +281,19 @@ public class GameState {
   }
 
   /**
-   * Calculates the distance from the robot to the hub.
+   * Calculates the lookup-table distance (front-of-bumper to front-of-hub) with alliance fudge
+   * factor.
    *
-   * @return distance in meters
+   * @return distance in meters in the lookup table reference frame
    */
-  private double calculateDistanceToHub() {
+  private double calculateLookupDistance() {
     Translation2d robotPosition = m_poseSupplier.get().getTranslation();
-    return robotPosition.getDistance(Constants.FieldSpots.getHubPosition());
+    double centerToCenter = robotPosition.getDistance(Constants.FieldSpots.getHubPosition());
+    double tableKey =
+        centerToCenter
+            - Constants.FuelConstants.kLookupTableDistanceOffset
+            - Constants.FuelConstants.getAllianceLookupOffset();
+    return Math.max(0.0, tableKey);
   }
 
   /**

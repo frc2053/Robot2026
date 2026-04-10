@@ -33,12 +33,6 @@
           "data": {
             "commands": [
               {
-                "type": "path",
-                "data": {
-                  "pathName": "Depot.1"
-                }
-              },
-              {
                 "type": "parallel",
                 "data": {
                   "commands": [
