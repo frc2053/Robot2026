@@ -57,9 +57,9 @@ public class RobotContainer {
   private final Telemetry m_logger =
       new Telemetry(SwerveConstants.translationMaxSpeed.in(MetersPerSecond));
 
-  /** Publisher for distance to goal (lookup table reference frame, in meters). */
-  private final DoublePublisher m_distanceToGoalPub =
-      NetworkTableInstance.getDefault().getDoubleTopic("Shooter/DistanceToGoal").publish();
+  /** Publisher for lookup distance (front-of-bumper to front-of-hub, in meters). */
+  private final DoublePublisher m_lookupDistancePub =
+      NetworkTableInstance.getDefault().getDoubleTopic("Shooter/LookupDistance").publish();
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
@@ -169,8 +169,8 @@ public class RobotContainer {
             m_shooter
                 .spinUpForDistanceCommand(
                     () -> {
-                      double lookupDistance = m_drivetrain.getLookupDistanceToGoal();
-                      m_distanceToGoalPub.set(lookupDistance);
+                      double lookupDistance = m_drivetrain.getLookupDistance();
+                      m_lookupDistancePub.set(lookupDistance);
                       return lookupDistance;
                     })
                 .alongWith(
@@ -343,7 +343,7 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "SpinUp",
         m_shooter
-            .spinUpForDistanceCommand(m_drivetrain::getLookupDistanceToGoal)
+            .spinUpForDistanceCommand(m_drivetrain::getLookupDistance)
             .until(m_shooter.atSpeedTrigger()));
     NamedCommands.registerCommand(
         "AimAndSpinUp",

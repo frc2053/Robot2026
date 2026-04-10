@@ -570,15 +570,19 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
   }
 
   /**
-   * Gets the distance from the shooter to the goal center for lookup table purposes.
+   * Gets the distance in the lookup table reference frame (front-of-bumper to front-of-hub), with
+   * per-alliance fudge factor applied.
    *
    * @return the lookup table distance in meters.
    */
-  public double getLookupDistanceToGoal() {
+  public double getLookupDistance() {
     Translation2d goalPosition = Constants.FieldSpots.getHubPosition();
-    // idk why we are shooting far only at comp, hack to adjust distance lookup table
-    double realDistance = getState().Pose.getTranslation().getDistance(goalPosition) - 0.610;
-    return Math.max(0.0, realDistance);
+    double centerToCenter = getState().Pose.getTranslation().getDistance(goalPosition);
+    double tableKey =
+        centerToCenter
+            - FuelConstants.kLookupTableDistanceOffset
+            - FuelConstants.getAllianceLookupOffset();
+    return Math.max(0.0, tableKey);
   }
 
   /**

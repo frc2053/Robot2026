@@ -315,15 +315,26 @@ public final class Constants {
     // Target height (hub opening height in meters)
     public static final double kTargetHeight = Units.feetToMeters(6.0);
 
-    // Robot frame dimensions
-    public static final double kHalfRobotLength = Units.inchesToMeters(13.25);
+    // Distance from robot center to front of bumper (includes 3.4375" bumper per side)
+    public static final double kCenterToBumperFront = SwerveConstants.kRobotLength / 2.0;
 
-    // Hub geometry (front face to aim point center)
+    // Hub geometry (front face to center)
     public static final double kHubFrontToCenter = Units.inchesToMeters(23.51378);
 
-    // Lookup table distance offset
-    // Our table was measured from front of robot to front of hub,
-    // so we add this to convert to shooter-to-goal-center distance
-    public static final double kLookupTableDistanceOffset = kHalfRobotLength + kHubFrontToCenter;
+    // Offset to convert robot-center-to-hub-center distance into the lookup table
+    // reference frame (front-of-bumper to front-of-hub).
+    // tableKey = robotCenterToHubCenter - kLookupTableDistanceOffset - allianceFudge
+    public static final double kLookupTableDistanceOffset =
+        kCenterToBumperFront + kHubFrontToCenter;
+
+    // Per-alliance calibration fudge factors subtracted from the lookup distance.
+    // Tune these at competition if shots are consistently long/short on one side.
+    public static final double kBlueLookupOffsetMeters = 0.0;
+    public static final double kRedLookupOffsetMeters = 0.0;
+
+    /** Returns the lookup fudge factor for the current alliance. */
+    public static double getAllianceLookupOffset() {
+      return ifOnBlue() ? kBlueLookupOffsetMeters : kRedLookupOffsetMeters;
+    }
   }
 }
