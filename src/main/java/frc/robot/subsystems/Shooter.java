@@ -16,9 +16,7 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.controls.NeutralOut;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
@@ -140,10 +138,9 @@ public class Shooter extends SubsystemBase {
   // Public trigger for when shooter is at speed
   private final Trigger m_atSpeedTrigger;
 
-  // Control requests
-  private final VelocityTorqueCurrentFOC m_mainShooterVelocityRequest =
-      new VelocityTorqueCurrentFOC(0).withSlot(0);
-  // Roller uses VelocityVoltage for better disturbance rejection with voltage-based PID
+  // Control requests - both use VelocityVoltage for better disturbance rejection
+  private final VelocityVoltage m_mainShooterVelocityRequest =
+      new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final VelocityVoltage m_rollerVelocityRequest =
       new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
@@ -152,7 +149,8 @@ public class Shooter extends SubsystemBase {
   // SysId voltage request (separate from idle voltage to avoid conflicts)
   private final VoltageOut m_sysIdVoltageRequest = new VoltageOut(0).withEnableFOC(true);
 
-  // SysId routine for roller characterization using Phoenix 6 Signal Logger
+  // SysId routines for characterization using Phoenix 6 Signal Logger
+  private final SysIdRoutine m_mainShooterSysIdRoutine;
   private final SysIdRoutine m_rollerSysIdRoutine;
 
   // Tuning mode NetworkTables controls
@@ -217,7 +215,8 @@ public class Shooter extends SubsystemBase {
     m_shooterMotorLeftRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_LEFT_ROLLER_ID);
     m_shooterMotorRightRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_RIGHT_ROLLER_ID);
 
-    // Configure main shooter motors first
+    // Configure main shooter motors with VelocityVoltage control
+    // No TorqueCurrentConfigs needed since we're using voltage-based velocity control
     TalonFXConfiguration mainShooterConfig =
         new TalonFXConfiguration()
             .withMotorOutput(
@@ -230,10 +229,6 @@ public class Shooter extends SubsystemBase {
                     .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
-            .withTorqueCurrent(
-                new TorqueCurrentConfigs()
-                    .withPeakForwardTorqueCurrent(ShooterConstants.SHOOTER_STATOR_LIMIT)
-                    .withPeakReverseTorqueCurrent(0))
             .withSlot0(
                 new Slot0Configs()
                     .withKS(ShooterConstants.kMainShooterKS)
@@ -524,13 +519,32 @@ public class Shooter extends SubsystemBase {
     m_rollerKDPub.set(ShooterConstants.kRollerKD);
     m_lastRollerKD = ShooterConstants.kRollerKD;
 
+    // Initialize SysId routine for main shooter characterization
+    // Uses Phoenix 6 Signal Logger for hoot file logging
+    m_mainShooterSysIdRoutine =
+        new SysIdRoutine(
+            new SysIdRoutine.Config(
+                null, // Use default ramp rate (1 V/s)
+                Volts.of(10), // Dynamic step voltage (flywheels don't brownout easily)
+                null, // Use default timeout (10 s)
+                // Log state with Phoenix SignalLogger class
+                state -> SignalLogger.writeString("sysid-main-shooter-state", state.toString())),
+            new SysIdRoutine.Mechanism(
+                volts -> {
+                  // Apply voltage to both main shooter motors independently
+                  m_shooterMotorLeft.setControl(m_sysIdVoltageRequest.withOutput(volts.in(Volts)));
+                  m_shooterMotorRight.setControl(m_sysIdVoltageRequest.withOutput(volts.in(Volts)));
+                },
+                null, // No log callback needed - Phoenix SignalLogger handles it
+                this));
+
     // Initialize SysId routine for roller characterization
     // Uses Phoenix 6 Signal Logger for hoot file logging
     m_rollerSysIdRoutine =
         new SysIdRoutine(
             new SysIdRoutine.Config(
                 null, // Use default ramp rate (1 V/s)
-                Volts.of(10), // Default dynamic step voltage (flywheels don't brownout easily)
+                Volts.of(10), // Dynamic step voltage (flywheels don't brownout easily)
                 null, // Use default timeout (10 s)
                 // Log state with Phoenix SignalLogger class
                 state -> SignalLogger.writeString("sysid-roller-state", state.toString())),
@@ -1027,5 +1041,25 @@ public class Shooter extends SubsystemBase {
    */
   public Command rollerSysIdDynamic(SysIdRoutine.Direction direction) {
     return m_rollerSysIdRoutine.dynamic(direction);
+  }
+
+  /**
+   * Returns a command for main shooter SysId quasistatic characterization.
+   *
+   * @param direction the direction to run (forward or reverse).
+   * @return the quasistatic SysId command.
+   */
+  public Command mainShooterSysIdQuasistatic(SysIdRoutine.Direction direction) {
+    return m_mainShooterSysIdRoutine.quasistatic(direction);
+  }
+
+  /**
+   * Returns a command for main shooter SysId dynamic characterization.
+   *
+   * @param direction the direction to run (forward or reverse).
+   * @return the dynamic SysId command.
+   */
+  public Command mainShooterSysIdDynamic(SysIdRoutine.Direction direction) {
+    return m_mainShooterSysIdRoutine.dynamic(direction);
   }
 }
