@@ -30,7 +30,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.commands.ShootOnTheMove;
 import frc.robot.generated.TunerConstants;
@@ -63,7 +62,6 @@ public class RobotContainer {
       NetworkTableInstance.getDefault().getDoubleTopic("Shooter/LookupDistance").publish();
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
-  private final CommandXboxController m_operator = new CommandXboxController(1);
 
   public final Swerve m_drivetrain = TunerConstants.createDrivetrain();
   public final Shooter m_shooter = new Shooter();
@@ -236,16 +234,6 @@ public class RobotContainer {
     // Reverse commands
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
-
-    m_operator.y().whileTrue(m_shooter.mainShooterSysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    m_operator.a().whileTrue(m_shooter.mainShooterSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-    m_operator.b().whileTrue(m_shooter.mainShooterSysIdDynamic(SysIdRoutine.Direction.kForward));
-    m_operator.x().whileTrue(m_shooter.mainShooterSysIdDynamic(SysIdRoutine.Direction.kReverse));
-
-    // m_joystick.y().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    // m_joystick.a().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-    // m_joystick.b().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kForward));
-    // m_joystick.x().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // GoToPose test: 10 ft forward, 4 ft right from current pose
     m_joystick
