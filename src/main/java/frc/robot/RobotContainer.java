@@ -243,6 +243,11 @@ public class RobotContainer {
     m_operator.b().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kForward));
     m_operator.x().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kReverse));
 
+    // m_joystick.y().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    // m_joystick.a().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+    // m_joystick.b().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kForward));
+    // m_joystick.x().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kReverse));
+
     // GoToPose test: 10 ft forward, 4 ft right from current pose
     m_joystick
         .start()
