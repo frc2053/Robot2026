@@ -84,9 +84,6 @@ public class RobotContainer {
 
   private final PowerDistribution m_powerDistribution = new PowerDistribution();
 
-  // Flag set by AimAndSpinUp when shooter reaches target speed
-  private boolean m_autoReadyToShoot;
-
   // Dashboard toggle for shooting on the fly mode
   private final BooleanSubscriber m_sotfEnabledSub;
   private final Trigger m_sotfEnabledTrigger;
@@ -209,8 +206,10 @@ public class RobotContainer {
     // Feed when shooter is at speed AND right trigger is held
     actuallyShoot.whileTrue(shootCommand());
     // Wiggle intake to feed balls while shooting, but only when not actively intaking
+    // Also wiggles during auto when shooter is at speed
     actuallyShoot
         .and(m_joystick.leftTrigger().negate())
+        .or(RobotModeTriggers.autonomous().and(m_shooter.atSpeedTrigger()))
         .whileTrue(m_intake.feedingWiggleRackCommand());
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
@@ -359,21 +358,17 @@ public class RobotContainer {
             .until(m_shooter.atSpeedTrigger()));
     NamedCommands.registerCommand(
         "AimAndSpinUp",
-        Commands.runOnce(() -> m_autoReadyToShoot = false)
-            .andThen(
-                m_drivetrain
-                    .aimAtHubDuringPath()
-                    .alongWith(
-                        m_shooter.spinUpForSOTFCommand(
-                            () -> m_drivetrain.getState().Pose,
-                            this::fieldRelativeSpeeds,
-                            this::fieldRelativeAccel,
-                            Constants.FieldSpots::getHubPosition),
-                        Commands.run(
-                            () -> m_autoReadyToShoot = m_shooter.atSpeedTrigger().getAsBoolean())))
-            .finallyDo(() -> m_autoReadyToShoot = false));
+        m_drivetrain
+            .aimAtHubDuringPath()
+            .alongWith(
+                m_shooter.spinUpForSOTFCommand(
+                    () -> m_drivetrain.getState().Pose,
+                    this::fieldRelativeSpeeds,
+                    this::fieldRelativeAccel,
+                    Constants.FieldSpots::getHubPosition)));
     NamedCommands.registerCommand(
-        "ShootWhenReady", Commands.waitUntil(() -> m_autoReadyToShoot).andThen(shootCommand()));
+        "ShootWhenReady",
+        Commands.waitUntil(m_shooter.atSpeedTrigger()).andThen(shootCommand()));
   }
 
   public Command getAutonomousCommand() {
