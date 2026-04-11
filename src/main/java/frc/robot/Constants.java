@@ -101,7 +101,7 @@ public final class Constants {
     public static final int SHOOTER_MOTOR_LEFT_ID = 15;
     public static final int SHOOTER_MOTOR_RIGHT_ID = 16;
     public static final int SHOOTER_MOTOR_LEFT_ROLLER_ID = 17;
-    public static final int SHOOTER_MOTOR_RIGHT_ROLLER_ID  = 30;
+    public static final int SHOOTER_MOTOR_RIGHT_ROLLER_ID = 30;
 
     public static final int SHOOTER_SUPPLY_LIMIT = 60;
     public static final int SHOOTER_STATOR_LIMIT = 120;
