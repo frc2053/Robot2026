@@ -121,10 +121,10 @@ public final class Constants {
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 4.3;
-    public static final double kRollerKV = 0.028;
-    public static final double kRollerKA = 0.0;
-    public static final double kRollerKP = 4.8;
+    public static final double kRollerKS = 0.1549;
+    public static final double kRollerKV = 0.12157;
+    public static final double kRollerKA = 0.0070367;
+    public static final double kRollerKP = 0.2;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
 
@@ -220,7 +220,7 @@ public final class Constants {
     public static final int ROLLER_MOTOR_ID = 21;
 
     public static final int RACK_SUPPLY_LIMIT = 40;
-    public static final int RACK_STATOR_LIMIT = 50;
+    public static final int RACK_STATOR_LIMIT = 30;
     public static final int ROLLER_SUPPLY_LIMIT = 40;
     public static final int ROLLER_STATOR_LIMIT = 80;
 
@@ -255,7 +255,7 @@ public final class Constants {
     public static final double kRackKA = 0.0;
     public static final double kRackKP = 3000.0;
     public static final double kRackKI = 0.0;
-    public static final double kRackKD = 28.0;
+    public static final double kRackKD = 20.0;
     public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
 
