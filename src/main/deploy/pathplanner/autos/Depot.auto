@@ -29,29 +29,21 @@
           }
         },
         {
-          "type": "parallel",
+          "type": "named",
           "data": {
-            "commands": [
-              {
-                "type": "parallel",
-                "data": {
-                  "commands": [
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "AimAndSpinUp"
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "ShootWhenReady"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
+            "name": "AlignToHub"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "SpinUp"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shoot"
           }
         }
       ]
