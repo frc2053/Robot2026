@@ -238,10 +238,10 @@ public class RobotContainer {
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
-    m_operator.y().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    m_operator.a().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-    m_operator.b().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kForward));
-    m_operator.x().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kReverse));
+    m_operator.y().whileTrue(m_shooter.mainShooterSysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    m_operator.a().whileTrue(m_shooter.mainShooterSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+    m_operator.b().whileTrue(m_shooter.mainShooterSysIdDynamic(SysIdRoutine.Direction.kForward));
+    m_operator.x().whileTrue(m_shooter.mainShooterSysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // m_joystick.y().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kForward));
     // m_joystick.a().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
