@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -18,6 +19,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -49,6 +51,7 @@ import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.FuelConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.util.ShootingOnTheFly;
@@ -61,8 +64,6 @@ public class Shooter extends SubsystemBase {
   private final TalonFX m_shooterMotorRight;
   private final TalonFX m_shooterMotorLeftRoller;
   private final TalonFX m_shooterMotorRightRoller;
-
-
 
   private final StatusSignal<AngularVelocity> m_leftMotorVel;
   private final StatusSignal<AngularVelocity> m_rightMotorVel;
@@ -100,26 +101,26 @@ public class Shooter extends SubsystemBase {
   private final DCMotorSim m_rollerSim;
 
   // NetworkTables publishers for logging
-private final DoublePublisher m_leftMotorVelPub;
-private final DoublePublisher m_rightMotorVelPub;
-private final DoublePublisher m_rollerLeftVelPub;
-private final DoublePublisher m_rollerRightVelPub; // new for right roller
-private final DoublePublisher m_leftMotorVoltagePub;
-private final DoublePublisher m_rightMotorVoltagePub;
-private final DoublePublisher m_rollerLeftVoltagePub;
-private final DoublePublisher m_rollerRightVoltagePub; // new for right roller
-private final DoublePublisher m_leftMotorStatorCurrentPub;
-private final DoublePublisher m_rightMotorStatorCurrentPub;
-private final DoublePublisher m_rollerLeftStatorCurrentPub;
-private final DoublePublisher m_rollerRightStatorCurrentPub; // new for right roller
-private final DoublePublisher m_leftMotorSupplyCurrentPub;
-private final DoublePublisher m_rightMotorSupplyCurrentPub;
-private final DoublePublisher m_rollerLeftSupplyCurrentPub;
-private final DoublePublisher m_rollerRightSupplyCurrentPub; // new for right roller
-private final StringPublisher m_currentCommandPub;
-private final BooleanPublisher m_atSpeedPub;
-private final DoublePublisher m_mainShooterSetpointPub;
-private final DoublePublisher m_rollerSetpointPub;
+  private final DoublePublisher m_leftMotorVelPub;
+  private final DoublePublisher m_rightMotorVelPub;
+  private final DoublePublisher m_rollerLeftVelPub;
+  private final DoublePublisher m_rollerRightVelPub; // new for right roller
+  private final DoublePublisher m_leftMotorVoltagePub;
+  private final DoublePublisher m_rightMotorVoltagePub;
+  private final DoublePublisher m_rollerLeftVoltagePub;
+  private final DoublePublisher m_rollerRightVoltagePub; // new for right roller
+  private final DoublePublisher m_leftMotorStatorCurrentPub;
+  private final DoublePublisher m_rightMotorStatorCurrentPub;
+  private final DoublePublisher m_rollerLeftStatorCurrentPub;
+  private final DoublePublisher m_rollerRightStatorCurrentPub; // new for right roller
+  private final DoublePublisher m_leftMotorSupplyCurrentPub;
+  private final DoublePublisher m_rightMotorSupplyCurrentPub;
+  private final DoublePublisher m_rollerLeftSupplyCurrentPub;
+  private final DoublePublisher m_rollerRightSupplyCurrentPub; // new for right roller
+  private final StringPublisher m_currentCommandPub;
+  private final BooleanPublisher m_atSpeedPub;
+  private final DoublePublisher m_mainShooterSetpointPub;
+  private final DoublePublisher m_rollerSetpointPub;
 
   // SOTF debug publishers
   private final StructPublisher<Pose2d> m_sotfVirtualTargetPub;
@@ -142,10 +143,17 @@ private final DoublePublisher m_rollerSetpointPub;
   // Control requests
   private final VelocityTorqueCurrentFOC m_mainShooterVelocityRequest =
       new VelocityTorqueCurrentFOC(0).withSlot(0);
-  private final VelocityTorqueCurrentFOC m_rollerVelocityRequest =
-      new VelocityTorqueCurrentFOC(0).withSlot(0);
+  // Roller uses VelocityVoltage for better disturbance rejection with voltage-based PID
+  private final VelocityVoltage m_rollerVelocityRequest =
+      new VelocityVoltage(0).withSlot(0).withEnableFOC(true);
   private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
   private final NeutralOut m_neutralRequest = new NeutralOut();
+
+  // SysId voltage request (separate from idle voltage to avoid conflicts)
+  private final VoltageOut m_sysIdVoltageRequest = new VoltageOut(0).withEnableFOC(true);
+
+  // SysId routine for roller characterization using Phoenix 6 Signal Logger
+  private final SysIdRoutine m_rollerSysIdRoutine;
 
   // Tuning mode NetworkTables controls
   private final BooleanSubscriber m_tuningEnabledSub;
@@ -209,6 +217,7 @@ private final DoublePublisher m_rollerSetpointPub;
     m_shooterMotorLeftRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_LEFT_ROLLER_ID);
     m_shooterMotorRightRoller = new TalonFX(ShooterConstants.SHOOTER_MOTOR_RIGHT_ROLLER_ID);
 
+    // Configure main shooter motors first
     TalonFXConfiguration mainShooterConfig =
         new TalonFXConfiguration()
             .withMotorOutput(
@@ -234,44 +243,6 @@ private final DoublePublisher m_rollerSetpointPub;
                     .withKI(ShooterConstants.kMainShooterKI)
                     .withKD(ShooterConstants.kMainShooterKD));
 
-    // Roller config with different PID gains and inverted direction (clockwise positive)
-    TalonFXConfiguration rollerConfig =
-        mainShooterConfig
-            .clone()
-            .withMotorOutput(
-                new MotorOutputConfigs()
-                    .withNeutralMode(NeutralModeValue.Coast)
-                    .withInverted(InvertedValue.CounterClockwise_Positive))
-            .withCurrentLimits(
-                new CurrentLimitsConfigs()
-                    .withStatorCurrentLimitEnable(true)
-                    .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
-                    .withSupplyCurrentLimitEnable(true)
-                    .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
-            .withTorqueCurrent(
-                new TorqueCurrentConfigs()
-                    .withPeakForwardTorqueCurrent(ShooterConstants.SHOOTER_STATOR_LIMIT)
-                    .withPeakReverseTorqueCurrent(0))
-            .withSlot0(
-                new Slot0Configs()
-                    .withKS(ShooterConstants.kRollerKS)
-                    .withKV(ShooterConstants.kRollerKV)
-                    .withKA(ShooterConstants.kRollerKA)
-                    .withKP(ShooterConstants.kRollerKP)
-                    .withKI(ShooterConstants.kRollerKI)
-                    .withKD(ShooterConstants.kRollerKD));
-
-    StatusCode rollerLeftConfigResult = m_shooterMotorLeftRoller.getConfigurator().apply(rollerConfig);
-    if (!rollerLeftConfigResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
-    }
-
-    rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-    StatusCode rollerRightConfigResult = m_shooterMotorRightRoller.getConfigurator().apply(rollerConfig);
-    if (!rollerRightConfigResult.isOK()) {
-      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
-    }
-
     StatusCode shooterLeftConfigResult =
         m_shooterMotorLeft.getConfigurator().apply(mainShooterConfig);
     if (!shooterLeftConfigResult.isOK()) {
@@ -284,6 +255,42 @@ private final DoublePublisher m_rollerSetpointPub;
         m_shooterMotorRight.getConfigurator().apply(mainShooterConfig);
     if (!shooterRightConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to right shooter motor!");
+    }
+
+    // Roller config with VelocityVoltage control (allows both positive and negative voltage output)
+    // No TorqueCurrentConfigs needed since we're using voltage-based velocity control
+    TalonFXConfiguration rollerConfig =
+        new TalonFXConfiguration()
+            .withMotorOutput(
+                new MotorOutputConfigs()
+                    .withNeutralMode(NeutralModeValue.Coast)
+                    .withInverted(InvertedValue.CounterClockwise_Positive))
+            .withCurrentLimits(
+                new CurrentLimitsConfigs()
+                    .withStatorCurrentLimitEnable(true)
+                    .withStatorCurrentLimit(ShooterConstants.SHOOTER_STATOR_LIMIT)
+                    .withSupplyCurrentLimitEnable(true)
+                    .withSupplyCurrentLimit(ShooterConstants.SHOOTER_SUPPLY_LIMIT))
+            .withSlot0(
+                new Slot0Configs()
+                    .withKS(ShooterConstants.kRollerKS)
+                    .withKV(ShooterConstants.kRollerKV)
+                    .withKA(ShooterConstants.kRollerKA)
+                    .withKP(ShooterConstants.kRollerKP)
+                    .withKI(ShooterConstants.kRollerKI)
+                    .withKD(ShooterConstants.kRollerKD));
+
+    StatusCode rollerLeftConfigResult =
+        m_shooterMotorLeftRoller.getConfigurator().apply(rollerConfig);
+    if (!rollerLeftConfigResult.isOK()) {
+      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
+    }
+
+    rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+    StatusCode rollerRightConfigResult =
+        m_shooterMotorRightRoller.getConfigurator().apply(rollerConfig);
+    if (!rollerRightConfigResult.isOK()) {
+      DataLogManager.log("ERROR! Not able to apply config to roller shooter motor!");
     }
     m_leftMotorVel = m_shooterMotorLeft.getVelocity();
     m_rightMotorVel = m_shooterMotorRight.getVelocity();
@@ -343,7 +350,10 @@ private final DoublePublisher m_rollerSetpointPub;
     }
     StatusCode optiResult =
         ParentDevice.optimizeBusUtilizationForAll(
-            m_shooterMotorLeft, m_shooterMotorRight, m_shooterMotorLeftRoller, m_shooterMotorRightRoller);
+            m_shooterMotorLeft,
+            m_shooterMotorRight,
+            m_shooterMotorLeftRoller,
+            m_shooterMotorRightRoller);
     if (!optiResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply optimization for shooter subsystem!");
     }
@@ -363,12 +373,14 @@ private final DoublePublisher m_rollerSetpointPub;
     m_leftMotorStatorCurrentPub = shooterTable.getDoubleTopic("LeftMotorStatorCurrent").publish();
     m_rightMotorStatorCurrentPub = shooterTable.getDoubleTopic("RightMotorStatorCurrent").publish();
     m_rollerLeftStatorCurrentPub = shooterTable.getDoubleTopic("RollerLeftStatorCurrent").publish();
-    m_rollerRightStatorCurrentPub = shooterTable.getDoubleTopic("RollerRightStatorCurrent").publish();
+    m_rollerRightStatorCurrentPub =
+        shooterTable.getDoubleTopic("RollerRightStatorCurrent").publish();
 
     m_leftMotorSupplyCurrentPub = shooterTable.getDoubleTopic("LeftMotorSupplyCurrent").publish();
     m_rightMotorSupplyCurrentPub = shooterTable.getDoubleTopic("RightMotorSupplyCurrent").publish();
     m_rollerLeftSupplyCurrentPub = shooterTable.getDoubleTopic("RollerLeftSupplyCurrent").publish();
-    m_rollerRightSupplyCurrentPub = shooterTable.getDoubleTopic("RollerRightSupplyCurrent").publish();
+    m_rollerRightSupplyCurrentPub =
+        shooterTable.getDoubleTopic("RollerRightSupplyCurrent").publish();
     m_currentCommandPub = shooterTable.getStringTopic("CurrentCommand").publish();
     m_atSpeedPub = shooterTable.getBooleanTopic("AtSpeed").publish();
     m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPM").publish();
@@ -390,7 +402,6 @@ private final DoublePublisher m_rollerSetpointPub;
     m_rollerLeftSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
     m_rollerRightSimState.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
-
     // Main shooter flywheel sim (powered by left and right motors)
     // Using 2 Kraken X60 motors
     m_mainShooterSim =
@@ -401,14 +412,14 @@ private final DoublePublisher m_rollerSetpointPub;
                 ShooterConstants.MAIN_SHOOTER_GEAR_RATIO),
             DCMotor.getKrakenX60Foc(2));
 
-    // Roller flywheel sim (powered by single motor)
+    // Roller flywheel sim (powered by 2 Kraken X60 motors)
     m_rollerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getFalcon500Foc(2),
+                DCMotor.getKrakenX60Foc(2),
                 ShooterConstants.ROLLER_MOI,
                 ShooterConstants.ROLLER_GEAR_RATIO),
-            DCMotor.getFalcon500Foc(2));
+            DCMotor.getKrakenX60Foc(2));
 
     // Initialize SOTF debug publishers
     NetworkTable sotfTable = shooterTable.getSubTable("SOTF");
@@ -512,6 +523,27 @@ private final DoublePublisher m_rollerSetpointPub;
     m_rollerKDSub = rollerGains.getDoubleTopic("kD").subscribe(ShooterConstants.kRollerKD);
     m_rollerKDPub.set(ShooterConstants.kRollerKD);
     m_lastRollerKD = ShooterConstants.kRollerKD;
+
+    // Initialize SysId routine for roller characterization
+    // Uses Phoenix 6 Signal Logger for hoot file logging
+    m_rollerSysIdRoutine =
+        new SysIdRoutine(
+            new SysIdRoutine.Config(
+                null, // Use default ramp rate (1 V/s)
+                Volts.of(10), // Default dynamic step voltage (flywheels don't brownout easily)
+                null, // Use default timeout (10 s)
+                // Log state with Phoenix SignalLogger class
+                state -> SignalLogger.writeString("sysid-roller-state", state.toString())),
+            new SysIdRoutine.Mechanism(
+                volts -> {
+                  // Apply voltage to both roller motors independently
+                  m_shooterMotorLeftRoller.setControl(
+                      m_sysIdVoltageRequest.withOutput(volts.in(Volts)));
+                  m_shooterMotorRightRoller.setControl(
+                      m_sysIdVoltageRequest.withOutput(volts.in(Volts)));
+                },
+                null, // No log callback needed - Phoenix SignalLogger handles it
+                this));
   }
 
   @Override
@@ -700,7 +732,7 @@ private final DoublePublisher m_rollerSetpointPub;
         m_rollerSim.getAngularPosition().times(ShooterConstants.ROLLER_GEAR_RATIO));
     m_rollerLeftSimState.setRotorVelocity(
         m_rollerSim.getAngularVelocity().times(ShooterConstants.ROLLER_GEAR_RATIO));
-    
+
     m_rollerRightSimState.setRawRotorPosition(
         m_rollerSim.getAngularPosition().times(-ShooterConstants.ROLLER_GEAR_RATIO));
     m_rollerRightSimState.setRotorVelocity(
@@ -718,7 +750,9 @@ private final DoublePublisher m_rollerSetpointPub;
     double rollerRightVel = m_rollerRightVel.getValue().in(RotationsPerSecond);
     double tolerance = m_velocityToleranceRpsSub.get();
     boolean mainAtSpeed = Math.abs(mainShooterVel - m_targetMainShooterRps) < tolerance;
-    boolean rollerAtSpeed = Math.abs(rollerVel - m_targetRollerRps) < tolerance && Math.abs(rollerRightVel - m_targetRollerRps) < tolerance;
+    boolean rollerAtSpeed =
+        Math.abs(rollerVel - m_targetRollerRps) < tolerance
+            && Math.abs(rollerRightVel - m_targetRollerRps) < tolerance;
     return mainAtSpeed && rollerAtSpeed;
   }
 
@@ -779,11 +813,9 @@ private final DoublePublisher m_rollerSetpointPub;
 
               // Command the top roller
               m_shooterMotorLeftRoller.setControl(
-                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));              
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
               m_shooterMotorRightRoller.setControl(
-                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));       
-            
-
+                  m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
             })
         .withName("SpinUpForDistance");
   }
@@ -915,7 +947,6 @@ private final DoublePublisher m_rollerSetpointPub;
                   m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
               m_shooterMotorRightRoller.setControl(
                   m_rollerVelocityRequest.withVelocity(topRollerSpeedRps));
-
             })
         .withName("SpinUpForSOTF");
   }
@@ -976,5 +1007,25 @@ private final DoublePublisher m_rollerSetpointPub;
               m_shooterMotorRightRoller.setControl(m_neutralRequest);
             })
         .withName("ShooterTuning");
+  }
+
+  /**
+   * Returns a command for roller SysId quasistatic characterization.
+   *
+   * @param direction the direction to run (forward or reverse)
+   * @return the quasistatic SysId command
+   */
+  public Command rollerSysIdQuasistatic(SysIdRoutine.Direction direction) {
+    return m_rollerSysIdRoutine.quasistatic(direction);
+  }
+
+  /**
+   * Returns a command for roller SysId dynamic characterization.
+   *
+   * @param direction the direction to run (forward or reverse)
+   * @return the dynamic SysId command
+   */
+  public Command rollerSysIdDynamic(SysIdRoutine.Direction direction) {
+    return m_rollerSysIdRoutine.dynamic(direction);
   }
 }
