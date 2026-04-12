@@ -23,6 +23,7 @@ import frc.robot.RobotContainer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Visualizes fuel projectiles in flight as Pose3d objects for AdvantageScope. Fuel follows a
@@ -231,6 +232,47 @@ public final class FuelVisualizer {
    */
   public static void trySpawnFuel(
       Pose2d robotPose, Translation2d targetXY, double distanceToTarget) {
+    trySpawnFuel(robotPose, targetXY, distanceToTarget, Optional.empty());
+  }
+
+  /**
+   * Attempts to spawn fuel at a rate-limited interval (4 per second). Call this every cycle while
+   * shooting; it will only spawn if enough time has passed since the last spawn and fuel is
+   * available.
+   *
+   * @param robotPose The current robot pose on the field.
+   * @param targetXY The target position (hub center) on the field.
+   * @param distanceToTarget The distance to target in meters (used for TOF lookup).
+   * @param aimingAngle The field-relative angle the robot is actually aiming (for SOTF). If empty,
+   *     calculates angle toward targetXY.
+   */
+  public static void trySpawnFuel(
+      Pose2d robotPose,
+      Translation2d targetXY,
+      double distanceToTarget,
+      Optional<Rotation2d> aimingAngle) {
+    trySpawnFuel(robotPose, targetXY, distanceToTarget, aimingAngle, Optional.empty());
+  }
+
+  /**
+   * Attempts to spawn fuel at a rate-limited interval (4 per second). Call this every cycle while
+   * shooting; it will only spawn if enough time has passed since the last spawn and fuel is
+   * available.
+   *
+   * @param robotPose The current robot pose on the field.
+   * @param targetXY The target position (hub center) on the field.
+   * @param distanceToTarget The distance to target in meters (used for TOF lookup).
+   * @param aimingAngle The field-relative angle the robot is actually aiming (for SOTF). If empty,
+   *     calculates angle toward targetXY.
+   * @param virtualDistance The SOTF virtual distance for velocity calculation. If empty, uses
+   *     distanceToTarget.
+   */
+  public static void trySpawnFuel(
+      Pose2d robotPose,
+      Translation2d targetXY,
+      double distanceToTarget,
+      Optional<Rotation2d> aimingAngle,
+      Optional<Double> virtualDistance) {
     double currentTime = Timer.getFPGATimestamp();
     if (currentTime - m_lastSpawnTime >= kSpawnIntervalSeconds && m_storedFuelCount > 0) {
       m_storedFuelCount--;
@@ -241,7 +283,9 @@ public final class FuelVisualizer {
 
       // Also spawn in physics simulation if running
       if (RobotBase.isSimulation()) {
-        spawnFuelInSim(robotPose, targetXY, distanceToTarget);
+        // Use virtual distance for velocity calculation if provided (SOTF mode)
+        double simDistance = virtualDistance.orElse(distanceToTarget);
+        spawnFuelInSim(robotPose, targetXY, simDistance, aimingAngle);
       }
     }
   }
@@ -252,9 +296,14 @@ public final class FuelVisualizer {
    * @param robotPose The current robot pose on the field.
    * @param targetXY The target position (hub center) on the field.
    * @param distanceToTarget The distance to target in meters.
+   * @param aimingAngle The field-relative angle the robot is actually aiming (for SOTF). If empty,
+   *     calculates angle toward targetXY.
    */
   private static void spawnFuelInSim(
-      Pose2d robotPose, Translation2d targetXY, double distanceToTarget) {
+      Pose2d robotPose,
+      Translation2d targetXY,
+      double distanceToTarget,
+      Optional<Rotation2d> aimingAngle) {
     FuelSim fuelSim = RobotContainer.getFuelSim();
     if (fuelSim == null) {
       return;
@@ -287,10 +336,17 @@ public final class FuelVisualizer {
     double launchSpeed = Math.hypot(horizontalVel, verticalVel);
     double hoodAngleRad = Math.atan2(verticalVel, horizontalVel);
 
-    // Calculate turret yaw from SHOOTER position to target (not robot center)
-    Translation2d shooterToTarget = targetXY.minus(shooterPosition);
-    Rotation2d angleToTarget = shooterToTarget.getAngle();
-    Rotation2d turretYaw = angleToTarget.minus(robotPose.getRotation());
+    // Calculate turret yaw - use provided aiming angle for SOTF, or calculate toward target
+    Rotation2d fieldAimingAngle;
+    if (aimingAngle.isPresent()) {
+      // SOTF: use the actual direction the robot is aiming (toward virtual target)
+      fieldAimingAngle = aimingAngle.get();
+    } else {
+      // Stationary: calculate angle from shooter position to target
+      Translation2d shooterToTarget = targetXY.minus(shooterPosition);
+      fieldAimingAngle = shooterToTarget.getAngle();
+    }
+    Rotation2d turretYaw = fieldAimingAngle.minus(robotPose.getRotation());
 
     fuelSim.launchFuel(
         MetersPerSecond.of(launchSpeed),

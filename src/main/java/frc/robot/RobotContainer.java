@@ -302,7 +302,13 @@ public class RobotContainer {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
               Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
               double distance = robotPosition.getDistance(hubPosition);
-              FuelVisualizer.trySpawnFuel(m_drivetrain.getState().Pose, hubPosition, distance);
+              // Pass SOTF aiming angle and virtual distance if available (set by ShootOnTheMove)
+              FuelVisualizer.trySpawnFuel(
+                  m_drivetrain.getState().Pose,
+                  hubPosition,
+                  distance,
+                  ShootOnTheMove.getCurrentAimingAngle(),
+                  ShootOnTheMove.getCurrentVirtualDistance());
             }));
   }
 
