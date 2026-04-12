@@ -25,7 +25,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "BigSeb.0"
+            "pathName": "DoubleBump.0"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "DoubleBump.1"
           }
         },
         {
@@ -53,13 +59,13 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "FeedingWiggle"
+                  "name": "Shoot"
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "Shoot"
+                  "name": "FeedingWiggle"
                 }
               }
             ]
@@ -80,7 +86,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "BigSebSecondPass.0"
+            "pathName": "DoubleBump.2"
           }
         },
         {
@@ -102,13 +108,13 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "FeedingWiggle"
+                  "name": "Shoot"
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "Shoot"
+                  "name": "FeedingWiggle"
                 }
               }
             ]

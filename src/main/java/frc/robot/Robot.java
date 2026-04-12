@@ -147,7 +147,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void simulationPeriodic() {
-    m_robotContainer.m_vision.simulationPeriodic(m_robotContainer.m_drivetrain.getState().Pose);
+    // Use getSimVisionPose() so vision sees the "true" position during simulated disturbances.
+    // When disturbed, this returns the frozen "stuck" pose while odometry continues advancing.
+    m_robotContainer.m_vision.simulationPeriodic(m_robotContainer.m_drivetrain.getSimVisionPose());
     if (RobotContainer.getFuelSim() != null) {
       RobotContainer.getFuelSim().updateSim();
     }

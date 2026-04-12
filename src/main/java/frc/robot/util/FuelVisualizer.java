@@ -5,7 +5,6 @@
 package frc.robot.util;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -261,8 +260,20 @@ public final class FuelVisualizer {
       return;
     }
 
+    // Calculate shooter position in field coordinates (same as spawnFuel)
+    Translation3d shooterOffset = Constants.FuelConstants.kShooterOffset;
+    double robotHeading = robotPose.getRotation().getRadians();
+    double cosHeading = Math.cos(robotHeading);
+    double sinHeading = Math.sin(robotHeading);
+
+    double shooterX =
+        robotPose.getX() + shooterOffset.getX() * cosHeading - shooterOffset.getY() * sinHeading;
+    double shooterY =
+        robotPose.getY() + shooterOffset.getX() * sinHeading + shooterOffset.getY() * cosHeading;
+    Translation2d shooterPosition = new Translation2d(shooterX, shooterY);
+
     double tof = Constants.ShooterConstants.TIME_OF_FLIGHT_MAP.get(distanceToTarget);
-    double launchHeight = Constants.FuelConstants.kShooterOffset.getZ();
+    double launchHeight = shooterOffset.getZ();
     double targetHeight = Constants.FuelConstants.kTargetHeight;
 
     // Calculate launch velocity using projectile motion equations
@@ -276,15 +287,15 @@ public final class FuelVisualizer {
     double launchSpeed = Math.hypot(horizontalVel, verticalVel);
     double hoodAngleRad = Math.atan2(verticalVel, horizontalVel);
 
-    // Calculate turret yaw (robot-relative angle to target)
-    Translation2d robotToTarget = targetXY.minus(robotPose.getTranslation());
-    Rotation2d angleToTarget = robotToTarget.getAngle();
+    // Calculate turret yaw from SHOOTER position to target (not robot center)
+    Translation2d shooterToTarget = targetXY.minus(shooterPosition);
+    Rotation2d angleToTarget = shooterToTarget.getAngle();
     Rotation2d turretYaw = angleToTarget.minus(robotPose.getRotation());
 
     fuelSim.launchFuel(
         MetersPerSecond.of(launchSpeed),
         Degrees.of(Math.toDegrees(hoodAngleRad)),
         Degrees.of(turretYaw.getDegrees()),
-        Meters.of(launchHeight));
+        shooterOffset);
   }
 }
