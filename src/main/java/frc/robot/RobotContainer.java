@@ -82,6 +82,9 @@ public class RobotContainer {
 
   private final PowerDistribution m_powerDistribution = new PowerDistribution();
 
+  // Flag set by AimAndSpinUp/SpinUp when shooter reaches target speed
+  private boolean m_autoReadyToShoot;
+
   // Dashboard toggle for shooting on the fly mode
   private final BooleanSubscriber m_sotfEnabledSub;
   private final Trigger m_sotfEnabledTrigger;
@@ -193,7 +196,7 @@ public class RobotContainer {
                 m_drivetrain,
                 m_shooter));
 
-    // Idle shooter when not shooting and not aligning (bumper h2.0eld keeps spin-up active)
+    // Idle shooter when not shooting and not aligning (bumper held keeps spin-up active)
     m_joystick
         .rightTrigger()
         .negate()
@@ -204,10 +207,10 @@ public class RobotContainer {
     // Feed when shooter is at speed AND right trigger is held
     actuallyShoot.whileTrue(shootCommand());
     // Wiggle intake to feed balls while shooting, but only when not actively intaking
-    // Also wiggles during auto when shooter is at speed
+    // Also wiggles during auto when shooter is actively spinning up and at speed
     actuallyShoot
         .and(m_joystick.leftTrigger().negate())
-        .or(RobotModeTriggers.autonomous().and(m_shooter.atSpeedTrigger()))
+        .or(RobotModeTriggers.autonomous().and(() -> m_autoReadyToShoot))
         .whileTrue(m_intake.feedingWiggleRackCommand());
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
@@ -341,22 +344,33 @@ public class RobotContainer {
         "ShooterWheelSpinUp", m_shooter.spinUpForDistanceCommand(() -> Units.feetToMeters(9.5)));
     NamedCommands.registerCommand(
         "SpinUp",
-        m_shooter
-            .spinUpForDistanceCommand(m_drivetrain::getLookupDistance)
-            .until(m_shooter.atSpeedTrigger()));
+        Commands.runOnce(() -> m_autoReadyToShoot = false)
+            .andThen(
+                m_shooter
+                    .spinUpForDistanceCommand(m_drivetrain::getLookupDistance)
+                    .alongWith(
+                        Commands.run(
+                            () -> m_autoReadyToShoot = m_shooter.atSpeedTrigger().getAsBoolean())))
+            .until(m_shooter.atSpeedTrigger())
+            .finallyDo(() -> m_autoReadyToShoot = false));
     NamedCommands.registerCommand(
         "AimAndSpinUp",
-        m_drivetrain
-            .aimAtHubDuringPath()
-            .alongWith(
-                m_shooter.spinUpForSOTFCommand(
-                    () -> m_drivetrain.getState().Pose,
-                    this::fieldRelativeSpeeds,
-                    this::fieldRelativeAccel,
-                    Constants.FieldSpots::getHubPosition)));
+        Commands.runOnce(() -> m_autoReadyToShoot = false)
+            .andThen(
+                m_drivetrain
+                    .aimAtHubDuringPath()
+                    .alongWith(
+                        m_shooter.spinUpForSOTFCommand(
+                            () -> m_drivetrain.getState().Pose,
+                            this::fieldRelativeSpeeds,
+                            this::fieldRelativeAccel,
+                            Constants.FieldSpots::getHubPosition),
+                        Commands.run(
+                            () -> m_autoReadyToShoot = m_shooter.atSpeedTrigger().getAsBoolean())))
+            .finallyDo(() -> m_autoReadyToShoot = false));
     NamedCommands.registerCommand(
         "ShootWhenReady",
-        Commands.waitUntil(m_shooter.atSpeedTrigger()).andThen(shootCommand()));
+        Commands.waitUntil(() -> m_autoReadyToShoot).andThen(shootCommand()));
   }
 
   public Command getAutonomousCommand() {
