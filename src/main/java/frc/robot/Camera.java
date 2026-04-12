@@ -4,8 +4,6 @@
 
 package frc.robot;
 
-import static frc.robot.Constants.ifOnBlue;
-
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -38,6 +36,10 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 /** Camera class for handling individual PhotonVision cameras with pose estimation. */
 public class Camera {
+  // Hub tag IDs by alliance
+  private static final List<Integer> RED_HUB_TAGS = List.of(2, 3, 4, 5, 8, 9, 10, 11);
+  private static final List<Integer> BLUE_HUB_TAGS = List.of(18, 19, 20, 21, 24, 25, 26, 27);
+
   private final boolean m_simulate;
   private final VisionEstimateConsumer m_consumer;
   private final Matrix<N3, N1> m_singleTagDevs;
@@ -55,9 +57,6 @@ public class Camera {
   private final DoublePublisher m_stdDevRotPosePub;
   private final StructArrayPublisher<Pose3d> m_targetPosesPub;
   private final StructArrayPublisher<Translation2d> m_cornersPub;
-
-  private static final List<Integer> blueAllowedTargets = new ArrayList<>();
-  private static final List<Integer> redAllowedTargets = new ArrayList<>();
 
   // Simulation
   private VisionSystemSim m_visionSim;
@@ -86,24 +85,6 @@ public class Camera {
     this.m_consumer = visionConsumer;
     this.m_singleTagDevs = singleTagStdDev;
     this.m_multiTagDevs = multiTagDevs;
-
-    redAllowedTargets.add(5);
-    redAllowedTargets.add(8);
-    redAllowedTargets.add(9);
-    redAllowedTargets.add(10);
-    redAllowedTargets.add(11);
-    redAllowedTargets.add(2);
-    redAllowedTargets.add(3);
-    redAllowedTargets.add(4);
-
-    blueAllowedTargets.add(18);
-    blueAllowedTargets.add(19);
-    blueAllowedTargets.add(20);
-    blueAllowedTargets.add(21);
-    blueAllowedTargets.add(24);
-    blueAllowedTargets.add(25);
-    blueAllowedTargets.add(26);
-    blueAllowedTargets.add(27);
 
     // Initialize NetworkTables
     m_nt = NetworkTableInstance.getDefault().getTable("Vision");
@@ -154,70 +135,38 @@ public class Camera {
     List<PhotonPipelineResult> allUnread = m_camera.getAllUnreadResults();
 
     for (PhotonPipelineResult result : allUnread) {
-      // During auto, allow both alliances' tags for better pose estimation
-      List<Integer> allowedTargets;
-      if (DriverStation.isAutonomous()) {
-        allowedTargets = new ArrayList<>(blueAllowedTargets);
-        allowedTargets.addAll(redAllowedTargets);
-      } else {
-        allowedTargets = ifOnBlue() ? blueAllowedTargets : redAllowedTargets;
+      // Skip if no targets visible
+      if (result.targets.isEmpty()) {
+        continue;
       }
 
-      // Filter targets to only allowed tags
-      List<PhotonTrackedTarget> filteredTargets = new ArrayList<>();
-      for (PhotonTrackedTarget target : result.targets) {
-        if (allowedTargets.contains(target.fiducialId)) {
-          filteredTargets.add(target);
-        }
-      }
-
-      // Skip if no valid targets after filtering
-      if (filteredTargets.isEmpty()) {
+      // In teleop, filter to only our alliance's tags. In auto, use all hub tags.
+      List<PhotonTrackedTarget> targets =
+          DriverStation.isAutonomous() ? result.targets : filterByAlliance(result.targets);
+      if (targets.isEmpty()) {
         continue;
       }
 
       Optional<EstimatedRobotPose> visionEst = Optional.empty();
 
-      // Try multi-tag if all tags in the multi-tag result are allowed
+      // Try coprocessor multi-tag PnP if all tags in the result are from our alliance
       Optional<MultiTargetPNPResult> multiTagResult = result.multitagResult;
-      if (multiTagResult.isPresent()) {
-        boolean allAllowed = true;
-        for (int id : multiTagResult.get().fiducialIDsUsed) {
-          if (!allowedTargets.contains(id)) {
-            allAllowed = false;
-            break;
-          }
-        }
-        if (allAllowed) {
-          visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
+      if (multiTagResult.isPresent() && canUseMultiTag(multiTagResult.get())) {
+        visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
+        if (visionEst.isPresent()) {
+          DataLogManager.log(
+              String.format(
+                  "[%s] MULTI-TAG pose: IDs=%s pose=(%.2f, %.2f)",
+                  m_camera.getName(),
+                  multiTagResult.get().fiducialIDsUsed,
+                  visionEst.get().estimatedPose.getX(),
+                  visionEst.get().estimatedPose.getY()));
         }
       }
 
-      // Fallback to lowest ambiguity single-tag using only allowed targets
+      // Fallback to lowest ambiguity single-tag from filtered targets
       if (visionEst.isEmpty()) {
-        PhotonTrackedTarget bestTarget = null;
-        double lowestAmbiguity = Double.MAX_VALUE;
-        for (PhotonTrackedTarget target : filteredTargets) {
-          if (target.poseAmbiguity >= 0 && target.poseAmbiguity < lowestAmbiguity) {
-            lowestAmbiguity = target.poseAmbiguity;
-            bestTarget = target;
-          }
-        }
-
-        if (bestTarget != null) {
-          Optional<Pose3d> tagPose =
-              m_photonEstimator.getFieldTags().getTagPose(bestTarget.fiducialId);
-          if (tagPose.isPresent()) {
-            Pose3d cameraPose =
-                tagPose.get().transformBy(bestTarget.getBestCameraToTarget().inverse());
-            Pose3d robotPoseEst =
-                cameraPose.transformBy(m_photonEstimator.getRobotToCameraTransform().inverse());
-            visionEst =
-                Optional.of(
-                    new EstimatedRobotPose(
-                        robotPoseEst, result.getTimestampSeconds(), List.of(bestTarget)));
-          }
-        }
+        visionEst = estimateSingleTag(targets, result.getTimestampSeconds());
       }
 
       // Publish pose
@@ -227,8 +176,8 @@ public class Camera {
         m_posePub.set(new Pose2d());
       }
 
-      // Cache filtered targets for standard deviation calculation
-      m_targetsCopy = new ArrayList<>(filteredTargets);
+      // Cache targets for standard deviation calculation
+      m_targetsCopy = new ArrayList<>(targets);
 
       // Publish target poses and corners
       List<Pose3d> targetPoses = new ArrayList<>();
@@ -318,6 +267,86 @@ public class Camera {
     if (m_simulate && m_visionSim != null) {
       m_visionSim.update(robotSimPose);
     }
+  }
+
+  /**
+   * Filters targets to only include tags from our alliance. In auto, all hub tags are allowed.
+   *
+   * @param targets The list of targets to filter.
+   * @return Filtered list containing only our alliance's tags.
+   */
+  private List<PhotonTrackedTarget> filterByAlliance(List<PhotonTrackedTarget> targets) {
+    List<Integer> allowedTags = Constants.ifOnBlue() ? BLUE_HUB_TAGS : RED_HUB_TAGS;
+    List<PhotonTrackedTarget> filtered = new ArrayList<>();
+    for (PhotonTrackedTarget target : targets) {
+      if (allowedTags.contains(target.fiducialId)) {
+        filtered.add(target);
+      }
+    }
+    return filtered;
+  }
+
+  /**
+   * Checks if we can use the coprocessor's multi-tag result. In auto, always yes. In teleop, only
+   * if all tags in the result are from our alliance.
+   *
+   * @param multiTagResult The multi-tag result from the coprocessor.
+   * @return true if we can use this multi-tag result.
+   */
+  private boolean canUseMultiTag(MultiTargetPNPResult multiTagResult) {
+    if (DriverStation.isAutonomous()) {
+      return true;
+    }
+    List<Integer> allowedTags = Constants.ifOnBlue() ? BLUE_HUB_TAGS : RED_HUB_TAGS;
+    for (int id : multiTagResult.fiducialIDsUsed) {
+      if (!allowedTags.contains(id)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Estimates pose from the best single tag in the target list.
+   *
+   * @param targets The filtered list of targets.
+   * @param timestampSeconds The timestamp of the result.
+   * @return The estimated pose, or empty if no valid estimate.
+   */
+  private Optional<EstimatedRobotPose> estimateSingleTag(
+      List<PhotonTrackedTarget> targets, double timestampSeconds) {
+    PhotonTrackedTarget bestTarget = null;
+    double lowestAmbiguity = Double.MAX_VALUE;
+    for (PhotonTrackedTarget target : targets) {
+      if (target.poseAmbiguity >= 0 && target.poseAmbiguity < lowestAmbiguity) {
+        lowestAmbiguity = target.poseAmbiguity;
+        bestTarget = target;
+      }
+    }
+
+    if (bestTarget == null) {
+      return Optional.empty();
+    }
+
+    Optional<Pose3d> tagPose = m_photonEstimator.getFieldTags().getTagPose(bestTarget.fiducialId);
+    if (tagPose.isEmpty()) {
+      return Optional.empty();
+    }
+
+    Pose3d cameraPose = tagPose.get().transformBy(bestTarget.getBestCameraToTarget().inverse());
+    Pose3d robotPoseEst =
+        cameraPose.transformBy(m_photonEstimator.getRobotToCameraTransform().inverse());
+
+    DataLogManager.log(
+        String.format(
+            "[%s] SINGLE-TAG pose: ID=%d ambiguity=%.3f pose=(%.2f, %.2f)",
+            m_camera.getName(),
+            bestTarget.fiducialId,
+            bestTarget.poseAmbiguity,
+            robotPoseEst.getX(),
+            robotPoseEst.getY()));
+
+    return Optional.of(new EstimatedRobotPose(robotPoseEst, timestampSeconds, List.of(bestTarget)));
   }
 
   /** Functional interface for consuming vision estimates. */

@@ -803,13 +803,11 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
 
   // ── Simulation testing ───────────────────────────────────────────
 
-  private Pose2d m_simDisturbPose = null;
+  private Pose2d m_simDisturbPose;
   private final BooleanPublisher m_simDisturbActivePub =
       NetworkTableInstance.getDefault().getBooleanTopic("Sim/DisturbActive").publish();
   private final StructPublisher<Pose2d> m_simTruePosePub =
-      NetworkTableInstance.getDefault()
-          .getStructTopic("Sim/TruePose", Pose2d.struct)
-          .publish();
+      NetworkTableInstance.getDefault().getStructTopic("Sim/TruePose", Pose2d.struct).publish();
 
   /**
    * Returns the pose to use for vision simulation. When the robot is being "disturbed" (simulating
