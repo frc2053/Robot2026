@@ -10,7 +10,6 @@ import com.pathplanner.lib.util.DriveFeedforwards;
 import com.pathplanner.lib.util.PPLibTelemetry;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
@@ -44,25 +43,6 @@ import java.util.function.Supplier;
  * <p>This is a drop-in replacement for {@code FollowPathCommand} in the AutoBuilder configuration.
  */
 public class ResilientFollowPathCommand extends Command {
-
-  // ── Sim testing ──────────────────────────────────────────────────
-
-  private static volatile Translation2d s_simPoseOffset = Translation2d.kZero;
-
-  /**
-   * Injects a translation offset into the pose the command sees, simulating the robot being
-   * displaced. The offset persists until cleared. Only useful in simulation.
-   *
-   * @param offset Field-relative translation offset to add to the reported robot pose.
-   */
-  public static void injectSimOffset(Translation2d offset) {
-    s_simPoseOffset = offset;
-  }
-
-  /** Clears any injected sim offset. */
-  public static void clearSimOffset() {
-    s_simPoseOffset = Translation2d.kZero;
-  }
 
   // ── Configuration ────────────────────────────────────────────────
 
@@ -251,7 +231,6 @@ public class ResilientFollowPathCommand extends Command {
     m_isPaused = false;
     m_wallTimer.restart();
     m_lastWallTime = 0.0;
-    s_simPoseOffset = Translation2d.kZero;
 
     m_pausedAlert.set(false);
   }
@@ -265,15 +244,10 @@ public class ResilientFollowPathCommand extends Command {
     // Sample trajectory at current virtual time to get the target state
     PathPlannerTrajectoryState targetState = m_trajectory.sample(m_virtualTime);
 
-    // Real robot pose (used for PID control — always accurate)
+    // Current robot pose from pose estimator (fuses odometry + vision)
     Pose2d currentPose = m_poseSupplier.get();
-
-    // Sim offset only affects the error check, not the PID output.
-    // This lets us trigger pause/resume in sim without driving the robot off course.
-    Pose2d errorCheckPose =
-        new Pose2d(currentPose.getTranslation().plus(s_simPoseOffset), currentPose.getRotation());
     double translationError =
-        errorCheckPose.getTranslation().getDistance(targetState.pose.getTranslation());
+        currentPose.getTranslation().getDistance(targetState.pose.getTranslation());
 
     // ── Pause / resume logic (skip during grace period after path start) ──
     if (!m_isPaused

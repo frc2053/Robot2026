@@ -18,11 +18,17 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.util.datalog.StringLogEntry;
@@ -73,6 +79,44 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
   private final StructPublisher<Pose2d> m_lookAtPointPub =
       NetworkTableInstance.getDefault()
           .getStructTopic("Drivetrain/LookAtPoint/TargetPoint", Pose2d.struct)
+          .publish();
+
+  // Hub alignment logging publishers
+  private final StructPublisher<Pose2d> m_hubAimPointPub =
+      NetworkTableInstance.getDefault()
+          .getStructTopic("Drivetrain/HubAlignment/AimPoint", Pose2d.struct)
+          .publish();
+  private final DoublePublisher m_hubHeadingErrorPub =
+      NetworkTableInstance.getDefault()
+          .getDoubleTopic("Drivetrain/HubAlignment/HeadingErrorDeg")
+          .publish();
+  private final DoublePublisher m_hubDistancePub =
+      NetworkTableInstance.getDefault()
+          .getDoubleTopic("Drivetrain/HubAlignment/DistanceMeters")
+          .publish();
+  private final DoublePublisher m_hubDesiredHeadingPub =
+      NetworkTableInstance.getDefault()
+          .getDoubleTopic("Drivetrain/HubAlignment/DesiredHeadingDeg")
+          .publish();
+
+  // Shooter position visualization (Pose3d for AdvantageScope)
+  private final StructPublisher<Pose3d> m_shooterPose3dPub =
+      NetworkTableInstance.getDefault()
+          .getStructTopic("Drivetrain/ShooterPose3d", Pose3d.struct)
+          .publish();
+
+  // Raw odometry tracking (no vision fusion) - for sim disturbance visualization
+  private static final double kModuleOffsetMeters = 0.269875; // 10.625 inches
+  private final SwerveDriveKinematics m_kinematics =
+      new SwerveDriveKinematics(
+          new Translation2d(kModuleOffsetMeters, kModuleOffsetMeters), // Front Left
+          new Translation2d(kModuleOffsetMeters, -kModuleOffsetMeters), // Front Right
+          new Translation2d(-kModuleOffsetMeters, kModuleOffsetMeters), // Back Left
+          new Translation2d(-kModuleOffsetMeters, -kModuleOffsetMeters)); // Back Right
+  private SwerveDriveOdometry m_rawOdometry;
+  private final StructPublisher<Pose2d> m_rawOdometryPub =
+      NetworkTableInstance.getDefault()
+          .getStructTopic("Sim/RawOdometryPose", Pose2d.struct)
           .publish();
 
   /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
@@ -181,6 +225,7 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
     }
     configureAutoBuilder();
     configureHeadingController();
+    initializeRawOdometry();
   }
 
   /**
@@ -204,6 +249,7 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
     }
     configureAutoBuilder();
     configureHeadingController();
+    initializeRawOdometry();
   }
 
   /**
@@ -238,6 +284,14 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
     }
     configureAutoBuilder();
     configureHeadingController();
+    initializeRawOdometry();
+  }
+
+  private void initializeRawOdometry() {
+    var state = getState();
+    m_rawOdometry =
+        new SwerveDriveOdometry(
+            m_kinematics, state.Pose.getRotation(), state.ModulePositions, state.Pose);
   }
 
   private void configureHeadingController() {
@@ -410,11 +464,20 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
           Translation2d targetPoint = targetPointSupplier.get();
           m_lookAtPointPub.set(new Pose2d(targetPoint, Rotation2d.kZero));
 
-          Translation2d robotPosition = getState().Pose.getTranslation();
+          Pose2d robotPose = getState().Pose;
+          Translation2d robotPosition = robotPose.getTranslation();
           Translation2d vectorToTarget = targetPoint.minus(robotPosition);
-          Rotation2d angleToTarget = vectorToTarget.getAngle();
+          Rotation2d rawAngleToTarget = vectorToTarget.getAngle();
+
+          // Log hub alignment data (using raw angle, before alliance adjustment)
+          double headingErrorDeg = rawAngleToTarget.minus(robotPose.getRotation()).getDegrees();
+          m_hubAimPointPub.set(new Pose2d(targetPoint, Rotation2d.kZero));
+          m_hubHeadingErrorPub.set(headingErrorDeg);
+          m_hubDistancePub.set(robotPosition.getDistance(Constants.FieldSpots.getHubPosition()));
+          m_hubDesiredHeadingPub.set(rawAngleToTarget.getDegrees());
 
           // Adjust for operator perspective (red alliance has 180 degree offset)
+          Rotation2d angleToTarget = rawAngleToTarget;
           if (!Constants.ifOnBlue()) {
             angleToTarget = angleToTarget.rotateBy(Rotation2d.k180deg);
           }
@@ -461,10 +524,21 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
                           Constants.FieldSpots.getHubPosition(),
                           Constants.ShooterConstants.kSOTFLatencyCompensation,
                           Constants.ShooterConstants.TIME_OF_FLIGHT_MAP);
-                  double desiredHeading =
+                  double desiredHeadingRad =
                       aimPoint.minus(robotPose.getTranslation()).getAngle().getRadians();
-                  double currentHeading = robotPose.getRotation().getRadians();
-                  return aimPid.calculate(currentHeading, desiredHeading);
+                  double currentHeadingRad = robotPose.getRotation().getRadians();
+                  double headingErrorDeg = Math.toDegrees(desiredHeadingRad - currentHeadingRad);
+
+                  // Log hub alignment data
+                  m_hubAimPointPub.set(new Pose2d(aimPoint, Rotation2d.kZero));
+                  m_hubHeadingErrorPub.set(headingErrorDeg);
+                  m_hubDistancePub.set(
+                      robotPose
+                          .getTranslation()
+                          .getDistance(Constants.FieldSpots.getHubPosition()));
+                  m_hubDesiredHeadingPub.set(Math.toDegrees(desiredHeadingRad));
+
+                  return aimPid.calculate(currentHeadingRad, desiredHeadingRad);
                 }),
         PPHolonomicDriveController::clearRotationFeedbackOverride);
   }
@@ -493,6 +567,25 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
 
     m_prevFieldSpeeds = m_currentFieldSpeeds;
     m_currentFieldSpeeds = getState().Speeds;
+
+    // Publish shooter Pose3d for visualization
+    Pose2d robotPose = getState().Pose;
+    Translation2d shooterPos2d = getShooterPosition();
+    Pose3d shooterPose3d =
+        new Pose3d(
+            shooterPos2d.getX(),
+            shooterPos2d.getY(),
+            FuelConstants.kShooterOffset.getZ(),
+            new Rotation3d(0, 0, robotPose.getRotation().getRadians()));
+    m_shooterPose3dPub.set(shooterPose3d);
+
+    // Update raw odometry (no vision fusion) for sim disturbance visualization
+    var state = getState();
+    if (m_rawOdometry != null) {
+      Rotation2d gyroAngle = getPigeon2().getRotation2d();
+      m_rawOdometry.update(gyroAngle, state.ModulePositions);
+      m_rawOdometryPub.set(m_rawOdometry.getPoseMeters());
+    }
   }
 
   private void startSimThread() {
@@ -555,6 +648,19 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
   @Override
   public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
     return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
+  }
+
+  /**
+   * Resets the pose of the robot. Also resets the raw odometry tracker to keep them in sync.
+   *
+   * @param pose The pose to reset to.
+   */
+  @Override
+  public void resetPose(Pose2d pose) {
+    super.resetPose(pose);
+    if (m_rawOdometry != null) {
+      m_rawOdometry.resetPose(pose);
+    }
   }
 
   /**
@@ -697,26 +803,81 @@ public class Swerve extends TunerSwerveDrivetrain implements Subsystem {
 
   // ── Simulation testing ───────────────────────────────────────────
 
-  private final java.util.Random m_simRandom = new java.util.Random();
+  private Pose2d m_simDisturbPose = null;
+  private final BooleanPublisher m_simDisturbActivePub =
+      NetworkTableInstance.getDefault().getBooleanTopic("Sim/DisturbActive").publish();
+  private final StructPublisher<Pose2d> m_simTruePosePub =
+      NetworkTableInstance.getDefault()
+          .getStructTopic("Sim/TruePose", Pose2d.struct)
+          .publish();
 
   /**
-   * Injects a random 0.5–1.5m offset into the resilient path follower for 2 seconds, making it
-   * think the robot is far off the path. This triggers the pause/recovery behavior without fighting
-   * the sim physics. Only useful in simulation.
+   * Returns the pose to use for vision simulation. When the robot is being "disturbed" (simulating
+   * hitting an obstacle), this returns the frozen "stuck" pose so cameras see the robot as stuck.
+   * Otherwise, returns the normal odometry pose.
    *
-   * @return Command that injects then clears a sim offset.
+   * <p>This allows testing the resilient path follower's recovery behavior: odometry advances
+   * (wheels spinning/slipping) while vision says robot is stuck. The pose estimator fuses these,
+   * and the discrepancy eventually triggers the path follower to pause and recover.
+   *
+   * @return The pose to feed to vision simulation.
+   */
+  public Pose2d getSimVisionPose() {
+    if (m_simDisturbPose != null) {
+      return m_simDisturbPose;
+    }
+    return getState().Pose;
+  }
+
+  /**
+   * Checks if the robot is currently being disturbed in simulation.
+   *
+   * @return true if disturb is active.
+   */
+  public boolean isSimDisturbed() {
+    return m_simDisturbPose != null;
+  }
+
+  /**
+   * Simulates the robot hitting an obstacle and wheels slipping. During the disturbance:
+   *
+   * <ul>
+   *   <li>The robot's "true" position (what vision sees) is frozen at the start pose
+   *   <li>Odometry continues advancing as if wheels are spinning (swerve physics continues)
+   *   <li>Vision cameras see the frozen pose, producing corrections toward the stuck position
+   *   <li>The pose estimator fuses odometry (advancing) with vision (stuck), creating error
+   *   <li>Eventually the resilient path follower detects the discrepancy and pauses to recover
+   * </ul>
+   *
+   * <p>In AdvantageScope, watch "Sim/TruePose" to see where the robot is really stuck, while the
+   * main DriveState/Pose shows the fused estimate. "Sim/DisturbActive" indicates when disturbance
+   * is active.
+   *
+   * @return Command that simulates wheel slip for 2 seconds.
    */
   public Command simDisturbRobot() {
     return Commands.sequence(
+            // Capture the "stuck" pose - this is where the robot truly is (vision sees this)
             Commands.runOnce(
                 () -> {
-                  double distance = 0.5 + m_simRandom.nextDouble() * 1.0;
-                  Rotation2d direction = new Rotation2d(m_simRandom.nextDouble() * 2.0 * Math.PI);
-                  ResilientFollowPathCommand.injectSimOffset(
-                      new Translation2d(distance, direction));
+                  m_simDisturbPose = getState().Pose;
+                  m_simDisturbActivePub.set(true);
+                  m_simTruePosePub.set(m_simDisturbPose);
                 }),
-            Commands.waitSeconds(2.0),
-            Commands.runOnce(ResilientFollowPathCommand::clearSimOffset))
+            // Keep publishing the true pose while disturbance is active
+            Commands.run(
+                    () -> {
+                      if (m_simDisturbPose != null) {
+                        m_simTruePosePub.set(m_simDisturbPose);
+                      }
+                    })
+                .withTimeout(2.0),
+            // End the disturbance - vision will now see the actual odometry pose again
+            Commands.runOnce(
+                () -> {
+                  m_simDisturbPose = null;
+                  m_simDisturbActivePub.set(false);
+                }))
         .ignoringDisable(true)
         .withName("SimDisturbRobot");
   }

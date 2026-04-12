@@ -564,16 +564,35 @@ public class FuelSim {
    */
   public void launchFuel(
       LinearVelocity launchVelocity, Angle hoodAngle, Angle turretYaw, Distance launchHeight) {
+    launchFuel(
+        launchVelocity, hoodAngle, turretYaw, new Translation3d(0, 0, launchHeight.in(Meters)));
+  }
+
+  /**
+   * Spawns a fuel onto the field from a position offset from the robot's center, with specified
+   * launch velocity and angles, accounting for robot movement.
+   *
+   * @param launchVelocity Initial launch velocity
+   * @param hoodAngle Hood angle where 0 is launching horizontally and 90 degrees is launching
+   *     straight up
+   * @param turretYaw <i>Robot-relative</i> turret yaw
+   * @param shooterOffset Robot-relative 3D offset from robot center to shooter (X forward, Y left,
+   *     Z up)
+   * @throws IllegalStateException if robot is not registered
+   */
+  public void launchFuel(
+      LinearVelocity launchVelocity,
+      Angle hoodAngle,
+      Angle turretYaw,
+      Translation3d shooterOffset) {
     if (m_robotPoseSupplier == null || m_robotFieldSpeedsSupplier == null) {
       throw new IllegalStateException("Robot must be registered before launching fuel.");
     }
 
+    // Pose3d.plus(Transform3d) automatically rotates the offset by the pose's rotation
+    Pose2d robotPose = m_robotPoseSupplier.get();
     Pose3d launchPose =
-        new Pose3d(this.m_robotPoseSupplier.get())
-            .plus(
-                new Transform3d(
-                    new Translation3d(Meters.zero(), Meters.zero(), launchHeight),
-                    Rotation3d.kZero));
+        new Pose3d(robotPose).plus(new Transform3d(shooterOffset, Rotation3d.kZero));
     ChassisSpeeds fieldSpeeds = this.m_robotFieldSpeedsSupplier.get();
 
     double horizontalVel = Math.cos(hoodAngle.in(Radians)) * launchVelocity.in(MetersPerSecond);
