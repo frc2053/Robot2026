@@ -3,13 +3,25 @@
 
 import struct
 import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 from wpiutil.log import DataLogReader
 
-LOG_PATH = sys.argv[1] if len(sys.argv) > 1 else (
-    "/home/drew/dev/Robot2026/logs/FRC_20260409_174304.wpilog"
-)
+SCRIPT_DIR = Path(__file__).parent.resolve()
+LOGS_DIR = SCRIPT_DIR.parent / "logs"
+
+
+def get_latest_log():
+    """Find the most recent .wpilog file in the logs directory."""
+    log_files = list(LOGS_DIR.glob("*.wpilog"))
+    if not log_files:
+        print(f"No .wpilog files found in {LOGS_DIR}")
+        sys.exit(1)
+    return str(max(log_files, key=lambda p: p.stat().st_mtime))
+
+
+LOG_PATH = sys.argv[1] if len(sys.argv) > 1 else get_latest_log()
 
 # ── Read log ──────────────────────────────────────────────────────────
 
@@ -294,7 +306,8 @@ ax.set_title("Robot vs Target Position")
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-out_path = "/home/drew/dev/Robot2026/logs/resilient_path_analysis.png"
+LOGS_DIR.mkdir(exist_ok=True)
+out_path = LOGS_DIR / "resilient_path_analysis.png"
 plt.savefig(out_path, dpi=150)
 print(f"\nPlot saved to: {out_path}")
 plt.show()

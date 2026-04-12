@@ -2,6 +2,7 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
+import edu.wpi.first.apriltag.AprilTag;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.Matrix;
@@ -249,15 +250,15 @@ public final class Constants {
     public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
 
     // Rack PID constants (Slot 0)
-    public static final double kRackKS = 5.0;
+    public static final double kRackKS = 0.5;
     public static final double kRackKG = 0.0;
-    public static final double kRackKV = 0.0;
-    public static final double kRackKA = 0.0;
-    public static final double kRackKP = 3000.0;
+    public static final double kRackKV = 0.01;
+    public static final double kRackKA = 0.01;
+    public static final double kRackKP = 50;
     public static final double kRackKI = 0.0;
-    public static final double kRackKD = 20.0;
-    public static final double kRackMotionMagicCruiseVelocity = 40.0; // rotations per second
-    public static final double kRackMotionMagicAcceleration = 80.0; // rotations per second^2
+    public static final double kRackKD = 30;
+    public static final double kRackMotionMagicCruiseVelocity = 20.0; // rotations per second
+    public static final double kRackMotionMagicAcceleration = 40.0; // rotations per second^2
 
     // Roller voltage for intaking
     public static final double kIntakeVoltage = -12.0;
@@ -292,14 +293,32 @@ public final class Constants {
             // new Translation3d(0, 0, 0),
             // new Rotation3d(0, 0, Units.degreesToRadians(180)));
             new Rotation3d(0, Units.degreesToRadians(-15), Units.degreesToRadians(180)));
-    // The layout of the AprilTags on the field
-    public static final AprilTagFieldLayout kTagLayout =
-        AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+    // Hub tag IDs only
+    // Red hub: 2, 3, 4, 5, 8, 9, 10, 11
+    // Blue hub: 18, 19, 20, 21, 24, 25, 26, 27
+    private static final List<Integer> kHubTagIds =
+        List.of(2, 3, 4, 5, 8, 9, 10, 11, 18, 19, 20, 21, 24, 25, 26, 27);
+
+    // The layout of the AprilTags on the field (filtered to hub tags only)
+    public static final AprilTagFieldLayout kTagLayout = createHubOnlyLayout();
 
     // The standard deviations of our vision estimated poses, which affect correction rate
     // (Fake values. Experiment and determine estimation noise on an actual robot.)
     public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(4, 4, 8);
     public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(0.5, 0.5, 1);
+
+    private static AprilTagFieldLayout createHubOnlyLayout() {
+      AprilTagFieldLayout fullLayout =
+          AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
+      List<AprilTag> hubTags = new ArrayList<>();
+      for (AprilTag tag : fullLayout.getTags()) {
+        if (kHubTagIds.contains(tag.ID)) {
+          hubTags.add(tag);
+        }
+      }
+      return new AprilTagFieldLayout(
+          hubTags, fullLayout.getFieldLength(), fullLayout.getFieldWidth());
+    }
   }
 
   public static final class FuelConstants {
