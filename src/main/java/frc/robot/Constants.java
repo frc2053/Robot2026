@@ -204,12 +204,14 @@ public final class Constants {
 
   public static class KickerConstants {
     public static final int KICKER_MOTOR_ID = 19;
+    public static final int KICKER_MOTOR2_ID = 31;
 
     public static final int KICKER_SUPPLY_LIMIT = 40;
     public static final int KICKER_STATOR_LIMIT = 120;
 
     // Spin voltage for feeding game pieces
     public static final double kSpinVoltage = 12.0;
+    public static final double kSpinVoltage2 = 12.0;
 
     // Simulation constants
     public static final double KICKER_GEAR_RATIO = 1.0;
