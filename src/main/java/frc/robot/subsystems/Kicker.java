@@ -73,7 +73,6 @@ public class Kicker extends SubsystemBase {
   private final DoublePublisher m_voltageSetpointPub2;
   private final DoublePublisher m_statorCurrentPub2;
   private final DoublePublisher m_supplyCurrentPub2;
-  private final StringPublisher m_currentCommandPub2;
 
   // Control requests
   private final VoltageOut m_voltageRequest = new VoltageOut(0).withEnableFOC(true);
@@ -160,7 +159,6 @@ public class Kicker extends SubsystemBase {
     m_voltageSetpointPub2 = kicker2Table.getDoubleTopic("VoltageSetpoint2").publish();
     m_statorCurrentPub2 = kicker2Table.getDoubleTopic("StatorCurrent2").publish();
     m_supplyCurrentPub2 = kicker2Table.getDoubleTopic("SupplyCurrent2").publish();
-    m_currentCommandPub2 = kicker2Table.getStringTopic("CurrentCommand2").publish();
 
     // Initialize simulation
     m_motorSimState = m_kickerMotor.getSimState();
@@ -291,15 +289,16 @@ public class Kicker extends SubsystemBase {
     return this.run(
             () -> {
               m_currentVoltageSetpoint = KickerConstants.kSpinVoltage;
-              m_kickerMotor.setControl(m_voltageRequest.withOutput(KickerConstants.kSpinVoltage));
-              m_kickerMotor2.setControl(m_voltageRequest.withOutput(KickerConstants.kSpinVoltage2));
+              m_currentVoltageSetpoint2 = KickerConstants.kSpinVoltage2;
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(m_currentVoltageSetpoint));
+              m_kickerMotor2.setControl(m_voltageRequest.withOutput(m_currentVoltageSetpoint2));
             })
         .finallyDo(
             () -> {
               m_currentVoltageSetpoint = 0.0;
               m_currentVoltageSetpoint2 = 0.0;
-              m_kickerMotor.setControl(m_voltageRequest.withOutput(0));
-              m_kickerMotor2.setControl(m_voltageRequest.withOutput(0));
+              m_kickerMotor.setControl(m_voltageRequest.withOutput(m_currentVoltageSetpoint));
+              m_kickerMotor2.setControl(m_voltageRequest.withOutput(m_currentVoltageSetpoint2));
             })
         .withName("SpinKicker");
   }
