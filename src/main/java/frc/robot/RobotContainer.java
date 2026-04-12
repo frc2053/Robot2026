@@ -233,14 +233,6 @@ public class RobotContainer {
     m_joystick.povDown().whileTrue(m_kicker.spinReverse());
     m_joystick.povRight().whileTrue(m_spindexer.spinReverse());
 
-    // GoToPose test: 10 ft forward, 4 ft right from current pose
-    m_joystick
-        .start()
-        .onTrue(
-            m_drivetrain.fastTransitRelative(
-                Units.feetToMeters(10), // 10 ft forward
-                Units.feetToMeters(-4))); // 4 ft right (negative = right)
-
     // Sim-only: set Sim/DisturbRobot to true in NetworkTables to teleport the robot off path.
     // Works during auto (joystick inputs are disabled during auto).
     // Auto-resets to false so you can trigger it repeatedly.
