@@ -26,6 +26,7 @@ import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Swerve;
 import frc.robot.util.ShootingOnTheFly;
 import frc.robot.util.ShootingOnTheFly.SOTFResult;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
@@ -50,6 +51,30 @@ public class ShootOnTheMove extends Command {
   private static final BooleanPublisher m_sotfConvergedPub;
   private static final DoublePublisher m_sotfRobotSpeedPub;
   private static final DoublePublisher m_sotfAimingAngleDegPub;
+
+  /** Current SOTF aiming angle (field-relative), or empty if SOTF is not active. */
+  private static Optional<Rotation2d> m_currentAimingAngle = Optional.empty();
+
+  /** Current SOTF virtual distance (used for RPM/velocity lookup), or empty if not active. */
+  private static Optional<Double> m_currentVirtualDistance = Optional.empty();
+
+  /**
+   * Gets the current SOTF aiming angle if shoot-on-the-move is active.
+   *
+   * @return The field-relative aiming angle, or empty if SOTF is not running.
+   */
+  public static Optional<Rotation2d> getCurrentAimingAngle() {
+    return m_currentAimingAngle;
+  }
+
+  /**
+   * Gets the current SOTF virtual distance if shoot-on-the-move is active.
+   *
+   * @return The virtual distance in meters, or empty if SOTF is not running.
+   */
+  public static Optional<Double> getCurrentVirtualDistance() {
+    return m_currentVirtualDistance;
+  }
 
   static {
     NetworkTable shooterTable = NetworkTableInstance.getDefault().getTable("Shooter");
@@ -121,6 +146,10 @@ public class ShootOnTheMove extends Command {
     m_sotfRobotSpeedPub.set(robotSpeed);
     m_sotfAimingAngleDegPub.set(result.aimingAngle().getDegrees());
 
+    // Store the aiming angle and virtual distance so FuelVisualizer can use them
+    m_currentAimingAngle = Optional.of(result.aimingAngle());
+    m_currentVirtualDistance = Optional.of(result.virtualDistance());
+
     // Convert virtual target distance to lookup table reference frame
     // (front-of-bumper to front-of-hub)
     double lookupDistance =
@@ -154,6 +183,8 @@ public class ShootOnTheMove extends Command {
   @Override
   public void end(boolean interrupted) {
     m_swerve.setControl(m_swerveRequest.withVelocityX(0).withVelocityY(0));
+    m_currentAimingAngle = Optional.empty();
+    m_currentVirtualDistance = Optional.empty();
   }
 
   // Returns true when the command should end.
