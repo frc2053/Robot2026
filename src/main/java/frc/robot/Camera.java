@@ -156,7 +156,6 @@ public class Camera {
         if (visionEst.isPresent()) {
           DataLogManager.log(
               String.format(
-                  "[%s] MULTI-TAG pose: IDs=%s pose=(%.2f, %.2f)",
                   m_camera.getName(),
                   multiTagResult.get().fiducialIDsUsed,
                   visionEst.get().estimatedPose.getX(),
@@ -339,7 +338,6 @@ public class Camera {
 
     DataLogManager.log(
         String.format(
-            "[%s] SINGLE-TAG pose: ID=%d ambiguity=%.3f pose=(%.2f, %.2f)",
             m_camera.getName(),
             bestTarget.fiducialId,
             bestTarget.poseAmbiguity,

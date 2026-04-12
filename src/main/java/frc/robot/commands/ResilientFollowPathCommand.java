@@ -152,7 +152,7 @@ public class ResilientFollowPathCommand extends Command {
   }
 
   /**
-   * Creates a resilient path-following command with default thresholds (0.5m pause, 0.15m resume).
+   * Creates a resilient path-following command with default thresholds (10in pause, 4in resume).
    *
    * @param path The path to follow.
    * @param poseSupplier Supplier for the current field-relative robot pose.
@@ -180,8 +180,8 @@ public class ResilientFollowPathCommand extends Command {
         controller,
         robotConfig,
         shouldFlipPath,
-        0.5,
-        0.15,
+        0.254, // 10 inches
+        0.10, // ~4 inches
         requirements);
   }
 

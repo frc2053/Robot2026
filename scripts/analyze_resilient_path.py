@@ -43,6 +43,9 @@ NAMES = {
     "NT:ResilientPath/TargetPose": "target_pose",
     "NT:/DriveState/Pose": "robot_pose",
     "NT:/Sim/DisturbRobot": "disturb",
+    # Also try alternate NT paths
+    "NT:Sim/DisturbActive": "disturb_active",
+    "NT:/Sim/DisturbActive": "disturb_active",
 }
 
 # Reverse map: entry_id -> short key
@@ -58,6 +61,7 @@ ts_real_error = ([], [])
 ts_paused = ([], [])
 ts_virtual = ([], [])
 ts_disturb = ([], [])
+ts_disturb_active = ([], [])
 ts_robot_x = ([], [])
 ts_robot_y = ([], [])
 ts_target_x = ([], [])
@@ -99,6 +103,9 @@ for record in reader2:
     elif key == "disturb":
         ts_disturb[0].append(t)
         ts_disturb[1].append(1.0 if record.getBoolean() else 0.0)
+    elif key == "disturb_active":
+        ts_disturb_active[0].append(t)
+        ts_disturb_active[1].append(1.0 if record.getBoolean() else 0.0)
     elif key == "robot_pose":
         x, y = decode_pose2d(record.getRaw())
         if x is not None:
@@ -116,14 +123,92 @@ for record in reader2:
 
 # ── Analysis ──────────────────────────────────────────────────────────
 
+print(f"\n{'='*60}")
+print("LOG FILE INFO")
+print(f"{'='*60}")
 print(f"Log: {LOG_PATH}")
-print(f"  Error samples:        {len(ts_error[0])}")
-print(f"  Real error samples:   {len(ts_real_error[0])}")
-print(f"  IsPaused samples:     {len(ts_paused[0])}")
-print(f"  VirtualTime samples:  {len(ts_virtual[0])}")
-print(f"  DisturbRobot samples: {len(ts_disturb[0])}")
-print(f"  Robot pose samples:   {len(ts_robot_x[0])}")
-print(f"  Target pose samples:  {len(ts_target_x[0])}")
+
+# List all available entries in the log
+print(f"\n--- All log entries ({len(entry_meta)} total) ---")
+resilient_entries = []
+for eid, (name, typ) in sorted(entry_meta.items(), key=lambda x: x[1][0]):
+    if "ResilientPath" in name or "Sim/" in name or "DriveState" in name:
+        resilient_entries.append((name, typ))
+        print(f"  {name} ({typ})")
+
+print(f"\n--- Sample counts ---")
+print(f"  Error samples:         {len(ts_error[0])}")
+print(f"  Real error samples:    {len(ts_real_error[0])}")
+print(f"  IsPaused samples:      {len(ts_paused[0])}")
+print(f"  VirtualTime samples:   {len(ts_virtual[0])}")
+print(f"  DisturbRobot samples:  {len(ts_disturb[0])}")
+print(f"  DisturbActive samples: {len(ts_disturb_active[0])}")
+print(f"  Robot pose samples:    {len(ts_robot_x[0])}")
+print(f"  Target pose samples:   {len(ts_target_x[0])}")
+
+# Time ranges for each data stream
+print(f"\n--- Time ranges ---")
+if ts_error[0]:
+    print(f"  Error:        {ts_error[0][0]:.3f}s - {ts_error[0][-1]:.3f}s")
+if ts_paused[0]:
+    print(f"  IsPaused:     {ts_paused[0][0]:.3f}s - {ts_paused[0][-1]:.3f}s")
+if ts_virtual[0]:
+    print(f"  VirtualTime:  {ts_virtual[0][0]:.3f}s - {ts_virtual[0][-1]:.3f}s")
+if ts_disturb[0]:
+    print(f"  DisturbRobot: {ts_disturb[0][0]:.3f}s - {ts_disturb[0][-1]:.3f}s")
+if ts_disturb_active[0]:
+    print(f"  DisturbActiv: {ts_disturb_active[0][0]:.3f}s - {ts_disturb_active[0][-1]:.3f}s")
+if ts_target_x[0]:
+    print(f"  TargetPose:   {ts_target_x[0][0]:.3f}s - {ts_target_x[0][-1]:.3f}s")
+
+# Sample rate analysis
+print(f"\n--- Sample rates ---")
+def calc_rate(times):
+    if len(times) < 2:
+        return 0, 0, 0
+    deltas = [times[i+1] - times[i] for i in range(len(times)-1)]
+    avg = sum(deltas) / len(deltas)
+    return 1/avg if avg > 0 else 0, min(deltas), max(deltas)
+
+if ts_error[0]:
+    rate, min_d, max_d = calc_rate(ts_error[0])
+    print(f"  Error:       {rate:.1f} Hz (gaps: {min_d*1000:.1f}ms - {max_d*1000:.1f}ms)")
+if ts_paused[0]:
+    rate, min_d, max_d = calc_rate(ts_paused[0])
+    print(f"  IsPaused:    {rate:.1f} Hz (gaps: {min_d*1000:.1f}ms - {max_d*1000:.1f}ms)")
+if ts_virtual[0]:
+    rate, min_d, max_d = calc_rate(ts_virtual[0])
+    print(f"  VirtualTime: {rate:.1f} Hz (gaps: {min_d*1000:.1f}ms - {max_d*1000:.1f}ms)")
+
+# Gap detection - find periods where data stops coming
+print(f"\n--- Gap detection (gaps > 100ms) ---")
+def find_gaps(times, name, threshold=0.1):
+    gaps = []
+    for i in range(len(times)-1):
+        delta = times[i+1] - times[i]
+        if delta > threshold:
+            gaps.append((times[i], times[i+1], delta))
+    return gaps
+
+if ts_error[0]:
+    gaps = find_gaps(ts_error[0], "Error")
+    if gaps:
+        print(f"  Error gaps: {len(gaps)}")
+        for start, end, dur in gaps[:5]:
+            print(f"    {start:.3f}s - {end:.3f}s ({dur*1000:.0f}ms)")
+        if len(gaps) > 5:
+            print(f"    ... and {len(gaps)-5} more")
+    else:
+        print(f"  Error: no gaps > 100ms")
+
+if ts_paused[0]:
+    gaps = find_gaps(ts_paused[0], "IsPaused")
+    if gaps:
+        print(f"  IsPaused gaps: {len(gaps)}")
+        for start, end, dur in gaps[:5]:
+            print(f"    {start:.3f}s - {end:.3f}s ({dur*1000:.0f}ms)")
+    else:
+        print(f"  IsPaused: no gaps > 100ms")
 
 # Find pause events
 pause_starts = []
@@ -137,19 +222,174 @@ for i, val in enumerate(ts_paused[1]):
         pause_ends.append(ts_paused[0][i])
         was_paused = False
 
-# Find disturb events
+# Find disturb events - try both disturb and disturb_active
 disturb_times = []
 was_disturbed = False
-for i, val in enumerate(ts_disturb[1]):
+
+# Use whichever has data
+disturb_source = ts_disturb if ts_disturb[0] else ts_disturb_active
+disturb_source_name = "DisturbRobot" if ts_disturb[0] else "DisturbActive"
+
+for i, val in enumerate(disturb_source[1]):
     if val > 0.5 and not was_disturbed:
-        disturb_times.append(ts_disturb[0][i])
+        disturb_times.append(disturb_source[0][i])
         was_disturbed = True
     elif val < 0.5:
         was_disturbed = False
 
+print(f"\nUsing disturb source: {disturb_source_name} ({len(disturb_source[0])} samples)")
+
+print(f"\n{'='*60}")
+print("DISTURBANCE ANALYSIS")
+print(f"{'='*60}")
+
+PAUSE_THRESHOLD = 0.254  # 10 inches
+RESUME_THRESHOLD = 0.10  # ~4 inches
+
+print(f"\nPause threshold: {PAUSE_THRESHOLD}m")
+print(f"Resume threshold: {RESUME_THRESHOLD}m")
+
 print(f"\n--- Disturb triggers: {len(disturb_times)} ---")
-for dt in disturb_times:
-    print(f"  t = {dt:.3f}s")
+for idx, dt in enumerate(disturb_times):
+    print(f"\n  === DISTURBANCE #{idx+1} at t={dt:.3f}s ===")
+
+    # Find disturbance end (next time disturb goes false, or +2s)
+    disturb_end = dt + 2.0
+    for i, t in enumerate(ts_disturb[0]):
+        if t > dt and ts_disturb[1][i] < 0.5:
+            disturb_end = t
+            break
+    print(f"  Duration: {disturb_end - dt:.3f}s")
+
+    # Sample counts during disturbance window
+    print(f"\n  Sample counts during disturbance window [{dt:.3f}s - {disturb_end:.3f}s]:")
+    error_count = sum(1 for t in ts_error[0] if dt <= t <= disturb_end)
+    paused_count = sum(1 for t in ts_paused[0] if dt <= t <= disturb_end)
+    virtual_count = sum(1 for t in ts_virtual[0] if dt <= t <= disturb_end)
+    target_count = sum(1 for t in ts_target_x[0] if dt <= t <= disturb_end)
+    print(f"    Error samples:       {error_count}")
+    print(f"    IsPaused samples:    {paused_count}")
+    print(f"    VirtualTime samples: {virtual_count}")
+    print(f"    TargetPose samples:  {target_count}")
+
+    # First and last sample times for each stream during disturbance
+    print(f"\n  First/last sample timestamps during disturbance:")
+    for name, times in [("Error", ts_error[0]), ("IsPaused", ts_paused[0]),
+                         ("VirtualTime", ts_virtual[0]), ("TargetPose", ts_target_x[0])]:
+        samples_in_window = [t for t in times if dt <= t <= disturb_end]
+        if samples_in_window:
+            first = min(samples_in_window)
+            last = max(samples_in_window)
+            print(f"    {name:12}: first={first:.3f}s last={last:.3f}s (delay from disturb start: {first-dt:.3f}s)")
+        else:
+            print(f"    {name:12}: NO SAMPLES during disturbance!")
+
+    # Raw sample timeline during disturbance (interleaved)
+    print(f"\n  Raw sample timeline (all streams interleaved):")
+    all_samples = []
+    for t in ts_error[0]:
+        if dt - 0.1 <= t <= disturb_end + 0.5:
+            all_samples.append((t, "Error", ts_error[1][ts_error[0].index(t)]))
+    for i, t in enumerate(ts_paused[0]):
+        if dt - 0.1 <= t <= disturb_end + 0.5:
+            all_samples.append((t, "IsPaused", "TRUE" if ts_paused[1][i] > 0.5 else "false"))
+    for i, t in enumerate(ts_virtual[0]):
+        if dt - 0.1 <= t <= disturb_end + 0.5:
+            all_samples.append((t, "VirtualTime", ts_virtual[1][i]))
+
+    all_samples.sort(key=lambda x: x[0])
+    if all_samples:
+        prev_t = all_samples[0][0]
+        for t, name, val in all_samples[:30]:  # Limit to 30 entries
+            gap = t - prev_t
+            gap_str = f"(+{gap*1000:.0f}ms)" if gap > 0.05 else ""
+            if name == "Error":
+                print(f"    t={t:.3f}s {gap_str:10} {name:12} = {val:.4f}m")
+            elif name == "IsPaused":
+                print(f"    t={t:.3f}s {gap_str:10} {name:12} = {val}")
+            else:
+                print(f"    t={t:.3f}s {gap_str:10} {name:12} = {val:.3f}s")
+            prev_t = t
+        if len(all_samples) > 30:
+            print(f"    ... ({len(all_samples) - 30} more samples)")
+    else:
+        print(f"    NO SAMPLES near disturbance window!")
+
+    # Show error values during this disturbance window
+    print(f"\n  Error during disturbance (threshold={PAUSE_THRESHOLD}m):")
+    errors_during = []
+    for i, t in enumerate(ts_error[0]):
+        if dt <= t <= disturb_end + 1.0:  # Include 1s after for recovery
+            errors_during.append((t, ts_error[1][i]))
+
+    if errors_during:
+        max_err = max(e[1] for e in errors_during)
+        print(f"    Max error: {max_err:.4f}m {'> threshold ✓' if max_err > PAUSE_THRESHOLD else '< threshold ✗'}")
+        print(f"    Error timeline:")
+        for t, err in errors_during[::max(1, len(errors_during)//10)]:  # Sample ~10 points
+            marker = ">>>" if err > PAUSE_THRESHOLD else "   "
+            print(f"      {marker} t={t:.3f}s: error={err:.4f}m")
+    else:
+        print(f"    NO ERROR DATA during disturbance!")
+
+    # Show virtual time during disturbance
+    print(f"\n  Virtual time during disturbance:")
+    vt_during = []
+    for i, t in enumerate(ts_virtual[0]):
+        if dt <= t <= disturb_end + 1.0:
+            vt_during.append((t, ts_virtual[1][i]))
+
+    if vt_during:
+        vt_start = vt_during[0][1]
+        vt_end = vt_during[-1][1]
+        vt_change = vt_end - vt_start
+        wall_change = vt_during[-1][0] - vt_during[0][0]
+        print(f"    Virtual time changed: {vt_start:.3f}s -> {vt_end:.3f}s (delta={vt_change:.3f}s)")
+        print(f"    Wall time changed: {wall_change:.3f}s")
+        if wall_change > 0.1:
+            ratio = vt_change / wall_change
+            print(f"    Ratio (vt/wall): {ratio:.2f} {'(paused!)' if ratio < 0.5 else '(running)'}")
+    else:
+        print(f"    NO VIRTUAL TIME DATA during disturbance!")
+
+    # Show IsPaused during disturbance
+    print(f"\n  IsPaused during disturbance:")
+    paused_during = []
+    for i, t in enumerate(ts_paused[0]):
+        if dt <= t <= disturb_end + 1.0:
+            paused_during.append((t, ts_paused[1][i]))
+
+    if paused_during:
+        any_paused = any(p[1] > 0.5 for p in paused_during)
+        print(f"    Ever paused: {'YES ✓' if any_paused else 'NO ✗'}")
+        for t, p in paused_during[::max(1, len(paused_during)//5)]:
+            print(f"      t={t:.3f}s: IsPaused={'TRUE' if p > 0.5 else 'false'}")
+    else:
+        print(f"    NO ISPAUSED DATA during disturbance!")
+
+    # Show robot pose vs target pose
+    print(f"\n  Robot vs Target pose:")
+    for i, t in enumerate(ts_robot_x[0]):
+        if dt <= t <= disturb_end:
+            # Find closest target pose
+            target_x, target_y = None, None
+            for j, tt in enumerate(ts_target_x[0]):
+                if abs(tt - t) < 0.05:
+                    target_x = ts_target_x[1][j]
+                    target_y = ts_target_y[1][j]
+                    break
+            if target_x is not None and i < len(ts_robot_y[1]):
+                robot_x = ts_robot_x[1][i]
+                robot_y = ts_robot_y[1][i]
+                dist = ((robot_x - target_x)**2 + (robot_y - target_y)**2)**0.5
+                print(f"    t={t:.3f}s: robot=({robot_x:.2f},{robot_y:.2f}) target=({target_x:.2f},{target_y:.2f}) dist={dist:.3f}m")
+            if i > 5:  # Limit output
+                print(f"    ... (truncated)")
+                break
+
+print(f"\n{'='*60}")
+print("PAUSE EVENTS")
+print(f"{'='*60}")
 
 print(f"\n--- Pause events: {len(pause_starts)} ---")
 for i, ps in enumerate(pause_starts):
