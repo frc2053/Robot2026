@@ -334,9 +334,9 @@ public final class Constants {
     // Negated X and Y for 180° front/back swap
     public static final Translation3d kShooterOffset =
         new Translation3d(
-            Units.inchesToMeters(7.72),
-            Units.inchesToMeters(-6.720000),
-            Units.inchesToMeters(22.99));
+            Units.inchesToMeters(6.792),
+            Units.inchesToMeters(-6.5),
+            Units.inchesToMeters(22.001322));
 
     // Target height (hub opening height in meters)
     public static final double kTargetHeight = Units.feetToMeters(6.0);
