@@ -261,10 +261,10 @@ public class Intake extends SubsystemBase {
     m_rackSimState = m_rackMotor.getSimState();
     m_rollerSimState = m_rollerMotor.getSimState();
 
-    // Rack and pinion simulation (linear motion) - using KrakenX44 to match Skip
+    // Rack and pinion simulation (linear motion)
     m_rackSim =
         new ElevatorSim(
-            DCMotor.getKrakenX44Foc(1),
+            DCMotor.getFalcon500Foc(1),
             IntakeConstants.RACK_GEAR_RATIO,
             IntakeConstants.RACK_CARRIAGE_MASS_KG,
             IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS,
@@ -273,14 +273,14 @@ public class Intake extends SubsystemBase {
             false, // No gravity (horizontal rack)
             0.0); // Starting position (retracted)
 
-    // Roller flywheel simulation - using KrakenX60 to match Skip
+    // Roller flywheel simulation
     m_rollerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getKrakenX60Foc(1),
+                DCMotor.getFalcon500Foc(1),
                 IntakeConstants.ROLLER_MOI,
                 IntakeConstants.ROLLER_GEAR_RATIO),
-            DCMotor.getKrakenX60Foc(1));
+            DCMotor.getFalcon500Foc(1));
   }
 
   private void configureRackMotor() {
