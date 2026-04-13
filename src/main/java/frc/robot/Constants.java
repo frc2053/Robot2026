@@ -242,7 +242,7 @@ public final class Constants {
 
     // Rack position constants (in rotations at mechanism/pinion)
     // Max travel = rack teeth / pinion teeth = 53 / 10 = 5.3 rotations
-    public static final double kRackDeployedPosition = 2.95;
+    public static final double kRackDeployedPosition = 3.57;
     public static final double kRackStowedPosition = 0.0;
 
     // Offset (in rotations) from deployed position when wiggling during feeding
