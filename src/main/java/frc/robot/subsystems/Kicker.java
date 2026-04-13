@@ -87,7 +87,6 @@ public class Kicker extends SubsystemBase {
     m_kickerMotor = new TalonFX(KickerConstants.KICKER_MOTOR_ID);
     m_kickerMotor2 = new TalonFX(KickerConstants.KICKER_MOTOR2_ID);
 
-
     TalonFXConfiguration config =
         new TalonFXConfiguration()
             .withMotorOutput(new MotorOutputConfigs().withNeutralMode(NeutralModeValue.Brake))
@@ -103,12 +102,10 @@ public class Kicker extends SubsystemBase {
       DataLogManager.log("ERROR! Not able to apply config to kicker motor!");
     }
 
-
     StatusCode config2Result = m_kickerMotor2.getConfigurator().apply(config);
     if (!config2Result.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to kicker motor!");
     }
-
 
     m_motorVelocity = m_kickerMotor.getVelocity();
     m_motorPosition = m_kickerMotor.getPosition();
@@ -139,7 +136,8 @@ public class Kicker extends SubsystemBase {
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for kicker subsystem!");
     }
-    StatusCode optiResult = ParentDevice.optimizeBusUtilizationForAll(m_kickerMotor, m_kickerMotor2);
+    StatusCode optiResult =
+        ParentDevice.optimizeBusUtilizationForAll(m_kickerMotor, m_kickerMotor2);
     if (!optiResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply optimization for kicker subsystem!");
     }
@@ -213,7 +211,6 @@ public class Kicker extends SubsystemBase {
     // Publish current command name
     Command currentCommand = getCurrentCommand();
     m_currentCommandPub.set(currentCommand != null ? currentCommand.getName() : "None");
-
   }
 
   @Override
@@ -231,7 +228,6 @@ public class Kicker extends SubsystemBase {
         m_kickerSim.getAngularPosition().times(KickerConstants.KICKER_GEAR_RATIO));
     m_motorSimState.setRotorVelocity(
         m_kickerSim.getAngularVelocity().times(KickerConstants.KICKER_GEAR_RATIO));
-
 
     // Update supply voltage from battery
     m_motorSimState2.setSupplyVoltage(RobotController.getBatteryVoltage());
@@ -261,7 +257,7 @@ public class Kicker extends SubsystemBase {
   //           })
   //       .withName("RunKicker");
   // }
-  //I think this above thingy does legit nothing
+  // I think this above thingy does legit nothing
 
   /**
    * Creates a command that stops the Kicker motor.
@@ -309,7 +305,8 @@ public class Kicker extends SubsystemBase {
               m_currentVoltageSetpoint = -KickerConstants.kSpinVoltage;
               m_kickerMotor.setControl(m_voltageRequest.withOutput(-KickerConstants.kSpinVoltage));
               m_currentVoltageSetpoint2 = -KickerConstants.kSpinVoltage2;
-              m_kickerMotor2.setControl(m_voltageRequest.withOutput(-KickerConstants.kSpinVoltage2));
+              m_kickerMotor2.setControl(
+                  m_voltageRequest.withOutput(-KickerConstants.kSpinVoltage2));
             })
         .finallyDo(
             () -> {

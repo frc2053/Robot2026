@@ -228,7 +228,7 @@ public final class Constants {
     public static final int ROLLER_STATOR_LIMIT = 80;
 
     // Gear ratios
-    public static final double RACK_GEAR_RATIO = (42.0 / 12.0); // Motor to pinion gearbox ratio
+    public static final double RACK_GEAR_RATIO = 42.0 / 12.0; // Motor to pinion gearbox ratio
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
     // Rack and pinion parameters (10 DP, 10 tooth pinion, 53 tooth rack)
