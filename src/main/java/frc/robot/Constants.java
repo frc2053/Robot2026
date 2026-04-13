@@ -226,7 +226,7 @@ public final class Constants {
     public static final int ROLLER_STATOR_LIMIT = 80;
 
     // Gear ratios
-    public static final double RACK_GEAR_RATIO = 5.0; // Motor to pinion gearbox ratio
+    public static final double RACK_GEAR_RATIO = (42.0 / 12.0); // Motor to pinion gearbox ratio
     public static final double ROLLER_GEAR_RATIO = 1.0;
 
     // Rack and pinion parameters (10 DP, 10 tooth pinion, 53 tooth rack)
@@ -242,21 +242,21 @@ public final class Constants {
 
     // Rack position constants (in rotations at mechanism/pinion)
     // Max travel = rack teeth / pinion teeth = 53 / 10 = 5.3 rotations
-    public static final double kRackDeployedPosition = 2.5;
+    public static final double kRackDeployedPosition = 2.95;
     public static final double kRackStowedPosition = 0.0;
 
     // Offset (in rotations) from deployed position when wiggling during feeding
     // Negative to retract 75% of the way back toward stowed
     public static final double kRackFeedingWiggleOffset = -0.75 * kRackDeployedPosition;
 
-    // Rack PID constants (Slot 0)
-    public static final double kRackKS = 0.5;
+    // Rack PID constants (Slot 0) - matching Skip
+    public static final double kRackKS = 14.0;
     public static final double kRackKG = 0.0;
-    public static final double kRackKV = 0.01;
-    public static final double kRackKA = 0.01;
-    public static final double kRackKP = 50;
+    public static final double kRackKV = 0.0;
+    public static final double kRackKA = 0.0;
+    public static final double kRackKP = 30.0;
     public static final double kRackKI = 0.0;
-    public static final double kRackKD = 30;
+    public static final double kRackKD = 0.0;
     public static final double kRackMotionMagicCruiseVelocity = 20.0; // rotations per second
     public static final double kRackMotionMagicAcceleration = 40.0; // rotations per second^2
 
@@ -274,7 +274,7 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Position tolerance for "at position" detection (rotations)
-    public static final double kRackPositionToleranceRotations = 0.02;
+    public static final double kRackPositionToleranceRotations = 0.625;
   }
 
   public static class VisionConstants {

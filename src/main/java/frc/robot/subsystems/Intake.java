@@ -293,13 +293,15 @@ public class Intake extends SubsystemBase {
     config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
-    // Current limits
+    // Current limits - supply disabled to match Skip, torque current handles limiting
     config.CurrentLimits =
         new CurrentLimitsConfigs()
-            .withStatorCurrentLimitEnable(true)
-            .withStatorCurrentLimit(IntakeConstants.RACK_STATOR_LIMIT)
-            .withSupplyCurrentLimitEnable(true)
-            .withSupplyCurrentLimit(IntakeConstants.RACK_SUPPLY_LIMIT);
+            .withStatorCurrentLimitEnable(false)
+            .withSupplyCurrentLimitEnable(false);
+
+    // Voltage limits (matching Skip)
+    config.Voltage.PeakForwardVoltage = 12.0;
+    config.Voltage.PeakReverseVoltage = -12.0;
 
     // Feedback configuration - use gear ratio for mechanism position
     config.Feedback =
