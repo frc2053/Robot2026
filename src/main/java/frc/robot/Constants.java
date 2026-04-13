@@ -257,17 +257,20 @@ public final class Constants {
     public static final double kRackKP = 30.0;
     public static final double kRackKI = 0.0;
     public static final double kRackKD = 0.0;
-    public static final double kRackMotionMagicCruiseVelocity = 20.0; // rotations per second
-    public static final double kRackMotionMagicAcceleration = 40.0; // rotations per second^2
+    // Motion Magic parameters (matching Skip: 1.0 m/s cruise, 999 m/s² accel)
+    // Cruise velocity = linear_velocity / (2π × pitch_radius) = 1.0 / (2π × 0.01298) ≈ 12.26 rps
+    // Acceleration = linear_accel / (2π × pitch_radius) = 999 / (2π × 0.01298) ≈ 12247 rps²
+    public static final double kRackMotionMagicCruiseVelocity = 12.26;
+    public static final double kRackMotionMagicAcceleration = 12247.0;
 
     // Roller voltage for intaking
     public static final double kIntakeVoltage = -12.0;
     public static final double nonheldVoltage = 0.0;
     public static final double kEjectVoltage = 6.0;
 
-    // Simulation constants (from CAD)
+    // Simulation constants (matching Skip)
     // Mass of the moving rack carriage
-    public static final double RACK_CARRIAGE_MASS_KG = Units.lbsToKilograms(10.224711);
+    public static final double RACK_CARRIAGE_MASS_KG = 0.1;
     // Min/max positions for simulation (in meters)
     public static final double RACK_MIN_EXTENSION_METERS = 0.0;
     public static final double RACK_MAX_EXTENSION_METERS = RACK_MAX_TRAVEL_METERS;

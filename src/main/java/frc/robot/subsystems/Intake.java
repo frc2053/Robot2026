@@ -26,7 +26,6 @@ import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -44,6 +43,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
@@ -261,13 +261,10 @@ public class Intake extends SubsystemBase {
     m_rackSimState = m_rackMotor.getSimState();
     m_rollerSimState = m_rollerMotor.getSimState();
 
-    // Set rack sim orientation to match motor invert (Clockwise_Positive)
-    m_rackSimState.Orientation = ChassisReference.Clockwise_Positive;
-
-    // Rack and pinion simulation (linear motion)
+    // Rack and pinion simulation (linear motion) - using KrakenX44 to match Skip
     m_rackSim =
         new ElevatorSim(
-            DCMotor.getFalcon500Foc(1),
+            DCMotor.getKrakenX44Foc(1),
             IntakeConstants.RACK_GEAR_RATIO,
             IntakeConstants.RACK_CARRIAGE_MASS_KG,
             IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS,
@@ -276,14 +273,14 @@ public class Intake extends SubsystemBase {
             false, // No gravity (horizontal rack)
             0.0); // Starting position (retracted)
 
-    // Roller flywheel simulation
+    // Roller flywheel simulation - using KrakenX60 to match Skip
     m_rollerSim =
         new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
-                DCMotor.getFalcon500Foc(1),
+                DCMotor.getKrakenX60Foc(1),
                 IntakeConstants.ROLLER_MOI,
                 IntakeConstants.ROLLER_GEAR_RATIO),
-            DCMotor.getFalcon500Foc(1));
+            DCMotor.getKrakenX60Foc(1));
   }
 
   private void configureRackMotor() {
@@ -291,7 +288,10 @@ public class Intake extends SubsystemBase {
 
     // Motor output configuration
     config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+    config.MotorOutput.Inverted =
+        RobotBase.isSimulation()
+            ? InvertedValue.CounterClockwise_Positive
+            : InvertedValue.Clockwise_Positive;
 
     // Current limits - supply disabled to match Skip, torque current handles limiting
     config.CurrentLimits =
@@ -473,9 +473,10 @@ public class Intake extends SubsystemBase {
         m_rackSim.getVelocityMetersPerSecond()
             / (2.0 * Math.PI * IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS);
 
-    // Convert mechanism (pinion) rotations to motor rotations
+    // Convert mechanism (pinion) rotations to motor rotations for position
+    // Note: Skip does NOT multiply velocity by gear ratio
     m_rackSimState.setRawRotorPosition(pinionRotations * IntakeConstants.RACK_GEAR_RATIO);
-    m_rackSimState.setRotorVelocity(pinionVelocityRps * IntakeConstants.RACK_GEAR_RATIO);
+    m_rackSimState.setRotorVelocity(pinionVelocityRps);
 
     // Update roller simulation
     m_rollerSim.setInputVoltage(m_rollerSimState.getMotorVoltageMeasure().in(Volts));
