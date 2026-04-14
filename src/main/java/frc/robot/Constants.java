@@ -122,10 +122,10 @@ public final class Constants {
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 0.1549;
-    public static final double kRollerKV = 0.12157;
-    public static final double kRollerKA = 0.0070367;
-    public static final double kRollerKP = 0.2;
+    public static final double kRollerKS = 0.14223;
+    public static final double kRollerKV = 0.11923;
+    public static final double kRollerKA = 0.0073708;
+    public static final double kRollerKP = 0.22518;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
 
@@ -210,8 +210,8 @@ public final class Constants {
     public static final int KICKER_STATOR_LIMIT = 120;
 
     // Spin voltage for feeding game pieces
-    public static final double kSpinVoltage = 12.0;
-    public static final double kSpinVoltage2 = 12.0;
+    public static final double kSpinVoltage = 8.0;
+    public static final double kSpinVoltage2 = 7.5;
 
     // Simulation constants
     public static final double KICKER_GEAR_RATIO = 1.0;
@@ -256,7 +256,7 @@ public final class Constants {
     public static final double kRackKG = 0.0;
     public static final double kRackKV = 0.0;
     public static final double kRackKA = 0.0;
-    public static final double kRackKP = 30.0;
+    public static final double kRackKP = 20.0;
     public static final double kRackKI = 0.0;
     public static final double kRackKD = 0.0;
     // Motion Magic parameters (matching Skip: 1.0 m/s cruise, 999 m/s² accel)
