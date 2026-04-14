@@ -19,8 +19,6 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.util.ShootingDataPoint;
-
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
