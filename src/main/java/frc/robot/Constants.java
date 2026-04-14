@@ -261,7 +261,7 @@ public final class Constants {
     // Cruise velocity = linear_velocity / (2π × pitch_radius) = 1.0 / (2π × 0.01298) ≈ 12.26 rps
     // Acceleration = linear_accel / (2π × pitch_radius) = 999 / (2π × 0.01298) ≈ 12247 rps²
     public static final double kRackMotionMagicCruiseVelocity = 12.26;
-    public static final double kRackMotionMagicAcceleration = 12247.0;
+    public static final double kRackMotionMagicAcceleration = 40.0;
 
     // Roller voltage for intaking
     public static final double kIntakeVoltage = -12.0;
