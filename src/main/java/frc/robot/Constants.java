@@ -19,6 +19,8 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.util.ShootingDataPoint;
+
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -158,23 +160,12 @@ public final class Constants {
     public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
     static {
-      // Top roller RPMs adjusted for 1.5x upduction (27T motor / 18T roller)
-      // Motor RPM = old roller RPM / 1.5
-
-      shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 166.7, 1.06));
-      shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 166.7));
-      shootingDataPoints.add(new ShootingDataPoint(1.77, 2500.0, 186.7));
-      shootingDataPoints.add(new ShootingDataPoint(1.93, 2700.0, 166.7));
-      shootingDataPoints.add(new ShootingDataPoint(2.30, 2700.0, 366.7, 1.20));
-      shootingDataPoints.add(new ShootingDataPoint(2.40, 2700.0, 400.0));
-      shootingDataPoints.add(new ShootingDataPoint(2.41, 1600.0, 2136.9));
-      shootingDataPoints.add(new ShootingDataPoint(2.49, 1600.0, 2266.7));
-      shootingDataPoints.add(new ShootingDataPoint(2.82, 1600.0, 2466.7, 1.22));
-      shootingDataPoints.add(new ShootingDataPoint(3.24, 1600.0, 2733.3));
-      shootingDataPoints.add(new ShootingDataPoint(3.55, 1500.0, 2866.7, 1.16));
-      shootingDataPoints.add(new ShootingDataPoint(3.90, 1700.0, 2900.0));
-      shootingDataPoints.add(new ShootingDataPoint(4.95, 1500.0, 3533.3, 1.58));
-      shootingDataPoints.add(new ShootingDataPoint(5.40, 1700.0, 3666.7, 1.63));
+      shootingDataPoints.add(new ShootingDataPoint(0.792, 2100.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(0.933, 2200.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(1.12, 2300.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(1.29, 2500.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(1.39, 2600.0, 180.0));
+      shootingDataPoints.add(new ShootingDataPoint(1.58, 2600.0, 240.0));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
