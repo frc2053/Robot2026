@@ -30,7 +30,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.commands.ShootOnTheMove;
 import frc.robot.generated.TunerConstants;
@@ -238,8 +237,6 @@ public class RobotContainer {
     // m_joystick.a().whileTrue(m_shooter.rollerSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
     // m_joystick.b().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kForward));
     // m_joystick.x().whileTrue(m_shooter.rollerSysIdDynamic(SysIdRoutine.Direction.kReverse));
-
-
 
     // Sim-only: set Sim/DisturbRobot to true in NetworkTables to teleport the robot off path.
     // Works during auto (joystick inputs are disabled during auto).
