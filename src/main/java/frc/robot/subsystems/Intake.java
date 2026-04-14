@@ -328,7 +328,8 @@ public class Intake extends SubsystemBase {
     config.TorqueCurrent =
         new TorqueCurrentConfigs()
             .withPeakForwardTorqueCurrent(IntakeConstants.RACK_STATOR_LIMIT)
-            .withPeakReverseTorqueCurrent(-IntakeConstants.RACK_STATOR_LIMIT);
+            // Make it so we can squish more in reverse
+            .withPeakReverseTorqueCurrent(-IntakeConstants.RACK_STATOR_LIMIT * 2.0);
 
     StatusCode configResult = m_rackMotor.getConfigurator().apply(config);
     if (!configResult.isOK()) {
