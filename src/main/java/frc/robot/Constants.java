@@ -158,12 +158,12 @@ public final class Constants {
     public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
     static {
-      shootingDataPoints.add(new ShootingDataPoint(0.792, 2100.0, 166.7));
+      shootingDataPoints.add(new ShootingDataPoint(0.792, 2100.0, 166.7, 1.0));
       shootingDataPoints.add(new ShootingDataPoint(0.933, 2200.0, 166.7));
       shootingDataPoints.add(new ShootingDataPoint(1.12, 2300.0, 166.7));
       shootingDataPoints.add(new ShootingDataPoint(1.29, 2500.0, 166.7));
       shootingDataPoints.add(new ShootingDataPoint(1.39, 2600.0, 180.0));
-      shootingDataPoints.add(new ShootingDataPoint(1.58, 2600.0, 240.0));
+      shootingDataPoints.add(new ShootingDataPoint(1.58, 2600.0, 240));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
@@ -192,13 +192,13 @@ public final class Constants {
   }
 
   public static class KickerConstants {
-    public static final int KICKER_MOTOR_ID = 19;
+    public static final int KICKER_MOTOR_ID = 31;
 
     public static final int KICKER_SUPPLY_LIMIT = 40;
     public static final int KICKER_STATOR_LIMIT = 120;
 
     // Spin voltage for feeding game pieces
-    public static final double kSpinVoltage = 8.0;
+    public static final double kSpinVoltage = 9.5;
 
     // Simulation constants
     public static final double KICKER_GEAR_RATIO = 1.0;

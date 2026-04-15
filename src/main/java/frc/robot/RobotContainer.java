@@ -201,6 +201,7 @@ public class RobotContainer {
         .whileTrue(m_shooter.idleVoltage(2.0));
 
     Trigger actuallyShoot = m_joystick.rightTrigger().and(m_shooter.atSpeedTrigger());
+
     // Feed when shooter is at speed AND right trigger is held
     actuallyShoot.whileTrue(shootCommand());
     // Wiggle intake to feed balls while shooting, but only when not actively intaking
@@ -209,6 +210,7 @@ public class RobotContainer {
         .whileTrue(m_intake.feedingWiggleRackCommand());
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
+
 
     // Passing mode: spin up wheels to passing speed on left bumper hold, feed when at speed
     m_joystick.leftBumper().whileTrue(m_shooter.spinUpForPassingCommand());
