@@ -158,12 +158,23 @@ public final class Constants {
     public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
     static {
-      shootingDataPoints.add(new ShootingDataPoint(0.792, 2100.0, 166.7, 1.0));
-      shootingDataPoints.add(new ShootingDataPoint(0.933, 2200.0, 166.7));
-      shootingDataPoints.add(new ShootingDataPoint(1.12, 2300.0, 166.7));
-      shootingDataPoints.add(new ShootingDataPoint(1.29, 2500.0, 166.7));
-      shootingDataPoints.add(new ShootingDataPoint(1.39, 2600.0, 180.0));
-      shootingDataPoints.add(new ShootingDataPoint(1.58, 2600.0, 240));
+      shootingDataPoints.add(new ShootingDataPoint(0.792, 2100, 166.7, 0.977));
+      shootingDataPoints.add(new ShootingDataPoint(0.9, 1000, 1800, 0.977));
+      shootingDataPoints.add(new ShootingDataPoint(0.93, 1000, 1800, 0.969));
+      shootingDataPoints.add(new ShootingDataPoint(0.97, 1000, 1800, 0.947));
+      shootingDataPoints.add(new ShootingDataPoint(1.04, 1000, 1800, 0.982));
+      shootingDataPoints.add(new ShootingDataPoint(1.12, 1000, 1800, 0.871));
+      shootingDataPoints.add(new ShootingDataPoint(1.15, 1000, 1800, 0.948));
+      shootingDataPoints.add(new ShootingDataPoint(1.32, 1000, 2000, 1.192));
+      shootingDataPoints.add(new ShootingDataPoint(1.45, 1000, 2000, 1.095));
+      shootingDataPoints.add(new ShootingDataPoint(1.61, 1000, 2200, 1.125));
+      shootingDataPoints.add(new ShootingDataPoint(1.84, 1000, 2200, 1.14));
+      shootingDataPoints.add(new ShootingDataPoint(2.17, 1000, 2400, 1.152));
+      shootingDataPoints.add(new ShootingDataPoint(2.59, 1100, 2600, 1.16));
+      shootingDataPoints.add(new ShootingDataPoint(3.04, 1400, 2400, 1.352));
+      shootingDataPoints.add(new ShootingDataPoint(3.52, 1550, 2400, 1.451));
+      shootingDataPoints.add(new ShootingDataPoint(3.82, 1800, 2100, 1.394));
+      shootingDataPoints.add(new ShootingDataPoint(4.34, 2000, 2100, 1.483));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
