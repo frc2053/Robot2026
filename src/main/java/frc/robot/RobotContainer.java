@@ -211,7 +211,6 @@ public class RobotContainer {
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
-
     // Passing mode: spin up wheels to passing speed on left bumper hold, feed when at speed
     m_joystick.leftBumper().whileTrue(m_shooter.spinUpForPassingCommand());
     Trigger actuallyPass = m_joystick.leftBumper().and(m_shooter.atSpeedTrigger());
