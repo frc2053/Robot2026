@@ -170,11 +170,11 @@ public final class Constants {
       shootingDataPoints.add(new ShootingDataPoint(1.61, 1000, 2200, 1.125));
       shootingDataPoints.add(new ShootingDataPoint(1.84, 1000, 2200, 1.14));
       shootingDataPoints.add(new ShootingDataPoint(2.17, 1000, 2400, 1.152));
-      shootingDataPoints.add(new ShootingDataPoint(2.59, 1100, 2600, 1.16));
-      shootingDataPoints.add(new ShootingDataPoint(3.04, 1400, 2400, 1.352));
-      shootingDataPoints.add(new ShootingDataPoint(3.52, 1550, 2400, 1.451));
-      shootingDataPoints.add(new ShootingDataPoint(3.82, 1800, 2100, 1.394));
-      shootingDataPoints.add(new ShootingDataPoint(4.34, 2000, 2100, 1.483));
+      shootingDataPoints.add(new ShootingDataPoint(2.59, 1000, 2500, 1.16));//Removed 100RPM from each from here out
+      shootingDataPoints.add(new ShootingDataPoint(3.04, 1300, 2300, 1.352));
+      shootingDataPoints.add(new ShootingDataPoint(3.52, 1500, 2300, 1.451));
+      shootingDataPoints.add(new ShootingDataPoint(3.82, 1700, 2000, 1.394));
+      shootingDataPoints.add(new ShootingDataPoint(4.34, 1900, 2000, 1.483));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
