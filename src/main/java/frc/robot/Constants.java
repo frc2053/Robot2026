@@ -243,7 +243,7 @@ public final class Constants {
 
     // Rack position constants (in rotations at mechanism/pinion)
     // Max travel = rack teeth / pinion teeth = 53 / 10 = 5.3 rotations
-    public static final double kRackDeployedPosition = 3.57;
+    public static final double kRackDeployedPosition = 2.945;
     public static final double kRackStowedPosition = 0.0;
 
     // Offset (in rotations) from deployed position when wiggling during feeding
@@ -308,7 +308,7 @@ public final class Constants {
 
     // The standard deviations of our vision estimated poses, which affect correction rate
     // (Fake values. Experiment and determine estimation noise on an actual robot.)
-    public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(4, 4, 8);
+    public static final Matrix<N3, N1> kSingleTagStdDevs = VecBuilder.fill(2, 2, 8);
     public static final Matrix<N3, N1> kMultiTagStdDevs = VecBuilder.fill(0.5, 0.5, 1);
 
     private static AprilTagFieldLayout createHubOnlyLayout() {
