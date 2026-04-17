@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.util.datalog.StringLogEntry;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -59,6 +60,7 @@ public class Camera {
   private final StructArrayPublisher<Pose3d> m_targetPosesPub;
   private final StructArrayPublisher<Translation2d> m_cornersPub;
   private final StringPublisher m_estimationMethodPub;
+  private final StringLogEntry m_estimationLog;
 
   // Simulation
   private VisionSystemSim m_visionSim;
@@ -100,6 +102,8 @@ public class Camera {
     m_cornersPub =
         m_nt.getStructArrayTopic(cameraName + "targetCorners", Translation2d.struct).publish();
     m_estimationMethodPub = m_nt.getStringTopic(cameraName + "EstimationMethod").publish();
+    m_estimationLog =
+        new StringLogEntry(DataLogManager.getLog(), "/Vision/" + cameraName + "/EstimationLog");
 
     // Initialize pose estimator
     m_photonEstimator =
@@ -159,10 +163,9 @@ public class Camera {
         visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
         if (visionEst.isPresent()) {
           estimationMethod = "multi-tag";
-          DataLogManager.log(
+          m_estimationLog.append(
               String.format(
-                  "[%s] multi-tag: tags=%s pose=(%.2f, %.2f)",
-                  m_camera.getName(),
+                  "multi-tag: tags=%s pose=(%.2f, %.2f)",
                   multiTagResult.get().fiducialIDsUsed,
                   visionEst.get().estimatedPose.getX(),
                   visionEst.get().estimatedPose.getY()));
@@ -257,7 +260,7 @@ public class Camera {
 
     // Log error if standard deviations are zero
     if (estStdDevs.get(0, 0) == 0 || estStdDevs.get(1, 0) == 0 || estStdDevs.get(2, 0) == 0) {
-      DataLogManager.log("ERROR: STD DEV IS ZERO!");
+      m_estimationLog.append("ERROR: STD DEV IS ZERO!");
     }
 
     // Publish standard deviations
@@ -346,10 +349,10 @@ public class Camera {
         }
       }
       if (bestTarget != null) {
-        DataLogManager.log(
+        m_estimationLog.append(
             String.format(
-                "[%s] single-tag area fallback (poseAmbiguity==-1): id=%d area=%.3f",
-                m_camera.getName(), bestTarget.fiducialId, bestTarget.getArea()));
+                "single-tag area fallback (poseAmbiguity==-1): id=%d area=%.3f",
+                bestTarget.fiducialId, bestTarget.getArea()));
       }
     }
 
@@ -366,10 +369,9 @@ public class Camera {
     Pose3d robotPoseEst =
         cameraPose.transformBy(m_photonEstimator.getRobotToCameraTransform().inverse());
 
-    DataLogManager.log(
+    m_estimationLog.append(
         String.format(
-            "[%s] single-tag: id=%d ambiguity=%.3f pose=(%.2f, %.2f)",
-            m_camera.getName(),
+            "single-tag: id=%d ambiguity=%.3f pose=(%.2f, %.2f)",
             bestTarget.fiducialId,
             bestTarget.poseAmbiguity,
             robotPoseEst.getX(),
