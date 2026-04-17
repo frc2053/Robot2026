@@ -209,7 +209,7 @@ public final class Constants {
     public static final int KICKER_STATOR_LIMIT = 120;
 
     // Spin voltage for feeding game pieces
-    public static final double kSpinVoltage = 9.5;
+    public static final double kSpinVoltage = 12;
 
     // Simulation constants
     public static final double KICKER_GEAR_RATIO = 1.0;
