@@ -331,7 +331,9 @@ public class Camera {
     PhotonTrackedTarget bestTarget = null;
     double lowestAmbiguity = Double.MAX_VALUE;
     for (PhotonTrackedTarget target : targets) {
-      if (target.poseAmbiguity >= 0 && target.poseAmbiguity < lowestAmbiguity) {
+      if (target.poseAmbiguity >= 0
+          && target.poseAmbiguity < 0.2
+          && target.poseAmbiguity < lowestAmbiguity) {
         lowestAmbiguity = target.poseAmbiguity;
         bestTarget = target;
       }
