@@ -170,7 +170,8 @@ public final class Constants {
       shootingDataPoints.add(new ShootingDataPoint(1.61, 1000, 2200, 1.125));
       shootingDataPoints.add(new ShootingDataPoint(1.84, 1000, 2200, 1.14));
       shootingDataPoints.add(new ShootingDataPoint(2.17, 1000, 2400, 1.152));
-      shootingDataPoints.add(new ShootingDataPoint(2.59, 1000, 2500, 1.16));//Removed 100RPM from each from here out
+      shootingDataPoints.add(
+          new ShootingDataPoint(2.59, 1000, 2500, 1.16)); // Removed 100RPM from each from here out
       shootingDataPoints.add(new ShootingDataPoint(3.04, 1300, 2300, 1.352));
       shootingDataPoints.add(new ShootingDataPoint(3.52, 1500, 2300, 1.451));
       shootingDataPoints.add(new ShootingDataPoint(3.82, 1700, 2000, 1.394));
