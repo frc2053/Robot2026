@@ -16,6 +16,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -57,6 +58,7 @@ public class Camera {
   private final DoublePublisher m_stdDevRotPosePub;
   private final StructArrayPublisher<Pose3d> m_targetPosesPub;
   private final StructArrayPublisher<Translation2d> m_cornersPub;
+  private final StringPublisher m_estimationMethodPub;
 
   // Simulation
   private VisionSystemSim m_visionSim;
@@ -97,6 +99,7 @@ public class Camera {
         m_nt.getStructArrayTopic(cameraName + "targetPoses", Pose3d.struct).publish();
     m_cornersPub =
         m_nt.getStructArrayTopic(cameraName + "targetCorners", Translation2d.struct).publish();
+    m_estimationMethodPub = m_nt.getStringTopic(cameraName + "EstimationMethod").publish();
 
     // Initialize pose estimator
     m_photonEstimator =
@@ -148,14 +151,17 @@ public class Camera {
       }
 
       Optional<EstimatedRobotPose> visionEst = Optional.empty();
+      String estimationMethod = "none";
 
       // Try coprocessor multi-tag PnP if all tags in the result are from our alliance
       Optional<MultiTargetPNPResult> multiTagResult = result.multitagResult;
       if (multiTagResult.isPresent() && canUseMultiTag(multiTagResult.get())) {
         visionEst = m_photonEstimator.estimateCoprocMultiTagPose(result);
         if (visionEst.isPresent()) {
+          estimationMethod = "multi-tag";
           DataLogManager.log(
               String.format(
+                  "[%s] multi-tag: tags=%s pose=(%.2f, %.2f)",
                   m_camera.getName(),
                   multiTagResult.get().fiducialIDsUsed,
                   visionEst.get().estimatedPose.getX(),
@@ -166,7 +172,12 @@ public class Camera {
       // Fallback to lowest ambiguity single-tag from filtered targets
       if (visionEst.isEmpty()) {
         visionEst = estimateSingleTag(targets, result.getTimestampSeconds());
+        if (visionEst.isPresent()) {
+          estimationMethod = "single-tag";
+        }
       }
+
+      m_estimationMethodPub.set(estimationMethod);
 
       // Publish pose
       if (visionEst.isPresent()) {
@@ -323,6 +334,25 @@ public class Camera {
       }
     }
 
+    // If no target had computable ambiguity (poseAmbiguity == -1 when coprocessor multi-tag PnP
+    // is active and per-target ambiguity is not computed), fall back to the largest-area tag as
+    // a confidence proxy.
+    if (bestTarget == null) {
+      double largestArea = -1;
+      for (PhotonTrackedTarget target : targets) {
+        if (target.getArea() > largestArea) {
+          largestArea = target.getArea();
+          bestTarget = target;
+        }
+      }
+      if (bestTarget != null) {
+        DataLogManager.log(
+            String.format(
+                "[%s] single-tag area fallback (poseAmbiguity==-1): id=%d area=%.3f",
+                m_camera.getName(), bestTarget.fiducialId, bestTarget.getArea()));
+      }
+    }
+
     if (bestTarget == null) {
       return Optional.empty();
     }
@@ -338,6 +368,7 @@ public class Camera {
 
     DataLogManager.log(
         String.format(
+            "[%s] single-tag: id=%d ambiguity=%.3f pose=(%.2f, %.2f)",
             m_camera.getName(),
             bestTarget.fiducialId,
             bestTarget.poseAmbiguity,
