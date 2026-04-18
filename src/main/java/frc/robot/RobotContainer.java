@@ -20,8 +20,10 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.PowerDistribution;
+import java.util.Set;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -94,6 +96,9 @@ public class RobotContainer {
   // Dashboard toggle for horizontal pose mirroring
   private final BooleanSubscriber m_mirrorSub;
 
+  // Dashboard number for auto wait delay (read at schedule time via defer)
+  private final DoubleSubscriber m_autoWaitSub;
+
   public RobotContainer() {
     // Initialize mirror toggle on dashboard (before setupPathPlannerCommands which references it)
     SmartDashboard.putBoolean("Left Side", false);
@@ -107,6 +112,14 @@ public class RobotContainer {
     setupPathPlannerCommands();
     m_autoChooser = AutoBuilder.buildAutoChooser("");
     SmartDashboard.putData("Auto Mode", m_autoChooser);
+
+    // Initialize auto wait delay on dashboard
+    SmartDashboard.putNumber("Auto Wait Seconds", 0.0);
+    m_autoWaitSub =
+        NetworkTableInstance.getDefault()
+            .getTable("SmartDashboard")
+            .getDoubleTopic("Auto Wait Seconds")
+            .subscribe(0.0);
 
     // Initialize SOTF toggle on dashboard
     SmartDashboard.putBoolean("Shoot On The Move", true);
@@ -340,6 +353,10 @@ public class RobotContainer {
     return m_intake.runRollers();
   }
 
+  public Command dashboardWait() {
+    return Commands.defer(() -> Commands.waitSeconds(m_autoWaitSub.get()), Set.of());
+  }
+
   public void setupPathPlannerCommands() {
     NamedCommands.registerCommand("Shoot", shootCommand());
     NamedCommands.registerCommand("Intake", m_intake.runAutoRollers());
@@ -367,6 +384,7 @@ public class RobotContainer {
                     this::fieldRelativeAccel,
                     Constants.FieldSpots::getHubPosition)));
     NamedCommands.registerCommand("FeedingWiggle", m_intake.feedingWiggleRackCommand());
+    NamedCommands.registerCommand("Wait", dashboardWait());
   }
 
   public Command getAutonomousCommand() {
