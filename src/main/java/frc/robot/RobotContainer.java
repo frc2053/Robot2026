@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -40,6 +41,7 @@ import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Swerve;
 import frc.robot.util.FuelSim;
 import frc.robot.util.FuelVisualizer;
+import frc.robot.util.GameState;
 
 public class RobotContainer {
   private final double m_maxAngularRate =
@@ -60,6 +62,9 @@ public class RobotContainer {
   /** Publisher for lookup distance (front-of-bumper to front-of-hub, in meters). */
   private final DoublePublisher m_lookupDistancePub =
       NetworkTableInstance.getDefault().getDoubleTopic("Shooter/LookupDistance").publish();
+
+  private final DoublePublisher m_actuallyShootFlagDist = NetworkTableInstance.getDefault().getDoubleTopic("DistanceToHubWhenShooting").publish();
+  private double m_dist = 0;
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
@@ -209,6 +214,10 @@ public class RobotContainer {
         .and(m_joystick.leftTrigger().negate())
         .whileTrue(m_intake.feedingWiggleRackCommand());
 
+    actuallyShoot.whileTrue(Commands.runOnce(() -> {
+        m_actuallyShootFlagDist.set(m_dist);
+    }));
+
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
     // Passing mode: spin up wheels to passing speed on left bumper hold, feed when at speed
@@ -308,6 +317,7 @@ public class RobotContainer {
               Translation2d robotPosition = m_drivetrain.getState().Pose.getTranslation();
               Translation2d hubPosition = Constants.FieldSpots.getHubPosition();
               double distance = robotPosition.getDistance(hubPosition);
+              m_dist = distance;
               // Pass SOTF aiming angle and virtual distance if available (set by ShootOnTheMove)
               FuelVisualizer.trySpawnFuel(
                   m_drivetrain.getState().Pose,

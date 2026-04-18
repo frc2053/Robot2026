@@ -166,10 +166,11 @@ public final class Constants {
       shootingDataPoints.add(new ShootingDataPoint(1.12, 1000, 1800, 0.871));
       shootingDataPoints.add(new ShootingDataPoint(1.15, 1000, 1800, 0.948));
       shootingDataPoints.add(new ShootingDataPoint(1.32, 1000, 2000, 1.192));
-      shootingDataPoints.add(new ShootingDataPoint(1.45, 1000, 2000, 1.095));
-      shootingDataPoints.add(new ShootingDataPoint(1.61, 1000, 2200, 1.125));
-      shootingDataPoints.add(new ShootingDataPoint(1.84, 1000, 2200, 1.14));
-      shootingDataPoints.add(new ShootingDataPoint(2.17, 1000, 2400, 1.152));
+      shootingDataPoints.add(
+          new ShootingDataPoint(1.45, 1000, 1900, 1.095)); // 1.45 to 2.17 reduced roller by 100
+      shootingDataPoints.add(new ShootingDataPoint(1.61, 1000, 2100, 1.125));
+      shootingDataPoints.add(new ShootingDataPoint(1.84, 1000, 2100, 1.14));
+      shootingDataPoints.add(new ShootingDataPoint(2.17, 1000, 2300, 1.152));
       shootingDataPoints.add(
           new ShootingDataPoint(2.59, 1000, 2500, 1.16)); // Removed 100RPM from each from here out
       shootingDataPoints.add(new ShootingDataPoint(3.04, 1300, 2300, 1.352));
@@ -223,8 +224,8 @@ public final class Constants {
 
     public static final int RACK_SUPPLY_LIMIT = 40;
     public static final int RACK_STATOR_LIMIT = 50;
-    public static final int ROLLER_SUPPLY_LIMIT = 40;
-    public static final int ROLLER_STATOR_LIMIT = 80;
+    public static final int ROLLER_SUPPLY_LIMIT = 60;
+    public static final int ROLLER_STATOR_LIMIT = 120;
 
     // Gear ratios
     public static final double RACK_GEAR_RATIO = 42.0 / 12.0; // Motor to pinion gearbox ratio
