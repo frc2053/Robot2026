@@ -17,13 +17,11 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.PowerDistribution;
-import java.util.Set;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -43,7 +41,7 @@ import frc.robot.subsystems.Spindexer;
 import frc.robot.subsystems.Swerve;
 import frc.robot.util.FuelSim;
 import frc.robot.util.FuelVisualizer;
-import frc.robot.util.GameState;
+import java.util.Set;
 
 public class RobotContainer {
   private final double m_maxAngularRate =
@@ -65,8 +63,9 @@ public class RobotContainer {
   private final DoublePublisher m_lookupDistancePub =
       NetworkTableInstance.getDefault().getDoubleTopic("Shooter/LookupDistance").publish();
 
-  private final DoublePublisher m_actuallyShootFlagDist = NetworkTableInstance.getDefault().getDoubleTopic("DistanceToHubWhenShooting").publish();
-  private double m_dist = 0;
+  private final DoublePublisher m_actuallyShootFlagDist =
+      NetworkTableInstance.getDefault().getDoubleTopic("DistanceToHubWhenShooting").publish();
+  private double m_dist;
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
 
@@ -227,9 +226,11 @@ public class RobotContainer {
         .and(m_joystick.leftTrigger().negate())
         .whileTrue(m_intake.feedingWiggleRackCommand());
 
-    actuallyShoot.whileTrue(Commands.runOnce(() -> {
-        m_actuallyShootFlagDist.set(m_dist);
-    }));
+    actuallyShoot.whileTrue(
+        Commands.runOnce(
+            () -> {
+              m_actuallyShootFlagDist.set(m_dist);
+            }));
 
     m_joystick.rightTrigger().whileFalse(Commands.parallel(m_spindexer.stop(), m_kicker.stop()));
 
