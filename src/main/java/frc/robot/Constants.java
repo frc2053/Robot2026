@@ -286,18 +286,14 @@ public final class Constants {
     public static final String kFrontCameraName = "UpperPortCamera";
     public static final Transform3d kFrontRobotToCam =
         new Transform3d(
-            new Translation3d(0.108320, -0.038100, 0.711926),
-            // new Translation3d(0, 0, 0),
-            // new Rotation3d(0, 0, 0));
+            new Translation3d(-0.17435, 0.037973, 0.70871588),
             new Rotation3d(0, Units.degreesToRadians(-15), 0));
 
     public static final String kBackCameraName = "BottomPortCamera";
     public static final Transform3d kBackRobotToCam =
         new Transform3d(
-            new Translation3d(0.123723, -0.292100, 0.711926),
-            // new Translation3d(0, 0, 0),
-            // new Rotation3d(0, 0, Units.degreesToRadians(180)));
-            new Rotation3d(0, Units.degreesToRadians(-15), Units.degreesToRadians(180)));
+            new Translation3d(-0.22780244, -0.28003246, 0.2122297),
+            new Rotation3d(0, Units.degreesToRadians(-20), Units.degreesToRadians(160)));
     // Hub tag IDs only
     // Red hub: 2, 3, 4, 5, 8, 9, 10, 11
     // Blue hub: 18, 19, 20, 21, 24, 25, 26, 27
@@ -331,11 +327,11 @@ public final class Constants {
 
     // Shooter position offset from robot center (robot-relative)
     // X = forward, Y = left, Z = up
-    // Negated X and Y for 180° front/back swap
+    // Shooter is behind center (negative X) and to the left (positive Y)
     public static final Translation3d kShooterOffset =
         new Translation3d(
-            Units.inchesToMeters(6.792),
-            Units.inchesToMeters(-6.5),
+            Units.inchesToMeters(-6.792),
+            Units.inchesToMeters(6.5),
             Units.inchesToMeters(22.001322));
 
     // Target height (hub opening height in meters)

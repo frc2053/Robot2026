@@ -294,10 +294,9 @@ public class RobotContainer {
 
     m_fuelSim.start();
 
-    // Intake is at the back after 180° front/back swap
     m_fuelSim.registerIntake(
-        -SwerveConstants.kRobotLength / 2 - Units.inchesToMeters(12),
-        -SwerveConstants.kRobotLength / 2,
+        SwerveConstants.kRobotLength / 2,
+        SwerveConstants.kRobotLength / 2 + Units.inchesToMeters(12),
         -SwerveConstants.kRobotWidth / 2,
         SwerveConstants.kRobotWidth / 2,
         m_intake.intakingTrigger(),

@@ -394,11 +394,10 @@ public class Intake extends SubsystemBase {
     double linearDistanceMeters =
         pinionRotations * 2.0 * Math.PI * IntakeConstants.RACK_PINION_PITCH_RADIUS_METERS;
 
-    // Rack extends up and out (after 180° front/back swap)
     double rackAngleRad = Math.toRadians(IntakeConstants.RACK_ANGLE_DEGREES);
 
     // Only publish the delta from zeroed position - config.json handles base position
-    double deltaX = -linearDistanceMeters * Math.cos(rackAngleRad);
+    double deltaX = linearDistanceMeters * Math.cos(rackAngleRad);
     double deltaZ = -linearDistanceMeters * Math.sin(rackAngleRad);
 
     MechanismVisualizer.setPose(
