@@ -17,6 +17,7 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.controls.StrictFollower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
@@ -250,6 +251,17 @@ public class Shooter extends SubsystemBase {
     if (!shooterRightConfigResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to right shooter motor!");
     }
+
+    // Raise the leader's DutyCycle broadcast rate so the follower mirrors output at 500 Hz
+    // instead of the default 100 Hz. At 100 Hz the 19 Hz torsional mode between the two
+    // coupled rotors gets a ~34° phase lag from the ZOH follower delay, which pumps the
+    // mode. 500 Hz drops that to ~7°, below the threshold where it excites oscillation.
+    m_shooterMotorLeft.getDutyCycle().setUpdateFrequency(500);
+
+    // Run the right shooter motor as a strict follower of the left. A single PID loop on the
+    // leader replaces the previous dueling dual-PID that excited the shared flywheel's
+    // torsional mode.
+    m_shooterMotorRight.setControl(new StrictFollower(m_shooterMotorLeft.getDeviceID()));
 
     // Roller config with VelocityVoltage control (allows both positive and negative voltage output)
     // No TorqueCurrentConfigs needed since we're using voltage-based velocity control
@@ -530,9 +542,8 @@ public class Shooter extends SubsystemBase {
                 state -> SignalLogger.writeString("sysid-main-shooter-state", state.toString())),
             new SysIdRoutine.Mechanism(
                 volts -> {
-                  // Apply voltage to both main shooter motors independently
+                  // Right motor follows the left via StrictFollower, so one request covers both.
                   m_shooterMotorLeft.setControl(m_sysIdVoltageRequest.withOutput(volts.in(Volts)));
-                  m_shooterMotorRight.setControl(m_sysIdVoltageRequest.withOutput(volts.in(Volts)));
                 },
                 null, // No log callback needed - Phoenix SignalLogger handles it
                 this));
@@ -788,9 +799,8 @@ public class Shooter extends SubsystemBase {
     m_targetMainShooterRps = mainSpeed;
     m_targetRollerRps = topSpeed;
 
-    // Command the bottom shooter (right motor is leader, left follows)
+    // Command the bottom shooter (left is leader, right follows via StrictFollower)
     m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
-    m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainSpeed));
 
     // Command the top roller
     m_shooterMotorLeftRoller.setControl(m_rollerVelocityRequest.withVelocity(topSpeed));
@@ -821,8 +831,6 @@ public class Shooter extends SubsystemBase {
 
               m_shooterMotorLeft.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
-              m_shooterMotorRight.setControl(
-                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
               m_shooterMotorLeftRoller.setControl(
@@ -849,10 +857,8 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = bottomSpeedRps;
               m_targetRollerRps = topRollerSpeedRps;
 
-              // Command the bottom shooter (right motor is leader, left follows)
+              // Command the bottom shooter (left is leader, right follows via StrictFollower)
               m_shooterMotorLeft.setControl(
-                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
-              m_shooterMotorRight.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
@@ -870,9 +876,8 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
 
-              // Set bottom shooter motor (leader)
+              // Set bottom shooter motor (right follows via StrictFollower)
               m_shooterMotorLeft.setControl(m_voltageRequest.withOutput(idleVoltage));
-              m_shooterMotorRight.setControl(m_voltageRequest.withOutput(idleVoltage));
 
               // Set top roller motor
               m_shooterMotorLeftRoller.setControl(m_voltageRequest.withOutput(idleVoltage));
@@ -949,10 +954,8 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = bottomSpeedRps;
               m_targetRollerRps = topRollerSpeedRps;
 
-              // Command the bottom shooter (right motor is leader, left follows)
+              // Command the bottom shooter (left is leader, right follows via StrictFollower)
               m_shooterMotorLeft.setControl(
-                  m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
-              m_shooterMotorRight.setControl(
                   m_mainShooterVelocityRequest.withVelocity(bottomSpeedRps));
 
               // Command the top roller
@@ -987,7 +990,6 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
               m_shooterMotorLeft.setControl(m_neutralRequest);
-              m_shooterMotorRight.setControl(m_neutralRequest);
               m_shooterMotorLeftRoller.setControl(m_neutralRequest);
               m_shooterMotorRightRoller.setControl(m_neutralRequest);
             })
@@ -1018,7 +1020,6 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = mainRps;
               m_targetRollerRps = rollerRps;
               m_shooterMotorLeft.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
-              m_shooterMotorRight.setControl(m_mainShooterVelocityRequest.withVelocity(mainRps));
               m_shooterMotorLeftRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
               m_shooterMotorRightRoller.setControl(m_rollerVelocityRequest.withVelocity(rollerRps));
             })
@@ -1027,7 +1028,6 @@ public class Shooter extends SubsystemBase {
               m_targetMainShooterRps = 0.0;
               m_targetRollerRps = 0.0;
               m_shooterMotorLeft.setControl(m_neutralRequest);
-              m_shooterMotorRight.setControl(m_neutralRequest);
               m_shooterMotorLeftRoller.setControl(m_neutralRequest);
               m_shooterMotorRightRoller.setControl(m_neutralRequest);
             })
