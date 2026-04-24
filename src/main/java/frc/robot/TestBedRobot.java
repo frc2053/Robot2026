@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Meters;
+
 import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -57,6 +59,8 @@ public class TestBedRobot extends TimedRobot {
     // Set MainShooterRPM and RollerRPM there, along with gain entries under
     // Shooter/Tuning/MainShooterGains/* and Shooter/Tuning/RollerGains/*.
     m_shooter.tuningEnabledTrigger().whileTrue(m_shooter.tuningCommand());
+
+
 
     // Main shooter SysId — hold right bumper, then press face button.
     m_joystick
