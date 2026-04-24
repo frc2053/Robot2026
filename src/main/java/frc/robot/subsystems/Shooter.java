@@ -223,7 +223,7 @@ public class Shooter extends SubsystemBase {
             .withMotorOutput(
                 new MotorOutputConfigs()
                     .withNeutralMode(NeutralModeValue.Coast)
-                    .withInverted(InvertedValue.Clockwise_Positive))
+                    .withInverted(InvertedValue.CounterClockwise_Positive))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
@@ -246,7 +246,6 @@ public class Shooter extends SubsystemBase {
     }
 
     // New shooter has the motors mounted opposite faces
-    mainShooterConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     StatusCode shooterRightConfigResult =
         m_shooterMotorRight.getConfigurator().apply(mainShooterConfig);
     if (!shooterRightConfigResult.isOK()) {
@@ -271,7 +270,7 @@ public class Shooter extends SubsystemBase {
             .withMotorOutput(
                 new MotorOutputConfigs()
                     .withNeutralMode(NeutralModeValue.Coast)
-                    .withInverted(InvertedValue.CounterClockwise_Positive))
+                    .withInverted(InvertedValue.Clockwise_Positive))
             .withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
@@ -967,6 +966,18 @@ public class Shooter extends SubsystemBase {
             })
         .withName("SpinUpForSOTF");
   }
+
+  /**
+   * Creates a command that spins up the shooter using iterative TOF recursion for Shooting On The
+   * Fly (SOTF). This compensates for robot velocity by iteratively computing a virtual target that
+   * accounts for the projectile's time-of-flight.
+   *
+   * @param robotPoseSupplier Supplier for current robot pose.
+   * @param robotSpeedsSupplier Supplier for current robot velocity (field-relative).
+   * @param goalPositionSupplier Supplier for the goal position to shoot at.
+   * @return A command that runs the shooter at SOTF-adjusted speeds.
+   */
+
 
   /**
    * Creates a command that stops all shooter motors.
