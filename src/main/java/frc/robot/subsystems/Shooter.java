@@ -978,7 +978,6 @@ public class Shooter extends SubsystemBase {
    * @return A command that runs the shooter at SOTF-adjusted speeds.
    */
 
-
   /**
    * Creates a command that stops all shooter motors.
    *

@@ -60,6 +60,7 @@ public class Intake extends SubsystemBase {
 
   private final TalonFX m_rackMotor;
   private final TalonFX m_rollerMotor;
+  private final TalonFX m_rollerMotor2;
 
   // Rack status signals
   private final StatusSignal<Angle> m_rackPosition;
@@ -69,12 +70,16 @@ public class Intake extends SubsystemBase {
   // Roller status signals
   private final StatusSignal<AngularVelocity> m_rollerVelocity;
   private final StatusSignal<Voltage> m_rollerVoltage;
+  private final StatusSignal<AngularVelocity> m_rollerVelocity2;
+  private final StatusSignal<Voltage> m_rollerVoltage2;
 
   // Current status signals
   private final StatusSignal<Current> m_rackStatorCurrent;
   private final StatusSignal<Current> m_rackSupplyCurrent;
   private final StatusSignal<Current> m_rollerStatorCurrent;
   private final StatusSignal<Current> m_rollerSupplyCurrent;
+  private final StatusSignal<Current> m_rollerStatorCurrent2;
+  private final StatusSignal<Current> m_rollerSupplyCurrent2;
 
   // Simulation objects
   private final TalonFXSimState m_rackSimState;
@@ -90,10 +95,15 @@ public class Intake extends SubsystemBase {
   private final DoublePublisher m_rollerVelocityPub;
   private final DoublePublisher m_rollerVoltagePub;
   private final DoublePublisher m_rollerVoltageSetpointPub;
+  private final DoublePublisher m_roller2VelocityPub;
+  private final DoublePublisher m_roller2VoltagePub;
+  private final DoublePublisher m_roller2VoltageSetpointPub;
   private final DoublePublisher m_rackStatorCurrentPub;
   private final DoublePublisher m_rackSupplyCurrentPub;
   private final DoublePublisher m_rollerStatorCurrentPub;
   private final DoublePublisher m_rollerSupplyCurrentPub;
+  private final DoublePublisher m_roller2StatorCurrentPub;
+  private final DoublePublisher m_roller2SupplyCurrentPub;
   private final BooleanPublisher m_atPositionPub;
   private final StringPublisher m_currentCommandPub;
 
@@ -148,6 +158,7 @@ public class Intake extends SubsystemBase {
   public Intake() {
     m_rackMotor = new TalonFX(IntakeConstants.RACK_MOTOR_ID);
     m_rollerMotor = new TalonFX(IntakeConstants.ROLLER_MOTOR_ID);
+    m_rollerMotor2 = new TalonFX(IntakeConstants.ROLLER_MOTOR_2_ID);
 
     configureRackMotor();
     configureRollerMotor();
@@ -160,12 +171,16 @@ public class Intake extends SubsystemBase {
     // Get roller status signals
     m_rollerVelocity = m_rollerMotor.getVelocity();
     m_rollerVoltage = m_rollerMotor.getMotorVoltage();
+    m_rollerVelocity2 = m_rollerMotor2.getVelocity();
+    m_rollerVoltage2 = m_rollerMotor2.getMotorVoltage();
 
     // Get current status signals
     m_rackStatorCurrent = m_rackMotor.getStatorCurrent();
     m_rackSupplyCurrent = m_rackMotor.getSupplyCurrent();
     m_rollerStatorCurrent = m_rollerMotor.getStatorCurrent();
     m_rollerSupplyCurrent = m_rollerMotor.getSupplyCurrent();
+    m_rollerStatorCurrent2 = m_rollerMotor2.getStatorCurrent();
+    m_rollerSupplyCurrent2 = m_rollerMotor2.getSupplyCurrent();
 
     m_wiggleTimer = new Timer();
 
@@ -177,10 +192,14 @@ public class Intake extends SubsystemBase {
             m_rackVelocity,
             m_rackVoltage,
             m_rollerVelocity,
+            m_rollerVelocity2,
             m_rollerVoltage,
+            m_rollerVoltage2,
             m_rackStatorCurrent,
             m_rackSupplyCurrent,
             m_rollerStatorCurrent,
+            m_rollerStatorCurrent2,
+            m_rollerSupplyCurrent2,
             m_rollerSupplyCurrent);
     if (!setUpdateFreqResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply update frequency for intake subsystem!");
@@ -197,12 +216,17 @@ public class Intake extends SubsystemBase {
     m_rackVoltagePub = intakeTable.getDoubleTopic("RackVoltage").publish();
     m_rackSetpointPub = intakeTable.getDoubleTopic("RackSetpoint").publish();
     m_rollerVelocityPub = intakeTable.getDoubleTopic("RollerVelocityRPM").publish();
+    m_roller2VelocityPub = intakeTable.getDoubleTopic("Roller2VelocityRPM").publish();
     m_rollerVoltagePub = intakeTable.getDoubleTopic("RollerVoltage").publish();
+    m_roller2VoltagePub = intakeTable.getDoubleTopic("Roller2Voltage").publish();
     m_rollerVoltageSetpointPub = intakeTable.getDoubleTopic("RollerVoltageSetpoint").publish();
+    m_roller2VoltageSetpointPub = intakeTable.getDoubleTopic("Roller2VoltageSetpoint").publish();
     m_rackStatorCurrentPub = intakeTable.getDoubleTopic("RackStatorCurrent").publish();
     m_rackSupplyCurrentPub = intakeTable.getDoubleTopic("RackSupplyCurrent").publish();
     m_rollerStatorCurrentPub = intakeTable.getDoubleTopic("RollerStatorCurrent").publish();
     m_rollerSupplyCurrentPub = intakeTable.getDoubleTopic("RollerSupplyCurrent").publish();
+    m_roller2StatorCurrentPub = intakeTable.getDoubleTopic("Roller2StatorCurrent").publish();
+    m_roller2SupplyCurrentPub = intakeTable.getDoubleTopic("Roller2SupplyCurrent").publish();
     m_atPositionPub = intakeTable.getBooleanTopic("AtPosition").publish();
     m_currentCommandPub = intakeTable.getStringTopic("CurrentCommand").publish();
 
@@ -355,6 +379,13 @@ public class Intake extends SubsystemBase {
     if (!configResult.isOK()) {
       DataLogManager.log("ERROR! Not able to apply config to intake roller motor!");
     }
+
+    TalonFXConfiguration invertedConfig = config.clone();
+    invertedConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+    StatusCode config2Result = m_rollerMotor2.getConfigurator().apply(invertedConfig);
+    if (!config2Result.isOK()) {
+      DataLogManager.log("ERROR! Not able to apply config to intake roller 2 motor!");
+    }
   }
 
   @Override
@@ -364,11 +395,15 @@ public class Intake extends SubsystemBase {
         m_rackVelocity,
         m_rackVoltage,
         m_rollerVelocity,
+        m_rollerVelocity2,
         m_rollerVoltage,
+        m_rollerVoltage2,
         m_rackStatorCurrent,
         m_rackSupplyCurrent,
         m_rollerStatorCurrent,
-        m_rollerSupplyCurrent);
+        m_rollerStatorCurrent2,
+        m_rollerSupplyCurrent,
+        m_rollerSupplyCurrent2);
 
     // Publish signals to NetworkTables
     m_rackPositionPub.set(m_rackPosition.getValue().in(Rotations));
@@ -376,12 +411,17 @@ public class Intake extends SubsystemBase {
     m_rackVoltagePub.set(m_rackVoltage.getValue().in(Volts));
     m_rackSetpointPub.set(m_rackPositionSetpoint);
     m_rollerVelocityPub.set(m_rollerVelocity.getValue().in(RotationsPerSecond) * 60.0);
+    m_roller2VelocityPub.set(m_rollerVelocity2.getValue().in(RotationsPerSecond) * 60.0);
     m_rollerVoltagePub.set(m_rollerVoltage.getValue().in(Volts));
+    m_roller2VoltagePub.set(m_rollerVoltage2.getValue().in(Volts));
     m_rollerVoltageSetpointPub.set(m_rollerVoltageSetpoint);
+    m_roller2VoltageSetpointPub.set(m_rollerVoltageSetpoint);
     m_rackStatorCurrentPub.set(m_rackStatorCurrent.getValue().in(Amps));
     m_rackSupplyCurrentPub.set(m_rackSupplyCurrent.getValue().in(Amps));
     m_rollerStatorCurrentPub.set(m_rollerStatorCurrent.getValue().in(Amps));
+    m_roller2StatorCurrentPub.set(m_rollerStatorCurrent2.getValue().in(Amps));
     m_rollerSupplyCurrentPub.set(m_rollerSupplyCurrent.getValue().in(Amps));
+    m_roller2SupplyCurrentPub.set(m_rollerSupplyCurrent2.getValue().in(Amps));
     m_atPositionPub.set(atPosition());
 
     // Publish current command name
@@ -513,11 +553,14 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("DeployIntake");
   }
@@ -536,6 +579,8 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
         .until(
             () -> {
@@ -545,6 +590,7 @@ public class Intake extends SubsystemBase {
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("AutoDeployIntake");
   }
@@ -570,6 +616,8 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
               m_rackPositionSetpoint = IntakeConstants.kRackStowedPosition;
             })
         .andThen(Commands.waitSeconds(0.25))
@@ -584,6 +632,7 @@ public class Intake extends SubsystemBase {
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("Stow Command");
   }
@@ -594,11 +643,14 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("RunIntakeRollers");
   }
@@ -608,6 +660,8 @@ public class Intake extends SubsystemBase {
             () -> {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
             })
         .withName("RunIntakeRollers");
@@ -619,11 +673,14 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = -IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(-IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(-IntakeConstants.kIntakeVoltage));
             })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("RunIntakeRollersReverse");
   }
@@ -639,11 +696,14 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kEjectVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kEjectVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kEjectVoltage));
             })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("EjectIntake");
   }
@@ -674,11 +734,13 @@ public class Intake extends SubsystemBase {
             () -> {
               m_rollerVoltageSetpoint = voltage;
               m_rollerMotor.setControl(m_rollerVoltageRequest.withOutput(voltage));
+              m_rollerMotor2.setControl(m_rollerVoltageRequest.withOutput(voltage));
             })
         .finallyDo(
             () -> {
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("RunIntakeRoller");
   }
@@ -695,6 +757,7 @@ public class Intake extends SubsystemBase {
               m_rackMotor.setControl(m_neutralRequest);
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("StopIntake");
   }
@@ -756,6 +819,8 @@ public class Intake extends SubsystemBase {
               m_rollerVoltageSetpoint = IntakeConstants.kIntakeVoltage;
               m_rollerMotor.setControl(
                   m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
+              m_rollerMotor2.setControl(
+                  m_rollerVoltageRequest.withOutput(IntakeConstants.kIntakeVoltage));
               if (m_wiggleTimer.hasElapsed(0.60)) {
                 m_wiggleGoingIn = !m_wiggleGoingIn;
                 m_wiggleTimer.reset();
@@ -775,6 +840,7 @@ public class Intake extends SubsystemBase {
                   m_rackPositionRequest.withPosition(IntakeConstants.kRackDeployedPosition));
               m_rollerVoltageSetpoint = 0.0;
               m_rollerMotor.setControl(m_neutralRequest);
+              m_rollerMotor2.setControl(m_neutralRequest);
             })
         .withName("FeedingWiggleRack");
   }

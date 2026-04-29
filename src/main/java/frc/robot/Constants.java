@@ -221,6 +221,7 @@ public final class Constants {
   public static class IntakeConstants {
     public static final int RACK_MOTOR_ID = 20;
     public static final int ROLLER_MOTOR_ID = 21;
+    public static final int ROLLER_MOTOR_2_ID = 23;
 
     public static final int RACK_SUPPLY_LIMIT = 40;
     public static final int RACK_STATOR_LIMIT = 50;
