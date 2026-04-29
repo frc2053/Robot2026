@@ -149,7 +149,7 @@ public class Camera {
 
       // In teleop, filter to only our alliance's tags. In auto, use all hub tags.
       List<PhotonTrackedTarget> targets =
-          DriverStation.isAutonomous() ? result.targets : filterByAlliance(result.targets);
+          (DriverStation.isAutonomous() || DriverStation.isDisabled()) ? result.targets : filterByAlliance(result.targets);
       if (targets.isEmpty()) {
         continue;
       }
