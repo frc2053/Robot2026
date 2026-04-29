@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+//import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.commands.ShootOnTheMove;
 import frc.robot.generated.TunerConstants;
@@ -68,6 +69,7 @@ public class RobotContainer {
   private double m_dist;
 
   private final CommandXboxController m_joystick = new CommandXboxController(0);
+  //private final CommandXboxController m_sysidjoy = new CommandXboxController(1);
 
   public final Swerve m_drivetrain = TunerConstants.createDrivetrain();
   public final Shooter m_shooter = new Shooter();
@@ -277,6 +279,17 @@ public class RobotContainer {
                   .simDisturbRobot()
                   .andThen(Commands.runOnce(() -> disturbPub.set(false))));
     }
+
+
+    // m_sysidjoy.a().whileTrue(m_shooter.rollerSysIdQuasistatic(Direction.kForward));
+    // m_sysidjoy.b().whileTrue(m_shooter.rollerSysIdQuasistatic(Direction.kReverse));
+    // m_sysidjoy.x().whileTrue(m_shooter.rollerSysIdDynamic(Direction.kForward));
+    // m_sysidjoy.y().whileTrue(m_shooter.rollerSysIdDynamic(Direction.kReverse));
+
+    // m_sysidjoy.back().whileTrue(m_shooter.mainShooterSysIdQuasistatic(Direction.kForward));
+    // m_sysidjoy.start().whileTrue(m_shooter.mainShooterSysIdQuasistatic(Direction.kReverse));
+    // m_sysidjoy.leftBumper().whileTrue(m_shooter.mainShooterSysIdDynamic(Direction.kForward));
+    // m_sysidjoy.rightBumper().whileTrue(m_shooter.mainShooterSysIdDynamic(Direction.kReverse));
 
     m_drivetrain.registerTelemetry(m_logger::telemeterize);
   }
