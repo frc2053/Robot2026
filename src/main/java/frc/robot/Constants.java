@@ -158,25 +158,20 @@ public final class Constants {
     public static final List<ShootingDataPoint> shootingDataPoints = new ArrayList<>();
 
     static {
-      shootingDataPoints.add(new ShootingDataPoint(0.792, 2100, 166.7, 0.977));
-      shootingDataPoints.add(new ShootingDataPoint(0.9, 1000, 1800, 0.977));
-      shootingDataPoints.add(new ShootingDataPoint(0.93, 1000, 1800, 0.969));
-      shootingDataPoints.add(new ShootingDataPoint(0.97, 1000, 1800, 0.947));
-      shootingDataPoints.add(new ShootingDataPoint(1.04, 1000, 1800, 0.982));
-      shootingDataPoints.add(new ShootingDataPoint(1.12, 1000, 1800, 0.871));
-      shootingDataPoints.add(new ShootingDataPoint(1.15, 1000, 1800, 0.948));
-      shootingDataPoints.add(new ShootingDataPoint(1.32, 1000, 2000, 1.192));
-      shootingDataPoints.add(
-          new ShootingDataPoint(1.45, 1000, 1900, 1.095)); // 1.45 to 2.17 reduced roller by 100
-      shootingDataPoints.add(new ShootingDataPoint(1.61, 1000, 2100, 1.125));
-      shootingDataPoints.add(new ShootingDataPoint(1.84, 1000, 2100, 1.14));
-      shootingDataPoints.add(new ShootingDataPoint(2.17, 1000, 2300, 1.152));
-      shootingDataPoints.add(
-          new ShootingDataPoint(2.59, 1000, 2500, 1.16)); // Removed 100RPM from each from here out
-      shootingDataPoints.add(new ShootingDataPoint(3.04, 1300, 2300, 1.352));
-      shootingDataPoints.add(new ShootingDataPoint(3.52, 1500, 2300, 1.451));
-      shootingDataPoints.add(new ShootingDataPoint(3.82, 1700, 2000, 1.394));
-      shootingDataPoints.add(new ShootingDataPoint(4.34, 1900, 2000, 1.483));
+      shootingDataPoints.add(new ShootingDataPoint(1.292, 2300.0, 250.0, 1.06));
+      shootingDataPoints.add(new ShootingDataPoint(1.63, 2500.0, 250.0));
+      shootingDataPoints.add(new ShootingDataPoint(1.77, 2500.0, 280.0));
+      shootingDataPoints.add(new ShootingDataPoint(1.93, 2700.0, 250.0));
+      shootingDataPoints.add(new ShootingDataPoint(2.30, 2700.0, 550.0, 1.20));
+      shootingDataPoints.add(new ShootingDataPoint(2.40, 2700.0, 600.0));
+      shootingDataPoints.add(new ShootingDataPoint(2.41, 1600.0, 3205.3));
+      shootingDataPoints.add(new ShootingDataPoint(2.49, 1600.0, 3400.0));
+      shootingDataPoints.add(new ShootingDataPoint(2.82, 1600.0, 3700.0, 1.22));
+      shootingDataPoints.add(new ShootingDataPoint(3.24, 1600.0, 4100.0));
+      shootingDataPoints.add(new ShootingDataPoint(3.55, 1500.0, 4300.0, 1.16));
+      shootingDataPoints.add(new ShootingDataPoint(3.90, 1700.0, 4350.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.95, 1500.0, 5300.0, 1.58));
+      shootingDataPoints.add(new ShootingDataPoint(5.40, 1700.0, 5500.0, 1.63));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
