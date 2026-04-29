@@ -288,8 +288,8 @@ public final class Constants {
     public static final String kBackCameraName = "BottomPortCamera";
     public static final Transform3d kBackRobotToCam =
         new Transform3d(
-            new Translation3d(-0.22780244, -0.28003246, 0.2122297),
-            new Rotation3d(0, Units.degreesToRadians(-20), Units.degreesToRadians(160)));
+            new Translation3d(-0.643921, -0.2921, 0.643921),
+            new Rotation3d(0, Units.degreesToRadians(-18.2), Units.degreesToRadians(180)));
     // Hub tag IDs only
     // Red hub: 2, 3, 4, 5, 8, 9, 10, 11
     // Blue hub: 18, 19, 20, 21, 24, 25, 26, 27
