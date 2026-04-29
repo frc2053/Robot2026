@@ -166,7 +166,15 @@ public final class Constants {
       shootingDataPoints.add(new ShootingDataPoint(2.51, 3000.0, 550.0, 1.0));
       shootingDataPoints.add(new ShootingDataPoint(2.8, 3200.0, 600.0, 1.0));
       shootingDataPoints.add(new ShootingDataPoint(3.1, 3200.0, 600.0, 1.0));
-
+      // Extrapolated: bottom = 540*d + 1693, top = 600 + 337*(d - 3.1). Untested past 3.1 m.
+      shootingDataPoints.add(new ShootingDataPoint(3.4, 3528.0, 725.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(3.7, 3690.0, 815.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.0, 3852.0, 905.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.3, 4014.0, 1000.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.6, 4175.0, 1095.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(4.9, 4337.0, 1195.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(5.2, 4499.0, 1295.0, 1.0));
+      shootingDataPoints.add(new ShootingDataPoint(5.4, 4607.0, 1360.0, 1.0));
 
       for (ShootingDataPoint point : shootingDataPoints) {
         BOTTOM_SHOOTER_SPEED_MAP.put(point.distance(), point.bottomRpm());
