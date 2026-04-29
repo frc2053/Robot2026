@@ -114,17 +114,17 @@ public final class Constants {
     public static final double ROLLER_MOI = 0.001; // kg*m^2
 
     // Main shooter PID constants (Slot 0)
-    public static final double kMainShooterKS = 0.21703;
+    public static final double kMainShooterKS = 0.20;
     public static final double kMainShooterKV = 0.12237;
-    public static final double kMainShooterKA = 0.0083286;
+    public static final double kMainShooterKA = 0.000;
     public static final double kMainShooterKP = 0.06705;
     public static final double kMainShooterKI = 0.0;
     public static final double kMainShooterKD = 0.0;
 
     // Roller PID constants (Slot 0)
-    public static final double kRollerKS = 0.22317;
+    public static final double kRollerKS = 0.20;
     public static final double kRollerKV = 0.12056;
-    public static final double kRollerKA = 0.008593;
+    public static final double kRollerKA = 0.000;
     public static final double kRollerKP = 0.11767;
     public static final double kRollerKI = 0.0;
     public static final double kRollerKD = 0.0;
@@ -288,7 +288,7 @@ public final class Constants {
     public static final String kBackCameraName = "BottomPortCamera";
     public static final Transform3d kBackRobotToCam =
         new Transform3d(
-            new Translation3d(-0.643921, -0.2921, 0.643921),
+            new Translation3d(-0.075909, 0.2921, 0.643921),
             new Rotation3d(0, Units.degreesToRadians(-18.2), Units.degreesToRadians(180)));
     // Hub tag IDs only
     // Red hub: 2, 3, 4, 5, 8, 9, 10, 11
