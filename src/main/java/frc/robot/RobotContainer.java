@@ -238,7 +238,7 @@ public class RobotContainer {
 
     // Passing mode: spin up wheels to passing speed on left bumper hold, feed when at speed
     m_joystick.leftBumper().whileTrue(m_shooter.spinUpForPassingCommand());
-    Trigger actuallyPass = m_joystick.leftBumper().and(m_shooter.atSpeedTrigger());
+    Trigger actuallyPass = m_joystick.leftBumper().and(m_shooter.atSpeedTriggerPassing());
     actuallyPass.whileTrue(shootCommand());
     // Wiggle intake to feed balls while passing, but only when not actively intaking
     actuallyPass

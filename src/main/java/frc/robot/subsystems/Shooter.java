@@ -118,6 +118,7 @@ public class Shooter extends SubsystemBase {
   private final DoublePublisher m_rollerRightSupplyCurrentPub; // new for right roller
   private final StringPublisher m_currentCommandPub;
   private final BooleanPublisher m_atSpeedPub;
+  private final BooleanPublisher m_atSpeedPubPassing;
   private final DoublePublisher m_mainShooterSetpointPub;
   private final DoublePublisher m_rollerSetpointPub;
 
@@ -138,6 +139,7 @@ public class Shooter extends SubsystemBase {
 
   // Public trigger for when shooter is at speed
   private final Trigger m_atSpeedTrigger;
+  private final Trigger m_atSpeedTriggerPassing;
 
   // Control requests - both use VelocityVoltage for better disturbance rejection
   private final VelocityVoltage m_mainShooterVelocityRequest =
@@ -389,6 +391,7 @@ public class Shooter extends SubsystemBase {
         shooterTable.getDoubleTopic("RollerRightSupplyCurrent").publish();
     m_currentCommandPub = shooterTable.getStringTopic("CurrentCommand").publish();
     m_atSpeedPub = shooterTable.getBooleanTopic("AtSpeed").publish();
+    m_atSpeedPubPassing = shooterTable.getBooleanTopic("AtSpeedPassing").publish();
     m_mainShooterSetpointPub = shooterTable.getDoubleTopic("MainShooterSetpointRPM").publish();
     m_rollerSetpointPub = shooterTable.getDoubleTopic("RollerSetpointRPM").publish();
     m_torqueCurrentMainPub = shooterTable.getDoubleTopic("TorqueCurrentMain").publish();
@@ -396,6 +399,7 @@ public class Shooter extends SubsystemBase {
 
     // Initialize at-speed trigger
     m_atSpeedTrigger = new Trigger(this::isAtSpeed);
+    m_atSpeedTriggerPassing = new Trigger(this::isAtSpeedPassing);
 
     // Initialize simulation
     m_leftMotorSimState = m_shooterMotorLeft.getSimState();
@@ -623,6 +627,7 @@ public class Shooter extends SubsystemBase {
 
     // Publish at-speed status
     m_atSpeedPub.set(isAtSpeed());
+    m_atSpeedPubPassing.set(isAtSpeedPassing());
 
     // Publish velocity setpoints in RPM
     m_mainShooterSetpointPub.set(m_targetMainShooterRps * 60.0);
@@ -780,6 +785,18 @@ public class Shooter extends SubsystemBase {
     return mainAtSpeed && rollerAtSpeed;
   }
 
+  public boolean isAtSpeedPassing() {
+    double mainShooterVel = m_rightMotorVel.getValue().in(RotationsPerSecond);
+    double rollerVel = m_rollerLeftVel.getValue().in(RotationsPerSecond);
+    double rollerRightVel = m_rollerRightVel.getValue().in(RotationsPerSecond);
+    double tolerance = m_velocityToleranceRpsSub.get();
+    boolean mainAtSpeed = Math.abs(mainShooterVel - m_targetMainShooterRps) < tolerance;
+    boolean rollerAtSpeed =
+        Math.abs(rollerVel - m_targetRollerRps) < 40.0
+            && Math.abs(rollerRightVel - m_targetRollerRps) < 40.0;
+    return mainAtSpeed && rollerAtSpeed;
+  }
+
   /**
    * Returns a trigger that is true when the shooter is at the target speed.
    *
@@ -787,6 +804,10 @@ public class Shooter extends SubsystemBase {
    */
   public Trigger atSpeedTrigger() {
     return m_atSpeedTrigger;
+  }
+
+  public Trigger atSpeedTriggerPassing() {
+    return m_atSpeedTriggerPassing;
   }
 
   /**
