@@ -206,7 +206,7 @@ public final class Constants {
     public static final int KICKER_MOTOR_ID = 31;
 
     public static final int KICKER_SUPPLY_LIMIT = 40;
-    public static final int KICKER_STATOR_LIMIT = 120;
+    public static final int KICKER_STATOR_LIMIT = 110;
 
     // Spin voltage for feeding game pieces
     public static final double kSpinVoltage = 12;
@@ -223,8 +223,8 @@ public final class Constants {
 
     public static final int RACK_SUPPLY_LIMIT = 40;
     public static final int RACK_STATOR_LIMIT = 50;
-    public static final int ROLLER_SUPPLY_LIMIT = 60;
-    public static final int ROLLER_STATOR_LIMIT = 120;
+    public static final int ROLLER_SUPPLY_LIMIT = 55;
+    public static final int ROLLER_STATOR_LIMIT = 100;
 
     // Gear ratios
     public static final double RACK_GEAR_RATIO = 42.0 / 12.0; // Motor to pinion gearbox ratio
