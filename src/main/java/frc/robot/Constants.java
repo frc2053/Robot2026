@@ -223,7 +223,7 @@ public final class Constants {
 
     public static final int RACK_SUPPLY_LIMIT = 40;
     public static final int RACK_STATOR_LIMIT = 50;
-    public static final int ROLLER_SUPPLY_LIMIT = 55;
+    public static final int ROLLER_SUPPLY_LIMIT = 45;
     public static final int ROLLER_STATOR_LIMIT = 100;
 
     // Gear ratios
